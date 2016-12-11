@@ -1,4 +1,4 @@
-module PPattern
+module Data.Algorithm.Ppattern.Splitting
 (
   partitionsInIncreasings
 )
@@ -8,8 +8,8 @@ import qualified Data.List     as L
 import qualified Data.Foldable as F
 import qualified Data.Set      as Set
 
-import Types
-import Combinatorics
+import Data.Algorithm.Ppattern.Types
+import Data.Algorithm.Ppattern.Combinatorics
 
 increasingSubsequences :: Isogram ->  Length -> [Isogram]
 increasingSubsequences xs l = aux xs l 0

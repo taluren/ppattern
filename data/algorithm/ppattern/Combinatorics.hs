@@ -1,4 +1,4 @@
-module Combinatorics
+module Data.Algorithm.Ppattern.Combinatorics
 (
   partitionsByLength
 )

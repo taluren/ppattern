@@ -1,10 +1,10 @@
-module Types
+module Data.Algorithm.Ppattern.Types
 (
   T
 , Length
 , Index
 , Isogram
-, Permutat  
+, Permutat
 )
 where
 
@@ -17,4 +17,3 @@ where
   type Isogram = [T]
 
   type Permutation = [T]
-

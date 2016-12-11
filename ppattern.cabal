@@ -15,10 +15,20 @@ build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
 
+
+library
+  ghc-options:    -Wall -O2
+  build-depends:       base >=4.8 && <4.9, containers >=0.5 && <0.6
+  default-language: Haskell2010
+  hs-source-dirs: src
+  exposed-modules:
+    Data.Algorithm.PPattern.Splitting
+    Data.Algorithm.PPattern.Combinatorics
+    Data.Algorithm.PPattern.Types
+
 executable ppattern
   main-is:             Main.hs
-  other-modules:       PPattern.hs
-  -- other-extensions:
+  ghc-options:         -Wall -O2
   build-depends:       base >=4.8 && <4.9, containers >=0.5 && <0.6
   hs-source-dirs:      src
   default-language:    Haskell2010

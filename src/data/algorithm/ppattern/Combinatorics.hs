@@ -1,12 +1,26 @@
+{-|
+Module      : Data.Algorithm.PPattern.Combinatorics
+Description : Short description
+Copyright   : (c) Stéphane Vialette, 2016
+License     : MIT
+Maintainer  : vialette@gmail.com
+Stability   : experimental
+
+Here is a longer description of this module, containing some
+commentary with @some markup@.
+-}
+
 module Data.Algorithm.PPattern.Combinatorics
 (
   partitionsByLength
 )
 where
 
+  import qualified Data.List as L
+  import qualified Data.Set  as Set
 
   {-|
-    The 'partitionsByLength' function returns all partition of an integer.
+    The 'partitionsByLength' function returns all k-partitions of an integer.
   -}
   partitionsByLength :: Int -> Int -> [[Int]]
   partitionsByLength n k = upToIsomorphism $ aux 1 n k
