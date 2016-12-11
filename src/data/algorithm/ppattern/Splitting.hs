@@ -54,5 +54,5 @@ where
                            p <- partitionsByLength (L.length xs) k
                           ]
 
-    upToIsomorphism :: [[Isogram]] -> [[Isogram]]
-    upToIsomorphism = Set.toList . Set.fromList . L.map L.sort
+      upToIsomorphism :: [[Isogram]] -> [[Isogram]]
+      upToIsomorphism = Set.toList . Set.fromList . L.map L.sort
