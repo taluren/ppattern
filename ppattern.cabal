@@ -27,6 +27,7 @@ library
   exposed-modules:
     Data.Algorithm.PPattern.Splitting
     Data.Algorithm.PPattern.Combinatorics
+    Data.Algorithm.PPattern.Partition
     Data.Algorithm.PPattern.Types
     Data.Algorithm.PPattern.Generator
     Data.Algorithm.PPattern.FPT
