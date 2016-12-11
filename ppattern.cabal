@@ -28,7 +28,7 @@ library
     Data.Algorithm.PPattern.Generator
     Data.Algorithm.PPattern.FPT
     Data.Algorithm.PPattern.Experimental
-
+    Data.Algorithm.PPattern.Bijection
 
 executable ppattern
   main-is:             Main.hs

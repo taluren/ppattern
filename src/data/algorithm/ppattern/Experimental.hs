@@ -19,4 +19,4 @@ where
   import Data.Algorithm.PPattern.Types
 
   search :: Permutation -> Permutation -> Bool
-  search = id
+  search xs ys = True

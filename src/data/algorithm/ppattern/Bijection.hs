@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.PPattern.Generator
+Module      : Data.Algorithm.PPattern.Bijection
 Description : Short description
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -10,13 +10,13 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-module Data.Algorithm.PPattern.Generator
+module Data.Algorithm.PPattern.Bijection
 (
-  random123Avoiding
+  search
 )
 where
 
   import Data.Algorithm.PPattern.Types
 
-  random123Avoiding :: Length -> Permutation
-  random123Avoiding n = [1..n]
+  -- search :: Permutation -> Permutation -> Bool
+  search = id

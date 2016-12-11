@@ -20,12 +20,17 @@ module Data.Algorithm.PPattern.Types
 )
 where
 
-  type Length = Int
-
-  type Index = Int
-
+  -- |Isogram and Permutation element type
   type T = Int
 
+  -- |'T' sequence type with no repeater letter
   type Isogram = [T]
 
+  -- | 'T' permutation type
   type Permutation = [T]
+
+  -- |Integer length type
+  type Length = Int
+
+  -- |Integer index type
+  type Index = Int
