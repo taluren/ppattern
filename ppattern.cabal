@@ -25,6 +25,10 @@ library
     Data.Algorithm.PPattern.Splitting
     Data.Algorithm.PPattern.Combinatorics
     Data.Algorithm.PPattern.Types
+    Data.Algorithm.PPattern.Generator
+    Data.Algorithm.PPattern.FPT
+    Data.Algorithm.PPattern.Experimental
+
 
 executable ppattern
   main-is:             Main.hs
