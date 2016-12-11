@@ -16,7 +16,15 @@ module Data.Algorithm.PPattern.Experimental
 )
 where
 
+  import qualified Data.Map as Map
+
   import Data.Algorithm.PPattern.Types
+
+  data ColoredPermutations = ColoredPermutations Permutation Partition
+
+  data Mapping = Mapping Map.Map T T
 
   search :: Permutation -> Permutation -> Bool
   search xs ys = True
+
+  initSearch :: ColoredPermutation -> ColoredPermutation -> A
