@@ -1,5 +1,7 @@
-module Main
-(main)
+module PPattern
+(
+  partitionsInIncreasings
+)
 where
 
 import qualified Data.List     as L
