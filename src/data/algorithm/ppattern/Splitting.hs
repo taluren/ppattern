@@ -12,7 +12,7 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.Splitting
 (
-  partitionsInIncreasings
+  partitionsIncreasings
 )
 where
 
@@ -45,8 +45,8 @@ where
       ps = [is:iss | is  <- increasingSubsequences xs l,
                      iss <- partitionsIncreasingsByLength (xs L.\\ is) ls]
 
-  partitionsInIncreasings :: Isogram -> Int -> [[Isogram]]
-  partitionsInIncreasings xs k = upToIsomorphism $ aux xs k
+  partitionsIncreasings :: Isogram -> Int -> [[Isogram]]
+  partitionsIncreasings xs k = upToIsomorphism $ aux xs k
     where
       aux :: Isogram -> Int -> [[Isogram]]
       aux xs k = L.concat [partitionsIncreasingsByLength xs p |

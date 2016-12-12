@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.PPattern.Experimental
+Module      : Data.Algorithm.PPattern.Isogram
 Description : Short description
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -10,17 +10,14 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-module Data.Algorithm.PPattern.Experimental
+module Data.Algorithm.PPattern.Isogram
 (
-  search
+  Isogram
 )
 where
 
-  import qualified Data.Map as Map
+  newtype Isogram a = Isogram { toList :: [a] }
+    deriving (Eq, Show, Ord)
 
-  import Data.Algorithm.PPattern.Types
-
-
-
-  search :: Permutation -> Permutation -> Bool
-  search xs ys = True
+  fromList :: [a] -> Isogram a
+  fromList xs = Isogram xs
