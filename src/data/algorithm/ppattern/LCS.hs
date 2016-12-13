@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.PPattern.Tools
+Module      : Data.Algorithm.PPattern.LCS
 Description : Short description
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -10,30 +10,30 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-module Data.Algorithm.PPattern.Tools
+module Data.Algorithm.PPattern.LCS
 (
-  sortPairFst
-, sortPairSnd
+  Data.Algorithm.PPattern.LCS.longestIncreasing
+, longestIncreasingLength
 )
 where
 
   import qualified Data.List  as L
   import qualified Data.Tuple as T
+  import Data.Algorithm.Patience as Patience
 
   {-|
     The 'square' function squares an integer.
     It takes one argument, of type 'Int'.
   -}
-  sortPairFst :: Ord a => [(a, b)] -> [(a, b)]
-  sortPairFst = L.sortBy comp
+  longestIncreasing :: [Int] -> [Int]
+  longestIncreasing = post . Patience.longestIncreasing . pre
     where
-      comp t1 t2 = (T.fst t1) `compare` (T.fst t2)
+      pre  = flip L.zip [1..]
+      post = L.map T.fst . L.reverse
 
   {-|
     The 'square' function squares an integer.
     It takes one argument, of type 'Int'.
   -}
-  sortPairSnd :: Ord b => [(a, b)] -> [(a, b)]
-  sortPairSnd = L.sortBy comp
-    where
-      comp t1 t2 = (T.snd t1) `compare` (T.snd t2)
+  longestIncreasingLength :: [Int] -> Int
+  longestIncreasingLength = L.length . Data.Algorithm.PPattern.LCS.longestIncreasing

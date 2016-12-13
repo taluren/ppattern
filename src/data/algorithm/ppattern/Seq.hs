@@ -12,7 +12,7 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.Seq
 (
-  Seq
+  Seq(..)
 , Isogram
 , Permutation
   --
@@ -31,6 +31,7 @@ where
 
   -- |Sequnce data type.
   newtype Seq t a = Seq [a]
+    deriving (Show)
 
   -- |Isogram Sequence annotation.
   data Isogram
@@ -38,27 +39,48 @@ where
   -- |Permutation Sequence annotation.
   data Permutation
 
-  instance (Show a) => Show (Seq t a) where
-    show (Seq xs) = "Seq Permutation " ++ (show xs)
-
   instance (Eq a) => Eq (Seq t a) where
     (Seq xs) == (Seq ys) = xs == ys
 
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
   fromList :: [a] -> Seq t a
   fromList = Seq
 
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
   isogramFromList :: [a] -> Seq Isogram a
   isogramFromList = fromList
 
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
   permutationFromList :: (Ord a, Num a, Enum a) => [a] -> Seq Permutation a
   permutationFromList = reduce . fromList
 
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
   toList :: Seq t a -> [a]
   toList (Seq xs) = xs
 
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
   length :: Seq t a -> Int
   length = L.length . toList
 
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
   reduce :: (Ord a, Num a, Enum a) => Seq t a -> Seq Permutation a
   reduce = fromList . getReducedValues . sortByIndex . makeIndex . sortByValue . makeIndex . toList
     where

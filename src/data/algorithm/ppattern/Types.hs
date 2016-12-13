@@ -15,8 +15,8 @@ module Data.Algorithm.PPattern.Types
   Length
 , Index
 , T
-, PermutationL
-, IsogramL
+-- , PermutationL
+-- , IsogramL
 )
 where
 
@@ -28,9 +28,3 @@ where
 
   -- |Integer length type
   type T = Int
-
-  -- |Integer length type
-  type PermutationL = [T]
-
-  -- |Integer length type
-  type IsogramL = [T]

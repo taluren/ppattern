@@ -10,34 +10,46 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Data.Algorithm.PPattern.Splitting
 (
   partitionsIncreasings
+  --
+-- , increasingSubsequences
+-- , partitionsIncreasingsByLength
 )
 where
 
   import qualified Data.List     as L
   import qualified Data.Foldable as F
+  import qualified Data.Tuple    as T
   import qualified Data.Set      as Set
 
-  import Data.Algorithm.PPattern.Types
-  import qualified Data.Algorithm.PPattern.Isogram as Isogram
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
+  import qualified Data.Algorithm.PPattern.Seq          as Seq
 
-  increasingSubsequences :: Isogram.Isogram ->  Length -> [Isogram.Isogram]
-  increasingSubsequences (Isogram.Isogram xs) l = Isogram.fromList $ aux xs l z
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
+  increasingSubsequences :: (Ord a) => [a] ->  Int -> [[a]]
+  increasingSubsequences [] _ = [[]]
+  increasingSubsequences xs l = aux xs l z
     where
-      aux :: IsogramL -> Length -> T -> [IsogramL]
       aux _      0 _  = [[]]
       aux []     _ _  = []
-      aux (x:xs) l x'
-        | x > x'    = L.map (x:) (aux xs (l-1) x) ++ aux xs l x'
-        | otherwise = aux xs l x'
+      aux (x:xs) l' x'
+        | l == l' || x > x' = L.map (x:) (aux xs (l'-1) x) ++ aux xs l' x'
+        | otherwise         = aux xs l' x'
 
-      z :: T
-      z = (F.minimum xs)-1
+      z = L.head xs
 
-  partitionsIncreasingsByLength :: IsogramL -> [Length] -> [[IsogramL]]
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
+  partitionsIncreasingsByLength :: (Ord a) => [a] -> [Int] -> [[[a]]]
   partitionsIncreasingsByLength [] []     = [[]]
   partitionsIncreasingsByLength [] _      = []
   partitionsIncreasingsByLength _  []     = []
@@ -46,12 +58,14 @@ where
       ps = [is:iss | is  <- increasingSubsequences xs l,
                      iss <- partitionsIncreasingsByLength (xs L.\\ is) ls]
 
-  partitionsIncreasings :: IsogramL -> Int -> [[IsogramL]]
-  partitionsIncreasings xs k = upToIsomorphism $ aux xs k
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
+  partitionsIncreasings :: (Ord a) => Seq.Seq t a -> Int -> [[Seq.Seq Seq.Isogram a]]
+  partitionsIncreasings (Seq.Seq xs) k = L.map (L.map Seq.fromList) . upToIsomorphism $ aux xs k
     where
-      aux :: IsogramL -> Int -> [[IsogramL]]
       aux xs k = L.concat [partitionsIncreasingsByLength xs (IntPartition.toList p) |
                            p <- IntPartition.partitionsByLength (L.length xs) k]
 
-      upToIsomorphism :: [[IsogramL]] -> [[IsogramL]]
       upToIsomorphism = Set.toList . Set.fromList . L.map L.sort

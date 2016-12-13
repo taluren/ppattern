@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.PPattern.Partition
+Module      : Data.Algorithm.PPattern.IntPartition
 Description : Short description
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -28,24 +28,48 @@ where
   newtype IntPartition a = IntPartition [a]
     deriving (Eq, Show, Ord)
 
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
   fromList :: (Ord a) => [a] -> IntPartition a
   fromList  = IntPartition . L.sortBy (flip compare)
 
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
   toList :: IntPartition a -> [a]
   toList  (IntPartition xs) = xs
 
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
   upToIsomorphism :: (Ord a) => [a] -> [a]
   upToIsomorphism = L.sort . Set.toList . Set.fromList
 
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
   partitions :: (Enum a, Num a, Ord a) => a -> [IntPartition a]
   partitions n = upToIsomorphism . L.map fromList $ aux 1 n
     where
       aux _ 0 = [[]]
       aux l h = [x:xs | x <- [l..h], xs <- aux x (h-x)]
 
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
   length :: IntPartition a -> Int
   length (IntPartition xs) = L.length xs
 
+  {-|
+    The 'square' function squares an integer.
+    It takes one argument, of type 'Int'.
+  -}
   partitionsByLength :: (Enum a, Num a, Ord a) => a -> a -> [IntPartition a]
   partitionsByLength n k = upToIsomorphism . L.map fromList $ aux 1 n k
     where
