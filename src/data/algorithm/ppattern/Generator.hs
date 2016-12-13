@@ -23,10 +23,5 @@ where
 
   import Data.Algorithm.PPattern.Types
 
-  random123Avoiding :: Length -> Permutation
+  random123Avoiding :: Length -> PermutationL
   random123Avoiding n = [1..n]
-
-  randomBinaryList :: Length -> [Int]
-  randomBinaryList n = L.take n $ Random.randomRs (0,1) $ g
-    where
-      g = Unsafe.unsafePerformIO Random.newStdGen

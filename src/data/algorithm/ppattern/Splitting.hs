@@ -21,12 +21,11 @@ where
   import qualified Data.Set      as Set
 
   import Data.Algorithm.PPattern.Types
-  import Data.Algorithm.PPattern.Combinatorics
 
-  increasingSubsequences :: Isogram ->  Length -> [Isogram]
+  increasingSubsequences :: IsogramL ->  Length -> [IsogramL]
   increasingSubsequences xs l = aux xs l z
     where
-      aux :: Isogram -> Length -> T -> [Isogram]
+      aux :: IsogramL -> Length -> T -> [IsogramL]
       aux _      0 _  = [[]]
       aux []     _ _  = []
       aux (x:xs) l x'
@@ -36,7 +35,7 @@ where
       z :: T
       z = (F.minimum xs)-1
 
-  partitionsIncreasingsByLength :: Isogram -> [Length] -> [[Isogram]]
+  partitionsIncreasingsByLength :: IsogramL -> [Length] -> [[IsogramL]]
   partitionsIncreasingsByLength [] []     = [[]]
   partitionsIncreasingsByLength [] _      = []
   partitionsIncreasingsByLength _  []     = []
@@ -45,12 +44,12 @@ where
       ps = [is:iss | is  <- increasingSubsequences xs l,
                      iss <- partitionsIncreasingsByLength (xs L.\\ is) ls]
 
-  partitionsIncreasings :: Isogram -> Int -> [[Isogram]]
+  partitionsIncreasings :: IsogramL -> Int -> [[IsogramL]]
   partitionsIncreasings xs k = upToIsomorphism $ aux xs k
     where
-      aux :: Isogram -> Int -> [[Isogram]]
+      aux :: IsogramL -> Int -> [[IsogramL]]
       aux xs k = L.concat [partitionsIncreasingsByLength xs p |
                            p <- partitionsByLength (L.length xs) k]
 
-      upToIsomorphism :: [[Isogram]] -> [[Isogram]]
+      upToIsomorphism :: [[IsogramL]] -> [[IsogramL]]
       upToIsomorphism = Set.toList . Set.fromList . L.map L.sort

@@ -16,6 +16,8 @@ module Data.Algorithm.PPattern.Permutation
 )
 where
 
+  import qualified Data.List as L
+
   newtype Permutation = Permutation { toList :: [a] }
     deriving (Eq, Show, Ord)
 
@@ -32,3 +34,5 @@ where
       sortByValue   = L.sortBy (\t1 t2 -> (T.snd t1) `compare` (T.snd t2))
       sortByIndex   = L.sortBy (\t1 t2 -> (T.fst (T.snd t1)) `compare` (T.fst (T.snd t2)))
       reducedValues = L.map (T.fst)
+
+  length = L.length . toList

@@ -30,6 +30,7 @@ library
     Data.Algorithm.PPattern.IntPartition
     Data.Algorithm.PPattern.Types
     Data.Algorithm.PPattern.Generator
+    Data.Algorithm.PPattern.Tools
 
 executable ppattern
   main-is:             Main.hs

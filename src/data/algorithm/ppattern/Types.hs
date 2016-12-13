@@ -12,25 +12,24 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.Types
 (
-  T
-, Length
+  Length
 , Index
-, Isogram
-, Permutation
+, PermutationL
+, IsogramL
 )
 where
-
-  -- |Isogram and Permutation element type
-  type T = Int
-
-  -- |'T' sequence type with no repeater letter
-  type Isogram = [T]
-
-  -- | 'T' permutation type
-  type Permutation = [T]
 
   -- |Integer length type
   type Length = Int
 
   -- |Integer index type
   type Index = Int
+
+  -- |Integer length type
+  type T = Int
+
+  -- |Integer length type
+  type PermutationL = [T]
+
+  -- |Integer length type
+  type IsogramL = [T]
