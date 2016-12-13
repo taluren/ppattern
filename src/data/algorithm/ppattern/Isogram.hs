@@ -16,8 +16,6 @@ module Data.Algorithm.PPattern.Isogram
 )
 where
 
-  newtype Isogram a = Isogram { toList :: [a] }
-    deriving (Eq, Show, Ord)
+  import qualified Data.Algorithm.PPPattern.Permutation
 
-  fromList :: [a] -> Isogram a
-  fromList xs = Isogram xs
+  type Isogram a = Permutation a
