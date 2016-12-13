@@ -10,7 +10,7 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-module Data.Algorithm.PPattern.Partition
+module Data.Algorithm.PPattern.IntPartition
 (
   IntPartition
   --
@@ -30,13 +30,17 @@ where
   fromList :: (Ord a) => [a] -> IntPartition a
   fromList  = IntPartition . L.sortBy (flip compare)
 
+  upToIsomorphism :: (Ord a) => [a] -> [a]
+  upToIsomorphism = L.sort . Set.toList . Set.fromList
+
   partitions :: (Enum a, Num a, Ord a) => a -> [IntPartition a]
   partitions n = upToIsomorphism . L.map fromList $ aux 1 n
     where
       aux _ 0 = [[]]
       aux l h = [x:xs | x <- [l..h], xs <- aux x (h-x)]
 
-      upToIsomorphism = L.sort . Set.toList . Set.fromList
+  length :: IntPartition a -> Int
+  length (IntPartition xs) = L.length xs
 
   partitionsByLength :: (Enum a, Num a, Ord a) => a -> a -> [IntPartition a]
   partitionsByLength n k = upToIsomorphism . L.map fromList $ aux 1 n k
@@ -44,5 +48,3 @@ where
       aux _ 0 _ = [[]]
       aux _ h 1 = [[h]]
       aux l h k = [x:xs | x <- [l..(h-k+1)], xs <- aux x (h-x) (k-1)]
-
-      upToIsomorphism = L.sort . Set.toList . Set.fromList

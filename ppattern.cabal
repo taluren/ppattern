@@ -27,11 +27,15 @@ library
   exposed-modules:
     Data.Algorithm.PPattern.Splitting
     Data.Algorithm.PPattern.Combinatorics
-    Data.Algorithm.PPattern.Partition
+    Data.Algorithm.PPattern.IntPartition
     Data.Algorithm.PPattern.Types
     Data.Algorithm.PPattern.Generator
     Data.Algorithm.PPattern.FPT
     Data.Algorithm.PPattern.Experimental
+    Data.Algorithm.PPattern.Point
+    Data.Algorithm.PPattern.Rectangle
+    Data.Algorithm.PPattern.Interval
+    Data.Algorithm.PPattern.IntervalTree
     Data.Algorithm.PPattern.Bijection
 
 executable ppattern
