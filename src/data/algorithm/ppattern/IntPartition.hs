@@ -14,6 +14,7 @@ module Data.Algorithm.PPattern.IntPartition
 (
   IntPartition
   --
+, toList
 , fromList
   --
 , partitions
@@ -24,11 +25,14 @@ where
   import qualified Data.List as L
   import qualified Data.Set  as Set
 
-  newtype IntPartition a = IntPartition { toList :: [a] }
+  newtype IntPartition a = IntPartition [a]
     deriving (Eq, Show, Ord)
 
   fromList :: (Ord a) => [a] -> IntPartition a
   fromList  = IntPartition . L.sortBy (flip compare)
+
+  toList :: IntPartition a -> [a]
+  toList  (IntPartition xs) = xs
 
   upToIsomorphism :: (Ord a) => [a] -> [a]
   upToIsomorphism = L.sort . Set.toList . Set.fromList

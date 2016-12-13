@@ -14,6 +14,7 @@ module Data.Algorithm.PPattern.Types
 (
   Length
 , Index
+, T
 , PermutationL
 , IsogramL
 )

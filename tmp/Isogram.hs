@@ -13,9 +13,26 @@ commentary with @some markup@.
 module Data.Algorithm.PPattern.Isogram
 (
   Isogram
+, fromSeq
+, fromList
+  --
+, toList
+  --
+, length
 )
 where
 
-  import qualified Data.Algorithm.PPPattern.Permutation
+  import qualified Data.Algorithm.PPPattern.Seq as Seq
 
-  type Isogram a = Permutation a
+  data Isogram
+
+  fromSeq :: Seq.Seq t a -> Seq.Seq Isogram a
+  fromSeq (Seq.Seq xs) = (Seq.Seq xs)
+
+  toIsogram :: [a] -> Seq.Seq Isogram a
+  toIsogram = Seq.Seq
+
+  toList :: Seq.Seq Isogram a -> [a]
+  toList (Seq.Seq xs) = Seq.toList
+
+  length ::

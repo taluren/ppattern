@@ -21,7 +21,4 @@ where
   --import qualified Control.Monad.Random.Class.MonadRandom as MonadRandom
 
   search :: [a] -> [a] -> Bool
-  search p q = not (null p') && not (null q')
-    where
-      p' = Random.Shuffle.shuffleM p
-      q' = Random.Shuffle.shuffleM q
+  search p q = True

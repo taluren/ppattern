@@ -13,7 +13,6 @@ commentary with @some markup@.
 module Data.Algorithm.PPattern.Generator
 (
   random123Avoiding
-, randomBinaryList
 )
 where
 
