@@ -17,8 +17,8 @@ module Data.Algorithm.PPattern.IntPartition
 , toList
 , fromList
   --
-, partitions
-, partitionsByLength
+, intPartitions
+, intPartitionsL
 )
 where
 
@@ -53,8 +53,8 @@ where
     The 'square' function squares an integer.
     It takes one argument, of type 'Int'.
   -}
-  partitions :: (Enum a, Num a, Ord a) => a -> [IntPartition a]
-  partitions n = upToIsomorphism . L.map fromList $ aux 1 n
+  intPartitions :: (Enum a, Num a, Ord a) => a -> [IntPartition a]
+  intPartitions n = upToIsomorphism . L.map fromList $ aux 1 n
     where
       aux _ 0 = [[]]
       aux l h = [x:xs | x <- [l..h], xs <- aux x (h-x)]
@@ -70,8 +70,8 @@ where
     The 'square' function squares an integer.
     It takes one argument, of type 'Int'.
   -}
-  partitionsByLength :: (Enum a, Num a, Ord a) => a -> a -> [IntPartition a]
-  partitionsByLength n k = upToIsomorphism . L.map fromList $ aux 1 n k
+  intPartitionsByLength :: (Enum a, Num a, Ord a) => a -> a -> [IntPartition a]
+  intPartitionsByLength n k = upToIsomorphism . L.map fromList $ aux 1 n k
     where
       aux _ 0 _ = [[]]
       aux _ h 1 = [[h]]

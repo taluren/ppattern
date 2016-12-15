@@ -13,8 +13,10 @@ commentary with @some markup@.
 module Data.Algorithm.PPattern.Generator
 (
   removeAt
+, removeAt'
 , randSelect
 , randPermutation
+, randIntPartitionL
 )
 where
 
@@ -36,6 +38,9 @@ where
 	 where
      (l, r) = removeAt (n - 1) xs
 
+  removeAt' :: (Eq a, Num a) => a -> [b] -> [b]
+  removeAt' i xs = T.snd $ removeAt i xs
+
   randSelect :: RandomGen g => [a] -> Int -> g -> ([a], g)
   randSelect _  0 g = ([], g)
   randSelect [] _ g = ([], g)
@@ -45,20 +50,27 @@ where
                             where
                               (k', g') = Random.randomR (0, (L.length l) - 1) g
 
+
   randPermutation :: RandomGen g => [a] -> g -> ([a], g)
   randPermutation xs = randSelect xs (L.length xs)
 
+  randIntPartitionL :: Int -> Int -> Random.StdGen -> (IntPartition.IntPartition Int, Random.StdGen)
+  randIntPartitionL n l g = (L.head ips, g')
+    where
+      (ips, g') = flip . randSelect 1 $ IntPartition.intPartitionsL n l
+   
+      
   {-|
     The 'randomPermutations' function returns an infinite list of random
     permutation of length 'n'.
   -}
-  randIntPartitionByLength :: Int -> Int -> Random.StdGen -> (IntPartition.IntPartition Int, Random.StdGen)
-  randIntPartitionByLength n k g = aux $ randSelect ips g
-    where
-      ips = IntPartition.partitionsByLength n k
+  -- randIntPartitionByLength :: Int -> Int -> Random.StdGen -> (IntPartition.IntPartition Int, Random.StdGen)
+  -- randIntPartitionByLength n k g = aux $ randSelect ips g
+  --   where
+  --     ips = IntPartition.partitionsByLength n k
 
-      aux ([],       g) = ([], g)
-      aux ((ip:ips), g) = (ip, g)
+  --     aux ([],       g) = ([], g)
+  --     aux ((ip:ips), g) = (ip, g)
 
   {-|
     The 'randomPermutations' function returns an infinite list of random
