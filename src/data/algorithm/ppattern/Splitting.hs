@@ -97,7 +97,7 @@ where
   -}
   greedyIncreasing :: (Ord a) => [a] -> [a]
   greedyIncreasing []     = []
-  greddyIncreasing (x:xs) = x:aux x xs
+  greedyIncreasing (x:xs) = x:aux x xs
     where
       aux _ []      = []
       aux x (x':xs)

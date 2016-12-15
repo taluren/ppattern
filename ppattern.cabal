@@ -37,6 +37,8 @@ library
     Data.Algorithm.PPattern.Tools
     Data.Algorithm.PPattern.LCS
     Data.Algorithm.PPattern.Combinatorics
+    Data.Algorithm.PPattern.Point
+    Data.Algorithm.PPattern.ColMapping
 
 executable ppattern
   main-is:             Main.hs
