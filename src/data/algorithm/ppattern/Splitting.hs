@@ -18,6 +18,8 @@ module Data.Algorithm.PPattern.Splitting
   --
 -- , increasingSubsequences
 -- , partitionsIncreasingsByLength
+, greedyIncreasing
+, greedyPartitionIncreasings
 )
 where
 
@@ -66,6 +68,38 @@ where
   partitionsIncreasings (Seq.Seq xs) k = L.map (L.map Seq.fromList) . upToIsomorphism $ aux xs k
     where
       aux xs k = L.concat [partitionsIncreasingsByLength xs (IntPartition.toList p) |
-                           p <- IntPartition.partitionsByLength (L.length xs) k]
+                           p <- IntPartition.intPartitionsL (L.length xs) k]
 
       upToIsomorphism = Set.toList . Set.fromList . L.map L.sort
+
+  {-|
+    'greedyPartitionIncreasings' takes a list 'xs'. It greedily computes a partition
+    of 'xs' into increasing subsequences.
+  -}
+  greedyPartitionIncreasings :: (Eq a, Ord a) => [a] -> [[a]]
+  greedyPartitionIncreasings = aux []
+    where
+      aux acc [] = acc
+      aux acc xs = aux (xs':acc) (xs L.\\ xs')
+        where
+          xs' = greedyIncreasing xs
+
+  {-|
+    'greedySeqPartitionIncreasings' takes a 'Seq.Seq t a ' sequence 's'. It greedily
+    computes a partition of 's' into increasing subsequences.
+  -}
+  greedySeqPartitionIncreasings :: (Eq a, Ord a) => Seq.Seq t a -> [Seq.Seq Seq.Isogram a]
+  greedySeqPartitionIncreasings = L.map Seq.isogramFromList . greedyPartitionIncreasings . Seq.toList
+
+  {-|
+    'greedyIncreasing' takes a list 'xs'. It greedily computes an increasing
+    subsequence of 'xs'.
+  -}
+  greedyIncreasing :: (Ord a) => [a] -> [a]
+  greedyIncreasing []     = []
+  greddyIncreasing (x:xs) = x:aux x xs
+    where
+      aux _ []      = []
+      aux x (x':xs)
+        | x' > x    = x':aux x' xs
+        | otherwise =    aux x  xs

@@ -70,8 +70,8 @@ where
     The 'square' function squares an integer.
     It takes one argument, of type 'Int'.
   -}
-  intPartitionsByLength :: (Enum a, Num a, Ord a) => a -> a -> [IntPartition a]
-  intPartitionsByLength n k = upToIsomorphism . L.map fromList $ aux 1 n k
+  intPartitionsL :: (Enum a, Num a, Ord a) => a -> a -> [IntPartition a]
+  intPartitionsL n k = upToIsomorphism . L.map fromList $ aux 1 n k
     where
       aux _ 0 _ = [[]]
       aux _ h 1 = [[h]]

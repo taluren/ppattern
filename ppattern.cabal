@@ -33,7 +33,7 @@ library
     Data.Algorithm.PPattern.Splitting
     Data.Algorithm.PPattern.IntPartition
     Data.Algorithm.PPattern.Types
-    Data.Algorithm.PPattern.Generator
+    Data.Algorithm.PPattern.Random
     Data.Algorithm.PPattern.Tools
     Data.Algorithm.PPattern.LCS
     Data.Algorithm.PPattern.Combinatorics

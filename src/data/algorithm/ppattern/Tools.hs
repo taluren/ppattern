@@ -12,13 +12,24 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.Tools
 (
-  sortPairFst
+  removeAt
+, removeAt'
+, sortPairFst
 , sortPairSnd
 )
 where
 
   import qualified Data.List  as L
   import qualified Data.Tuple as T
+
+  removeAt :: (Eq a, Num a) => [b] -> a -> (b, [b])
+  removeAt (x:xs) 0 = (x, xs)
+  removeAt (x:xs) n = (x', x:xs')
+	 where
+     (x', xs') = removeAt xs (n-1)
+
+  removeAt' :: (Eq a, Num a) => [b] -> a -> [b]
+  removeAt' xs i = T.snd $ removeAt xs i
 
   {-|
     The 'square' function squares an integer.
