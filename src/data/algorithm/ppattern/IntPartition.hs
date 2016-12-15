@@ -12,7 +12,7 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.IntPartition
 (
-  IntPartition
+  IntPartition(..)
   --
 , toList
 , fromList
