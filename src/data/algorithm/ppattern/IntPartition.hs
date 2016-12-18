@@ -6,73 +6,73 @@ License     : MIT
 Maintainer  : vialette@gmail.com
 Stability   : experimental
 
-Here is a longer description of this module, containing some
-commentary with @some markup@.
+Integer partitions.
 -}
 
 module Data.Algorithm.PPattern.IntPartition
 (
-  IntPartition(..)
+  intPartitions
+, nbIntPartitions
   --
-, toList
-, fromList
-  --
-, intPartitions
-, intPartitionsL
+, intPartitionsByL
+, nbIntPartitionsByL
 )
 where
 
   import qualified Data.List as L
-  import qualified Data.Set  as Set
-
-  newtype IntPartition a = IntPartition [a]
-    deriving (Eq, Show, Ord)
 
   {-|
-    The 'square' function squares an integer.
-    It takes one argument, of type 'Int'.
+    'intPartitions n ' returns all ordered partitions of integer 'n'.
+
+    λ: intPartitions 6
+    [[6],[3,3],[4,2],[5,1],[2,2,2],[3,2,1],[4,1,1],[2,2,1,1],[3,1,1,1],[2,1,1,1,1],[1,1,1,1,1,1]]
   -}
-  fromList :: (Ord a) => [a] -> IntPartition a
-  fromList  = IntPartition . L.sortBy (flip compare)
+  intPartitions :: Int -> [[Int]]
+  intPartitions n = L.concat [intPartitionsByL n k | k <- [1..n]]
 
   {-|
-    The 'square' function squares an integer.
-    It takes one argument, of type 'Int'.
+    'nbIntPartitions n' returns the number of ordered partitions of integer 'n'.
   -}
-  toList :: IntPartition a -> [a]
-  toList  (IntPartition xs) = xs
+  nbIntPartitions = L.length . intPartitions
 
   {-|
-    The 'square' function squares an integer.
-    It takes one argument, of type 'Int'.
-  -}
-  upToIsomorphism :: (Ord a) => [a] -> [a]
-  upToIsomorphism = L.sort . Set.toList . Set.fromList
+    'intPartitionsByL n k' returns all ordered partitions of integer 'n' into 'k'
+    parts.
 
-  {-|
-    The 'square' function squares an integer.
-    It takes one argument, of type 'Int'.
+    λ: intPartitionsByL 6 0
+    [[]]
+    λ: intPartitionsByL 6 1
+    [[6]]
+    λ: intPartitionsByL 6 2
+    [[3,3],[4,2],[5,1]]
+    λ: intPartitionsByL 6 3
+    [[2,2,2],[3,2,1],[4,1,1]]
+    λ: intPartitionsByL 6 4
+    [[2,2,1,1],[3,1,1,1]]
+    λ: intPartitionsByL 6 5
+    [[2,1,1,1,1]]
+    λ: intPartitionsByL 6 6
+    [[1,1,1,1,1,1]]
+    λ: intPartitionsByL 6 7
+    []
   -}
-  intPartitions :: (Enum a, Num a, Ord a) => a -> [IntPartition a]
-  intPartitions n = upToIsomorphism . L.map fromList $ aux 1 n
-    where
-      aux _ 0 = [[]]
-      aux l h = [x:xs | x <- [l..h], xs <- aux x (h-x)]
-
-  {-|
-    The 'square' function squares an integer.
-    It takes one argument, of type 'Int'.
-  -}
-  length :: IntPartition a -> Int
-  length (IntPartition xs) = L.length xs
-
-  {-|
-    The 'square' function squares an integer.
-    It takes one argument, of type 'Int'.
-  -}
-  intPartitionsL :: (Enum a, Num a, Ord a) => a -> a -> [IntPartition a]
-  intPartitionsL n k = upToIsomorphism . L.map fromList $ aux 1 n k
+  intPartitionsByL :: Int -> Int -> [[Int]]
+  intPartitionsByL n k = aux n k n
     where
       aux _ 0 _ = [[]]
-      aux _ h 1 = [[h]]
-      aux l h k = [x:xs | x <- [l..(h-k+1)], xs <- aux x (h-x) (k-1)]
+      aux n 1 _ = [[n]]
+      aux n k b
+        | n < k           = []
+        | n == k          = [L.replicate k 1]
+        | otherwise       = L.concat [fmap (k':) (aux (n-k') (k-1) k') |
+                                      k' <- [l..h]]
+        where
+          l = fromIntegral (ceiling (fromIntegral n / fromIntegral k))
+          h = min (n-k+1) b
+
+  {-|
+    'nbIntPartitionsByL n k' returns the number of ordered partitions of integer
+    'n' into 'k' parts.
+  -}
+  nbIntPartitionsByL :: Int -> Int -> Int
+  nbIntPartitionsByL n k = L.length $ intPartitionsByL n k

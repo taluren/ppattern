@@ -1,5 +1,6 @@
 import Data.Algorithm.PPattern.Splitting
-import qualified Data.Algorithm.PPattern.Seq as Seq
+import Data.Algorithm.PPattern.Random
+import Data.Algorithm.PPattern.LCS
 
 main :: IO ()
 -- main = putStrLn $ show $ partitionsIncreasings (Seq.fromList [1..8]) 3

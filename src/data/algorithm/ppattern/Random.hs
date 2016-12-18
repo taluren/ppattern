@@ -15,7 +15,7 @@ module Data.Algorithm.PPattern.Random
   randSelect
 , randPermutation
 , randPermutation'
-, randIntPartitionL
+, randIntPartitionByL
 , randKIncreasing
 , randKIncreasingL
 , randShuffle
@@ -28,10 +28,10 @@ where
   import qualified Data.Foldable   as F
   import qualified System.Random   as R
 
-  import qualified Data.Algorithm.PPattern.Seq as Seq
   import qualified Data.Algorithm.PPattern.Tools as Tools
   import qualified Data.Algorithm.PPattern.Combinatorics as Combi
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
+  import qualified Data.Algorithm.PPattern.LCS as LCS
 
   {-|
     'randChoose' takes a list 'xs', an integer 'k' and a generator 'g', and
@@ -70,17 +70,17 @@ where
     'randPermutation'' takes an integer 'n' and a generator 'g', and
     returns a random permutation of '[1..n]', together with a new generator.
   -}
+  randPermutation' :: R.RandomGen g => Int -> g -> ([Int], g)
   randPermutation' n = randPermutation [1..n]
 
   {-|
-    'randIntPartitionL' takes two integers 'n' and 'k', and a generator 'g', and
+    'randIntPartitionByL' takes two integers 'n' and 'k', and a generator 'g', and
     returns a random 'k'-partition of '[1..n]', together with a new generator.
   -}
-  randIntPartitionL :: (Enum a, Num a, Ord a, R.RandomGen t) =>
-       a -> a -> t -> (IntPartition.IntPartition a, t)
-  randIntPartitionL n k g = (L.head ips, g')
+  randIntPartitionByL :: (R.RandomGen g) => Int -> Int -> g -> ([Int], g)
+  randIntPartitionByL n k g = (L.head ips, g')
     where
-      (ips, g') = randSelect (IntPartition.intPartitionsL n k) 1 g
+      (ips, g') = randSelect (IntPartition.intPartitionsByL n k) 1 g
 
   {-|
     'randShuffle' takes a list of lists 'xss' and a generator 'g', and
@@ -99,26 +99,32 @@ where
               aux' ([x]:xss)     = (x, xss)
               aux' ((x:xs):xss') = (x, xs:xss')
 
-  {-|
-    'randKIncreasing' takes two integers 'n' and 'k' and a generator 'g', and
-    returns a random permutation (a 'Seq.Seq Seq.Permutation Int' object) of
-    length 'n' that is the union of 'k' increasings sequences, together with a
-    new generator.
-  -}
-  randKIncreasing:: R.RandomGen g => Int -> Int -> g -> (Seq.Seq Seq.Permutation Int, g)
-  randKIncreasing n k g = (Seq.permutationFromList xs, g'')
+  -- {-|
+  --   'randKIncreasing' takes two integers 'n' and 'k' and a generator 'g', and
+  --   returns a random permutation of length 'n' that is the union of 'k'
+  --   increasings sequences, together with a new generator.
+  -- -}
+  -- randKIncreasing:: R.RandomGen g => Int -> Int -> g -> ([Int], g)
+  -- randKIncreasing n k g = (xs, g'')
+  --   where
+  --     (ip, g')   = randIntPartitionByL n k g
+  --     (xss, g'') = randKIncreasingL ip g'
+  --     (xs, g''') = randShuffle xss g''
+  
+  randKIncreasing:: R.RandomGen g => Int -> Int -> g -> ([Int], g)
+  randKIncreasing n k g =
+    if LCS.lenLongestDecreasingSub xs > k
+      then randKIncreasing n k g'
+      else (xs, g')
     where
-      (ip, g')   = randIntPartitionL n k g
-      (xss, g'') = randKIncreasingL (IntPartition.toList ip) g'
-      (xs, g''') = randShuffle xss g''
+      (xs, g') = randPermutation' n g
 
   {-|
-    'randKIncreasings' takes three integers 'n', 'k' and 'k' and a generator 'g',
-    and returns 'm' random permutations (a 'Seq.Seq Seq.Permutation Int' objects)
-    of length 'n' that are the union of 'k' increasings sequences, together with a
-    new generator.
+    'randKIncreasings' takes three integers 'n', 'k' and 'm' and a generator 'g',
+    and returns 'm' random permutations of length 'n' that are the union of 'k'
+    increasings sequences, together with a new generator.
   -}
-  randKIncreasings :: R.RandomGen t => Int -> Int -> Int -> t -> ([Seq.Seq Seq.Permutation Int], t)
+  randKIncreasings :: (R.RandomGen g) => Int -> Int -> Int -> g -> ([[Int]], g)
   randKIncreasings n k = aux []
     where
       aux acc 0 g = (acc, g)
@@ -127,7 +133,7 @@ where
           (xs, g') = randKIncreasing n k g
 
   {-|
-    'randKIncreasingL' 
+    'randKIncreasingL'
   -}
   randKIncreasingL :: R.RandomGen g => [Int] -> g -> ([[Int]], g)
   randKIncreasingL ls = aux ls [1..F.sum ls] []

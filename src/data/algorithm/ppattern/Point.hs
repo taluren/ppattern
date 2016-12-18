@@ -19,31 +19,37 @@ module Data.Algorithm.PPattern.Point
 , xCoord
 , yCoord
   --
+, southEastDomination
 )
 where
 
   import qualified Data.Tuple as T
 
-  type Point a = (a,a)
+  newtype Point = Point (Int, Int)
 
   {-|
     'makePoint' makes a point from two integers 'x' and 'y'.
   -}
-  makePoint :: a -> a -> Point a
-  makePoint x y = (x, y)
+  makePoint :: Int -> Int -> Point
+  makePoint x y = Point (x, y)
 
   {-|
     'xCoord' returns the x-coordinate of a point.
   -}
-  xCoord :: Point a -> a
-  xCoord = T.fst
+  xCoord :: Point -> Int
+  xCoord (Point (x,_)) = x
 
   {-|
     'yCoord' returns the y-coordinate of a point.
   -}
-  yCoord :: Point a -> a
-  yCoord = T.snd
+  yCoord :: Point -> Int
+  yCoord (Point (_,y)) = y
 
+  {-|
+    'southEastDomination p1 p2' takes two points. It returns True if and only if
+    'p1' south-east-dominates 'p2' (i.e., x1 < x2 and y1 > y2).
+  -}
+  southEastDomination :: Point -> Point -> Bool
   p1 `southEastDomination` p2 = xConstraint && yConstraint
     where
       xConstraint = xCoord p1 < xCoord p2
