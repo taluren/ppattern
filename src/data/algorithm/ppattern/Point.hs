@@ -14,11 +14,14 @@ module Data.Algorithm.PPattern.Point
 (
   Point(..)
   --
-, makePoint
+, mkPoint
   --
 , xCoord
 , yCoord
   --
+, northWestDomination
+, northEastDomination
+, southWestDomination
 , southEastDomination
 )
 where
@@ -28,10 +31,10 @@ where
   newtype Point = Point (Int, Int)
 
   {-|
-    'makePoint' makes a point from two integers 'x' and 'y'.
+    'mkPoint' mks a point from two integers 'x' and 'y'.
   -}
-  makePoint :: Int -> Int -> Point
-  makePoint x y = Point (x, y)
+  mkPoint :: Int -> Int -> Point
+  mkPoint x y = Point (x, y)
 
   {-|
     'xCoord' returns the x-coordinate of a point.
@@ -46,8 +49,32 @@ where
   yCoord (Point (_,y)) = y
 
   {-|
+    'southWestDomination p1 p2' takes two points. It returns True if and only if
+    'p1' south-west-dominates 'p2' (i.e., x1 > x2 and y1 < y2).
+  -}
+  northWestDomination :: Point -> Point -> Bool
+  northWestDomination = flip southEastDomination
+
+  {-|
     'southEastDomination p1 p2' takes two points. It returns True if and only if
     'p1' south-east-dominates 'p2' (i.e., x1 < x2 and y1 > y2).
+  -}
+  northEastDomination :: Point -> Point -> Bool
+  p1 `northEastDomination` p2 = xConstraint && yConstraint
+    where
+      xConstraint = xCoord p1 < xCoord p2
+      yConstraint = yCoord p1 < yCoord p2
+
+  {-|
+    'southWestDomination p1 p2' takes two points. It returns True if and only if
+    'p1' south-west-dominates 'p2' (i.e., x1 > x2 and y1 > y2).
+  -}
+  southWestDomination :: Point -> Point -> Bool
+  southWestDomination = flip northEastDomination
+
+  {-|
+    'southEastDomination p1 p2' takes two points. It returns True if and only if
+    'p1' north-east-dominates 'p2' (i.e., x1 < x2 and y1 > y2).
   -}
   southEastDomination :: Point -> Point -> Bool
   p1 `southEastDomination` p2 = xConstraint && yConstraint

@@ -23,15 +23,14 @@ module Data.Algorithm.PPattern.Random
 where
 
   import qualified Data.List       as L
-  import qualified Data.Tuple      as T
-  import qualified Data.Map.Strict as M
-  import qualified Data.Foldable   as F
+  import qualified Data.Foldable   as Fold
   import qualified System.Random   as R
 
-  import qualified Data.Algorithm.PPattern.Tools as Tools
-  import qualified Data.Algorithm.PPattern.Combinatorics as Combi
-  import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
-  import qualified Data.Algorithm.PPattern.LCS as LCS
+  import qualified Data.Algorithm.PPattern.Tools                  Combi as Tools
+  import qualified Data.Algorithm.PPattern.Combinatorics           as Combinatorics
+  import qualified Data.Algorithm.PPattern.IntPartition            as IntPartition
+  import qualified Data.Algorithm.PPattern.Permutation             as Permutation
+  import qualified Data.Algorithm.PPattern.Permutation.Stringology as Stringology
 
   {-|
     'randChoose' takes a list 'xs', an integer 'k' and a generator 'g', and
@@ -40,7 +39,7 @@ where
   randChoose :: R.RandomGen g => [a] -> Int -> g -> ([a], g)
   randChoose xs k g = (xss L.!! (i-1), g')
     where
-      xss = xs `Combi.choose` k
+      xss = xs `Combinatorics.choose` k
       (i, g') = R.randomR (1, L.length xss) g
 
   {-|
@@ -63,14 +62,14 @@ where
     'randPermutation' takes a list 'xs' and a generator 'g', and
     returns a random permutation of 'xs', together with a new generator.
   -}
-  randPermutation :: R.RandomGen g => [a] -> g -> ([a], g)
-  randPermutation xs = randSelect xs (L.length xs)
+  randPermutation :: R.RandomGen g => Permutation.Permutation -> g -> (Permutation.Permutation, g)
+  randPermutation (Permutation xs) = Permutation.fromListUnsafe $ randSelect xs (L.length xs)
 
   {-|
     'randPermutation'' takes an integer 'n' and a generator 'g', and
     returns a random permutation of '[1..n]', together with a new generator.
   -}
-  randPermutation' :: R.RandomGen g => Int -> g -> ([Int], g)
+  randPermutation' :: R.RandomGen g => Int -> g -> (Permutation.Permutation, g)
   randPermutation' n = randPermutation [1..n]
 
   {-|
@@ -110,7 +109,7 @@ where
   --     (ip, g')   = randIntPartitionByL n k g
   --     (xss, g'') = randKIncreasingL ip g'
   --     (xs, g''') = randShuffle xss g''
-  
+
   randKIncreasing:: R.RandomGen g => Int -> Int -> g -> ([Int], g)
   randKIncreasing n k g =
     if LCS.lenLongestDecreasingSub xs > k
@@ -136,7 +135,7 @@ where
     'randKIncreasingL'
   -}
   randKIncreasingL :: R.RandomGen g => [Int] -> g -> ([[Int]], g)
-  randKIncreasingL ls = aux ls [1..F.sum ls] []
+  randKIncreasingL ls = aux ls [1..Fold.sum ls] []
     where
       aux []     [] acc g = (acc, g)
       aux (l:ls) xs acc g = aux ls (xs L.\\ xs') (xs':acc) g'

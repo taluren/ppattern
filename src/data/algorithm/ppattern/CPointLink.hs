@@ -14,20 +14,36 @@ module Data.Algorithm.PPattern.CPointLink
 (
   CPointLink(..)
   --
-, makeCPointLink
+, mkCPointLink
   --
 , color
+, sameColor
 )
 where
 
   import qualified Data.Algorithm.PPattern.Cpoint as CPoint
 
-  data CPointLink c = CPointLink { src  :: CPoint.CPoint c
-                                 , trgt :: CPoint.CPoint c
-                                 } deriving (Show, Eq)
+  data CPointLink = CPointLink { src  :: CPoint.CPoint
+                               , trgt :: CPoint.CPoint
+                               } deriving (Show, Eq)
   {-|
-    'makeCPointLink' makes a colored point link from two colored points.
+    'mkCPointLink' makes a CPointLink object from two colored points with the
+    the same color.
   -}
-  makeCPointLink src trgt = CPointLink {src=src, trgt=trgt}
+  mkCPointLink :: CPoint.CPoint -> CPoint.CPoint -> Maybe CPointLink c
+  mkCPointLink src trgt
+    | CPoint.color src /= CPoint.color trgt = Nothing
+    | otherwise                             = CPointLink {src=src, trgt=trgt}
 
+  {-|
+    'color' return the color of a CPointLink.
+  -}
+  color :: CPointLink c -> c
   color = CPoint.color . src
+
+  {-|
+    'sameColor' takes two CPointLink objects. It returns True if and only if the
+    two links have the same color.
+  -}
+  sameColor :: CPointLink c -> CPointLink c -> Bool
+  sameColor cpl1 cpl2 = color cpl1 == color cpl2

@@ -12,7 +12,14 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.Permutation
 (
-  toList
+  Permutation(..)
+, fromList
+, fromListUnsafe
+, increasings
+, decreasing
+, empty
+  --
+, toList
   --
 , preIdx
 , postIdx
@@ -30,8 +37,29 @@ where
   {-|
     'fromList xs' construct a reduced permutation from list xs.
   -}
-  fromList :: [a] -> Permutation
+  fromList :: (Ord a) => [a] -> Permutation
   fromList = reduce . Permutation
+
+  {-|
+    'fromList xs' construct a reduced permutation from list xs.
+  -}
+  fromListUnsafe :: [Int] -> Permutation
+  fromListUnsafe = Permutation
+
+  {-|
+  -}
+  increasing :: Int -> Permutation
+  increasing n = fromListUnsafe [1..n]
+
+  {-|
+  -}
+  decreasing :: Int -> Permutation
+  decreasing n = fromListUnsafe [n,n-1..1]
+
+  {-|
+  -}
+  empty :: Permutation
+  empty = fromListUnsafe []
 
   {-|
     'toList p' returns the permutation 'p' as a list.

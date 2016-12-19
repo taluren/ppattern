@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.PPattern.Stringology
+Module      : Data.Algorithm.PPattern.Permutation.Stringology
 Description : Short description
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -10,82 +10,51 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-module Data.Algorithm.PPattern.Stringology
+module Data.Algorithm.PPattern.Permutation.Stringology
 (
   longestIncreasingSub
 , lenLongestIncreasingSub
   --
 , longestDecreasingSub
 , lenLongestDecreasingSub
-  --
-, nextIncreasing
 )
 where
 
-  import qualified Data.List  as L
-  import qualified Data.Tuple as T
-  import qualified Data.Map   as Map
-  import Data.Algorithm.Patience as Patience
+  import qualified Data.List               as L
+  import qualified Data.Tuple              as T
+  import qualified Data.Map                as Map
+  import qualified Data.Algorithm.Patience as Patience
+
+  import qualified Data.Algorithm.PPattern.Permutation as Permutation
 
   {-|
     'longestIncreasingSub xs' returns a longest increasing subsequences in 'xs'.
   -}
-  longestIncreasingSub :: [Int] -> [Int]
+  longestIncreasingSub :: Permutation.Permutation -> Permutation.Permutation
   longestIncreasingSub = post . Patience.longestIncreasing . pre
     where
-      pre  = flip L.zip [1..]
-      post = L.map T.fst . L.reverse
+      pre  = flip L.zip [1..] . Permutation.toList
+      post =  Permutation.fromListUnsafe . L.map T.fst . L.reverse
 
   {-|
     'lenLongestIncreasingSub xs' returns the length of the longest increasing
     subsequences in 'xs'.
   -}
-  lenLongestIncreasingSub:: [Int] -> Int
+  lenLongestIncreasingSub:: Permutation.Permutation -> Int
   lenLongestIncreasingSub = L.length . longestIncreasingSub
 
   {-|
     'longestDecreasingSub xs' returns a longest decreasing subsequences in 'xs'.
   -}
-  longestDecreasingSub :: [Int] -> [Int]
+  longestDecreasingSub :: Permutation.Permutation -> Permutation.Permutation
   longestDecreasingSub = post . Patience.longestIncreasing . pre
     where
-      pre  = flip L.zip [1..] . L.reverse
-      post = L.reverse . L.map T.fst . L.reverse
+      pre  = flip L.zip [1..] . L.reverse . Permutation.toList
+      post = Permutation.fromListUnsafe . L.reverse . L.map T.fst . L.reverse
 
   {-|
     'lenLongestDecreasingSub xs' returns the length of the longest decreasing
     subsequences in 'xs'.
   -}
-  lenLongestDecreasingSub :: [Int] -> Int
+  lenLongestDecreasingSub :: Permutation.Permutation -> Int
   lenLongestDecreasingSub = L.length . longestDecreasingSub
-
-  {-|
-    'nextIncreasing'
-  -}
-  nextIncreasing :: [Int] -> Map.Map (Int, Int) (Int, Int)
-  nextIncreasing [] = Map.empty
-  nextIncreasing xs = aux (L.zip [1..] xs) [] Map.empty
-    where
-      aux ((i,x):ixs) s m = nextIncreasingAux ixs [(i,x)] m
-
-  -- nextIncreasingAux :: [(Int, Int)] -> [(Int, Int)] -> Map.Map (Int, Int) (Int, Int) -> Map.Map (Int, Int) (Int, Int)
-  -- nextIncreasingAux []          s           m = m
-  -- nextIncreasingAux ((i,x):ixs) []          m = nextIncreasingAux ixs [(i,x)] m
-  -- nextIncreasingAux ixs'@((i,x):ixs) jys'@((j,y):jys) m
-  --   | y < x     = aux ixs' jys' m
-  --   | otherwise = nextIncreasingAux ixs ((i,x):jys') m
-  --   where
-  --     aux ixs         []          m = nextIncreasingAux ixs [] m
-  --     aux ((i,x):ixs) jys'@((j,y):jys) m
-  --       | y < x     = aux ((i,x):ixs) jys (Map.insert (j,y) (i,x) m)
-  --       | otherwise = nextIncreasingAux ixs ((i,x):jys') m
-
-  nextIncreasingAux :: [(Int, Int)] -> [(Int, Int)] -> Map.Map (Int, Int) (Int, Int) -> Map.Map (Int, Int) (Int, Int)
-  nextIncreasingAux []          s           m = m
-  nextIncreasingAux ((i,x):ixs) []          m = nextIncreasingAux ixs [(i,x)] m
-  nextIncreasingAux ixs'@((i,x):ixs) jys'@((j,y):jys) m = aux ixs' jys' m
-    where
-      aux ixs         []          m = nextIncreasingAux ixs [] m
-      aux ((i,x):ixs) jys'@((j,y):jys) m
-        | y < x     = aux ((i,x):ixs) jys (Map.insert (j,y) (i,x) m)
-        | otherwise = nextIncreasingAux ixs ((i,x):jys') m

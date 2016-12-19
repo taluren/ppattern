@@ -29,15 +29,15 @@ library
   hs-source-dirs: src
   exposed-modules:
     Data.Algorithm.PPattern.Permutation
-    Data.Algorithm.PPattern.Splitting
+    Data.Algorithm.PPattern.Permutation.Splitting
+    Data.Algorithm.PPattern.Permutation.Stringology
     Data.Algorithm.PPattern.IntPartition
+    Data.Algorithm.PPattern.Combinatorics
     Data.Algorithm.PPattern.Types
     Data.Algorithm.PPattern.Random
     Data.Algorithm.PPattern.Tools
-    Data.Algorithm.PPattern.LCS
-    Data.Algorithm.PPattern.Combinatorics
     Data.Algorithm.PPattern.Point
-
+    Data.Algorithm.PPattern.CPoint
 
 executable ppattern
   main-is:             Main.hs

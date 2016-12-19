@@ -23,77 +23,123 @@ where
   import qualified Data.Array        as Array
   import qualified Data.Function     as Fun
 
-  import qualified Data.Algorithm.PPattern.Point         as Point
-  import qualified Data.Algorithm.PPattern.CPoint        as CPoint
-  import qualified Data.Algorithm.PPattern.CPointLink    as CPointLink
-  import qualified Data.Algorithm.PPattern.CPointMapping as CPointMapping
+  import qualified Data.Algorithm.PPattern.Permutation.Splitting as Splitting
+  import qualified Data.Algorithm.PPattern.Point                 as Point
+  import qualified Data.Algorithm.PPattern.CPoint                as CPoint
+  import qualified Data.Algorithm.PPattern.CPointLink            as CPointLink
+  import qualified Data.Algorithm.PPattern.CPointMapping         as CPointMapping
+  import qualified Data.Algorithm.PPattern.Stack                 as Stack
 
+  type PointPointMap = Map.Map Point.Point Point.Point
+
+  type CPointPointMap = Map.Map C PointPointMap
 
   {-|
-    The 'makeCPointArray' function takes a list of colored points and return
-    an array containing this point sorted by ascending x-coordinates.
+    'mkNextIncreasing'
   -}
-  makeCPointArray :: [CPoint.CPoint c] -> Array.Array Int Int
-  makeCPointArray cps = Array.listArray (1, n) cps'
+  mkNextIncreasing :: [Point.Point] -> PointPointMap
+  mkNextIncreasing []     = Map.empty
+  mkNextIncreasing (p:ps) = mkNextIncreasingAux ps s m
     where
-      n    = L.length cps
-      cps' = L.sortBy (compare `Fun.on` (Point.xCoord . CPoint.point)) cps
+      s = Stack.push Stack.empty p
+      m = Map.empty
+
+  mkNextIncreasingAux :: [Point.Point] -> Stack Point.Point -> PointPointMap -> PointPointMap
+  mkNextIncreasingAux []     _            m = m
+  mkNextIncreasingAux (p:ps) s@(Stack []) m = mkNextIncreasingAux ps (Stack.push s p) m
+  mkNextIncreasingAux ps     s            m = aux ps s m
+    where
+      aux ps     s@(Stack [])       m = mkNextIncreasingAux ps s m
+      aux (p:ps) s@(Stack (p':ps')) m
+        | x' < x    = aux (p:ps) (Stack.pop s) (Map.insert p' p m)
+        | otherwise = mkNextIncreasingAux ps (Stack.push s p) m
+        where
+          x  = Point.xCoord p
+          x' = Point.xCoord p'
 
   {-|
-    'leftmostCPointMapping p q' return the leftmost color friendly mapping from 'p'
-    to 'a'.
+    'mkNextIncreasings' takes a list of colored points. It returns a map that
+    associates to each distinct color the next increassing map to this color.
   -}
-  leftmostCPointMapping :: [CPoint.Cpoint c] -> [CPoint.Cpoint c] -> Maybe [CPointLink c]
+  mkNextIncreasings :: [CPoint.CPoint] -> CPointPointMap
+  mkNextIncreasings cps = mkNextIncreasingsAux cps cs m
+    where
+      cs = L.nub $ L.filter color cps
+      m  = Map.empty
+
+  mkNextIncreasingsAux :: [CPoint.PointC] -> [CPoint.C] -> PointMap -> CPointPointMap
+  mkNextIncreasingsAux cps []     m = m
+  mkNextIncreasingsAux cps (c:cs) m = mkNextIncreasingsAux cps cs m'
+    where
+      cps' = L.filter (\cp -> CPoint.color cp == c) cps
+      ps'  = fmap CPoint.point cps'
+      cm   = mkNextIncreasing ps'
+      m'   = Map.insert c cm m
+
+  {-|
+    The 'mkCPoints' function takes a permutation and a color mapping given
+    in the form of a map, and it return a list of CPoint.
+  -}
+  mkCPoints :: Permutation -> Map.Map Int CPoint.C -> [CPoint.CPoint]
+  mkCPoints (Permutation xs) m = L.map (THT.uncurry3 CPoint.mkCPoint') [] t3s
+    where
+      cs  = F.foldr (\x -> fromJust (Map.lookup x m)) xs
+      t3s = L.zip3 [1..] xs cs
+
+  {-|
+    'leftmostCPointMapping cp1s cp2s' return the leftmost color friendly mapping
+    from 'cp1s' to 'cp2s'.
+  -}
+  leftmostCPointMapping :: [CPoint.CPoint c] -> [CPoint.CPoint c] -> Maybe [CPointLink c]
   leftmostCPointMapping [] []  = Just []
   leftmostCPointMapping [] _   = Just []
   leftmostCPointMapping _  []  = Nothing
   leftmostCPointMapping (cp1:cp1s) (cp2:cp2s)
-    | c1 = c2   = makeCPointLink cp1 cp2 >>= \cpl -> fmap (cpl:) (aux cp1s cp2s)
+    | c1 = c2   = mkCPointLink cp1 cp2 >>= \cpl -> fmap (cpl:) (aux cp1s cp2s)
     | otherwise = leftmostCPointMapping (cp1:cp1s) cp2s
     where
       c1 = CPoint.color cp1
       c2 = CPoint.color cp2
 
   {-|
-    The 'makeTarget' function takes a list of integer, and it return a
-    list of CPoints by mean of a greedy coloring.
+    'mapFrompartition' transform an integer partition into a map object that
+    associates to each each element a color.
   -}
-  makeTargetCPointList :: Permutation -> [CPoint]
-  makeTargetCPointList (Permutation xs) = makeCPoints xs m
+  mapFrompartition :: [Permutation] -> Map.Map Int CPoint.C
+  mapFrompartition = Map.fromList . F.concatMap f . flip zip [1..] . fmap Permutation.toList
     where
-      iss = greedyPartitionIncreasings1 xs
-      m = mapFromPartition iss
-
-  makeSourceCPointLists :: [Int] -> Int -> [[CPoint]]
-  makeSources ys k = aux (Splitting.partitionsIncreasings k)
-    where
-      aux []       = []
-      aux (is:iss) = makeSource ys is:aux iss
-
-  makeSource :: [Int] -> [[Int]] -> [[CPoint]]
-  makeSource ys iss = makeCPoints ys m
-    where
-      m = mapFromPartition iss
+      f (xs, i) = L.zip xs (L.repeat i)
 
   {-|
-    The 'makeCPoints' function takes a list of integer and color mapping given
-    in the form of a Map.Map, and it return a list of CPoint.
+
   -}
-  makeCPoints :: [Int] -> Map.Map Int a -> [CPoint]
-  makeCPoints xs m = L.map (THT.uncurry3 CPoint.makeCPoint') [] ts
+  mkSources ::Permutation -> Int -> [([CPoint], CPointPointMap)]
+  mkSources p = aux $ Splitting.partitionsIncreasings p
     where
-      is = [1..]
-      cs = F.foldr (\x -> fromJust (Map.lookup x m)) xs
-      ts = L.zip3 is xs cs
+      aux []                     = []
+      aux (partition:partitions) = (cps, mkNextIncreasings cps):aux partitions
+        where
+          m   = mapFrompartition partition
+          cps = mkCPoints p m
 
   {-|
-    The 'square' function squares an integer.
-    It takes one argument, of type 'Int'.
+
   -}
-  search :: [Int] -> [Int] -> Maybe [Int]
-  search xs ys = searchAux cxs cyss
+  mkTarget :: Permutation -> ([CPoint], CPointPointMap)
+  mkTarget p = (cps, mkNextIncreasings cps)
     where
-      cxs  = color xs
+      partition = Splitting.greedyPartitionIncreasings1 p
+      m         = mapFrompartition partition
+      cps       = mkCPoints p m
+
+  {-|
+    The 'search' function takes two permutations 'p1' and 'p2', and it return
+    (if possible) an order-isomorphic occurrence of 'p1' in 'p2'.
+  -}
+  search :: Permutation -> Permutation -> Maybe Permutation
+  search p1 p2 = searchAux cps1 m1 cyss
+    where
+      cp1s  = mkCPoint p1
       k    = nbColors xs'
       cyss = colors ys k
 
@@ -101,7 +147,7 @@ where
     The 'square' function squares an integer.
     It takes one argument, of type 'Int'.
   -}
-  searchAux :: [CPoint Int Int] -> [[CPoint Int Int]]
+  searchAux :: [CPoint c] -> [[CPoint Int Int]]
   searchAux _   [] = Nothing
   searchAux cxs (cys:cyss) = case doSearch cxs cys of
     Nothing -> searchAux cxs cyss

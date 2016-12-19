@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.PPattern.Splitting
+Module      : Data.Algorithm.PPattern.Permutation.Splitting
 Description : Short description
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -10,9 +10,7 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-{-# LANGUAGE ScopedTypeVariables #-}
-
-module Data.Algorithm.PPattern.Splitting
+module Data.Algorithm.PPattern.Permutation.Splitting
 (
   partitionsIncreasings
   --
@@ -26,10 +24,11 @@ module Data.Algorithm.PPattern.Splitting
 where
 
   import qualified Data.List     as L
-  import qualified Data.Foldable as F
+  import qualified Data.Foldable as Fold
   import qualified Data.Tuple    as T
   import qualified Data.Set      as Set
 
+  import qualified Data.Algorithm.PPattern.Permutation  as Permutation
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
   import qualified Data.Algorithm.PPattern.LCS          as LCS
 
@@ -70,27 +69,27 @@ where
       xs' = L.sort $ L.map L.sort xs
 
   {-|
-    'partitionsIncreasings xs n' return all partitions of 'xs' into 'k'
+    'partitionsIncreasings p n' return all partitions of permutation 'p' into 'k'
     increasing subsequences.
   -}
-  partitionsIncreasings :: [Int] -> Int -> [[[Int]]]
-  partitionsIncreasings xs k
-    | LCS.lenLongestDecreasingSub xs > k = []
-    | otherwise                          = aux xs k
+  partitionsIncreasings :: Permutation -> Int -> [[Permutation]]
+  partitionsIncreasings p@(Permutation xs) k
+    | Stringology.lenLongestDecreasingSub p > k = []
+    | otherwise                                 = aux xs k
     where
-      aux xs k = [ip' | ip  <- IntPartition.intPartitionsByL (L.length xs) k,
-                        ip' <- partitionsIncreasingsByL xs ip,
-                        isClassLeader ip']
-
+      aux xs k = [fmap Permutation.fromListUnsafe ip' |
+                  ip  <- IntPartition.intPartitionsByL (L.length xs) k,
+                  ip' <- partitionsIncreasingsByL xs ip,
+                  isClassLeader ip']
 
   {-|
     'greedyPartitionIncreasings xs f' return a partition of xs into increasing
     subsequences by repeatidily calling function 'f' on the remaining subsequence.
   -}
-  greedyPartitionIncreasings :: [Int] -> ([Int] -> [Int]) -> [[Int]]
-  greedyPartitionIncreasings xs f = aux [] xs
+  greedyPartitionIncreasings :: (Permutation.Permutation -> Permutation.Permutation) -> Permutation.Permutation -> [Permutation.Permutation]
+  greedyPartitionIncreasings f (Permutation.Permutation xs) = aux [] xs
     where
-      aux acc [] = acc
+      aux acc [] = Permutation.fromListUnsafe acc
       aux acc xs = aux (xs':acc) (xs L.\\ xs')
         where
           xs' = f xs
@@ -99,16 +98,16 @@ where
     'greedyPartitionIncreasings1' takes a list 'xs'. It greedily computes a partition
     of 'xs' into increasing subsequences.
   -}
-  greedyPartitionIncreasings1 :: [Int] -> [[Int]]
-  greedyPartitionIncreasings1 xs = greedyPartitionIncreasings xs greedyIncreasing1
+  greedyPartitionIncreasings1 :: Permutation.Permutation -> [Permutation.Permutation]
+  greedyPartitionIncreasings1 = greedyPartitionIncreasings greedyIncreasing1
 
   {-|
     'greedyIncreasing1' takes a list 'xs'. It greedily computes an increasing
     subsequence of 'xs'.
   -}
-  greedyIncreasing1 :: [Int] -> [Int]
-  greedyIncreasing1 []     = []
-  greedyIncreasing1 (x:xs) = x:aux x xs
+  greedyIncreasing1 :: Permutation.Permutation -> Permutation.Permutation
+  greedyIncreasing1 (Permutation.Permutation [])     = Permutation.empty
+  greedyIncreasing1 (Permutation.Permutation (x:xs)) = Permutation.fromListUnsafe $ x:aux x xs
     where
       aux _ []      = []
       aux x (x':xs)
@@ -119,13 +118,13 @@ where
     'greedyPartitionIncreasings1' takes a list 'xs'. It greedily computes a partition
     of 'xs' into increasing subsequences.
   -}
-  greedyPartitionIncreasings2 :: [Int] -> [[Int]]
-  greedyPartitionIncreasings2 xs = greedyPartitionIncreasings xs greedyIncreasing2
+  greedyPartitionIncreasings2 :: Permutation.Permutation -> [Permutation.Permutation]
+  greedyPartitionIncreasings2 = greedyPartitionIncreasings greedyIncreasing2
 
 
   {-|
     'greedyIncreasing1' takes a list 'xs'. It greedily computes an increasing
     subsequence of 'xs'.
   -}
-  greedyIncreasing2 :: [Int] -> [Int]
-  greedyIncreasing2 = LCS.longestIncreasingSub
+  greedyIncreasing2 :: Permutation.Permutation -> Permutation.Permutation
+  greedyIncreasing2 = Stringology.longestIncreasingSub

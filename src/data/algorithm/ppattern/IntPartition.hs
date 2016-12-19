@@ -20,6 +20,9 @@ module Data.Algorithm.PPattern.IntPartition
 where
 
   import qualified Data.List as L
+  import Control.Applicative
+
+  newtype IntPartition = IntPartition [Int]
 
   {-|
     'intPartitions n ' returns all ordered partitions of integer 'n'.
@@ -27,12 +30,13 @@ where
     λ: intPartitions 6
     [[6],[3,3],[4,2],[5,1],[2,2,2],[3,2,1],[4,1,1],[2,2,1,1],[3,1,1,1],[2,1,1,1,1],[1,1,1,1,1,1]]
   -}
-  intPartitions :: Int -> [[Int]]
+  intPartitions :: Int -> [IntPartition]
   intPartitions n = L.concat [intPartitionsByL n k | k <- [1..n]]
 
   {-|
     'nbIntPartitions n' returns the number of ordered partitions of integer 'n'.
   -}
+  nbIntPartitions :: Int -> Int
   nbIntPartitions = L.length . intPartitions
 
   {-|
@@ -56,8 +60,8 @@ where
     λ: intPartitionsByL 6 7
     []
   -}
-  intPartitionsByL :: Int -> Int -> [[Int]]
-  intPartitionsByL n k = aux n k n
+  intPartitionsByL :: Int -> Int -> [IntPartition]
+  intPartitionsByL n k = IntPartition <$> aux n k n
     where
       aux _ 0 _ = [[]]
       aux n 1 _ = [[n]]
