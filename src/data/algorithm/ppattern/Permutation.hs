@@ -21,6 +21,8 @@ module Data.Algorithm.PPattern.Permutation
   --
 , toList
   --
+, length
+  --
 , preIdx
 , postIdx
   ---
@@ -66,6 +68,11 @@ where
   -}
   toList :: Permutation -> [Int]
   toList (Permutation xs) = xs
+
+  {-|
+  -}
+  length :: Permutation -> [Int]
+  length = L.length . toList
 
   {-|
     'preIdx p' returns the pre-indexed form of the permutation 'p'.

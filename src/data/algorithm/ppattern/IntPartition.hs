@@ -11,7 +11,11 @@ Integer partitions.
 
 module Data.Algorithm.PPattern.IntPartition
 (
-  intPartitions
+  IntPartition(..)
+, fromList
+, toList
+  --
+, intPartitions
 , nbIntPartitions
   --
 , intPartitionsByL
@@ -23,6 +27,18 @@ where
   import Control.Applicative
 
   newtype IntPartition = IntPartition [Int]
+
+  {-|
+
+  -}
+  fromList :: [Int] -> IntPartition
+  fromList xs = IntPartition xs
+
+  {-|
+
+  -}
+  toList :: IntPartition -> [Int]
+  toList (IntPartition xs) = xs
 
   {-|
     'intPartitions n ' returns all ordered partitions of integer 'n'.

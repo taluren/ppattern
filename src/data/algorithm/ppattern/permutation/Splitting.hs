@@ -50,37 +50,43 @@ where
     'partitionsIncreasingsByL xs ks' returns all partitions of 'xs' into |ks|
     increasing subsequences of length ks = [k1, k2, ..., kp].
   -}
-  partitionsIncreasingsByL :: (Ord a) => [a] -> [Int] -> [[[a]]]
-  partitionsIncreasingsByL [] []     = [[]]
-  partitionsIncreasingsByL [] _      = []
-  partitionsIncreasingsByL _  []     = []
-  partitionsIncreasingsByL xs (l:ls) = ps
+  partitionsIncreasingsByL :: Permutation.Permutation -> IntPartition.IntPartition -> [[Permutation.Permutation]]
+  partitionsIncreasingsByL p intPartition = aux xs ls
     where
-      ps = [is:iss | is  <- increasingsByL xs l,
-                     iss <- partitionsIncreasingsByL (xs L.\\ is) ls]
+      xs = Permutation.toList p
+      ls = IntPartition.toList intPartition
+
+      aux [] []     = [[]]
+      aux [] _      = []
+      aux _  []     = []
+      aux xs (l:ls) = fmap (fmap Permutation.fromListUnsafe) ps
+        where
+          ps = [is:iss | is  <- increasingsByL xs l, iss <- aux (xs L.\\ is) ls]
 
   {-|
     'isClassLeader xss' returns 'True' if and only if xss is composed of
     ascending sorted list, each list being sorted ascending.
   -}
-  isClassLeader :: [[Int]] -> Bool
-  isClassLeader xs = xs == xs'
+  isClassLeader :: [Permutation.Permutation] -> Bool
+  isClassLeader ps = xss == xss'
     where
-      xs' = L.sort $ L.map L.sort xs
+      xss = [Permutation.toList p | p <- ps]
+      xss' = L.sort $ L.map L.sort xs
 
   {-|
     'partitionsIncreasings p n' return all partitions of permutation 'p' into 'k'
     increasing subsequences.
   -}
   partitionsIncreasings :: Permutation -> Int -> [[Permutation]]
-  partitionsIncreasings p@(Permutation xs) k
+  partitionsIncreasings p k
     | Stringology.lenLongestDecreasingSub p > k = []
     | otherwise                                 = aux xs k
     where
       aux xs k = [fmap Permutation.fromListUnsafe ip' |
-                  ip  <- IntPartition.intPartitionsByL (L.length xs) k,
-                  ip' <- partitionsIncreasingsByL xs ip,
-                  isClassLeader ip']
+                  intPartition <- IntPartition.intPartitionsByL n k,
+                  pPartition   <- partitionsIncreasingsByL p intPartition,
+                  isClassLeader psPartition]
+      n = Permutation.length p
 
   {-|
     'greedyPartitionIncreasings xs f' return a partition of xs into increasing

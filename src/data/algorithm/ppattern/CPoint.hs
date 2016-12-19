@@ -19,6 +19,7 @@ module Data.Algorithm.PPattern.Point
 , mkCPoint'
   --
 , sameC
+, diffC
 )
 where
 
@@ -46,3 +47,6 @@ where
   -}
   sameC :: CPoint -> CPoint -> Bool
   sameC p1 p2 = color p1 == color p2
+
+  diffC :: CPoint -> CPoint -> Bool
+  diffC p1 p2 = not $ sameC p1 p2
