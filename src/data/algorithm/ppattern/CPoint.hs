@@ -13,7 +13,7 @@ commentary with @some markup@.
 module Data.Algorithm.PPattern.CPoint
 (
   CPoint(..)
-, C
+, Color
   --
 , mkCPoint
 , mkCPoint'
