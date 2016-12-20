@@ -17,13 +17,13 @@ module Data.Algorithm.PPattern.Permutation
 , fromList
 , fromListUnsafe
   ---
-, increasings
+, increasing
 , decreasing
 , empty
   --
 , toList
   --
-, length
+, Data.Algorithm.PPattern.Permutation.length
   --
 , preIdx
 , postIdx
@@ -36,31 +36,38 @@ where
   import qualified Data.Tuple    as T
   import qualified Data.Function as Fun
 
-  newtype Permutation = Permutation [Int]
+  type TPermutation = Int
+
+  newtype Permutation = Permutation [TPermutation] deriving (Show, Eq, Ord)
 
   {-|
     'fromList xs' construct a reduced permutation from list xs.
   -}
-  fromList ::  [Int] -> Permutation
-  fromList = reduce . Permutation
+  fromList ::  [TPermutation] -> Permutation
+  fromList = reduce . fromListUnsafe
 
   {-|
-    'fromList xs' construct a reduced permutation from list xs.
+    'fromList xs' constructs a permutation from the list xs. No check is done!
   -}
-  fromListUnsafe :: [Int] -> Permutation
+  fromListUnsafe :: [TPermutation] -> Permutation
   fromListUnsafe = Permutation
 
   {-|
+    'increasing n' return the increasing permutation 1 2 ... n. The function
+    returns the empty permutation if 'n' is non-positive.
   -}
   increasing :: Int -> Permutation
   increasing n = fromListUnsafe [1..n]
 
   {-|
+    'decrasing n' return the decreasing permutation n n-1 ... 1. The function
+    returns the empty permutation if 'n' is non-positive.
   -}
   decreasing :: Int -> Permutation
   decreasing n = fromListUnsafe [n,n-1..1]
 
   {-|
+    'empty' returns the empty permutation (i.e., the permutation with no element).
   -}
   empty :: Permutation
   empty = fromListUnsafe []
@@ -68,32 +75,38 @@ where
   {-|
     'toList p' returns the permutation 'p' as a list.
   -}
-  toList :: Permutation -> [Int]
+  toList :: Permutation -> [TPermutation]
   toList (Permutation xs) = xs
 
   {-|
   -}
-  length :: Permutation -> [Int]
+  length :: Permutation -> Int
   length = L.length . toList
 
   {-|
     'preIdx p' returns the pre-indexed form of the permutation 'p'.
+
+    λ: preIdx $ fromListUnsafe []
+    []
+    λ: preIdx $ fromListUnsafe [4,2,1,3]
+    [(1,4),(2,2),(3,1),(4,3)]
   -}
-  preIdx :: (Enum a, Num a) => Permutation -> Permutation (a, Int)
-  preIdx (Permutation xs) = Permutation xs'
-    where
-        xs' = L.zip [1..] xs
+  preIdx :: Permutation -> [(Integer, TPermutation)]
+  preIdx  = L.zip [1..] . toList
 
   {-|
     'postIdx p' returns the post-indexed form of the permutation 'p'.
+
+    λ: postIdx $ fromListUnsafe []
+    []
+    λ: postIdx $ fromListUnsafe [4,2,1,3]
+    [(4,1),(2,2),(1,3),(3,4)]
   -}
-  postIdx :: (Enum a, Num a) => Permutation -> Permutation (Int, b)
-  postIdx (Permutation xs) = Permutation xs'
-    where
-      xs' = flip L.zip [1..]
+  postIdx :: Permutation -> [(TPermutation, Integer)]
+  postIdx = flip L.zip [1..] . toList
 
   {-|
-    'reduce xs' returns the reduced form of 'xs'.
+    'reduce p' returns the reduced permutation of permutation 'p'.
 
     λ: reduce []
     []
@@ -103,8 +116,8 @@ where
     [3,5,1,4,2]
   -}
   reduce :: Permutation -> Permutation
-  reduce = Permutation . get . sortByIdx . preIdx . sortByVal . preIdx . toList
+  reduce = fromListUnsafe . get . sortByIdx . L.zip [1..] . sortByVal . L.zip [1..] . toList
     where
-      sortByValue = L.sortBy (compare `Fun.on` T.snd)
-      sortByIndex = L.sortBy (compare `Fun.on` (T.fst . T.snd))
-      get         = L.map T.fst
+      sortByVal = L.sortBy (compare `Fun.on` T.snd)
+      sortByIdx = L.sortBy (compare `Fun.on` (T.fst . T.snd))
+      get       = fmap T.fst

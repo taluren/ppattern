@@ -12,6 +12,7 @@ Integer partitions.
 module Data.Algorithm.PPattern.IntPartition
 (
   IntPartition(..)
+  ---
 , fromList
 , toList
   --
@@ -77,15 +78,15 @@ where
     []
   -}
   intPartitionsByL :: Int -> Int -> [IntPartition]
-  intPartitionsByL n k = IntPartition <$> aux n k n
+  intPartitionsByL n k = fromList <$> aux n k n
     where
       aux _ 0 _ = [[]]
       aux n 1 _ = [[n]]
       aux n k b
-        | n < k           = []
-        | n == k          = [L.replicate k 1]
-        | otherwise       = L.concat [fmap (k':) (aux (n-k') (k-1) k') |
-                                      k' <- [l..h]]
+        | n < k     = []
+        | n == k    = [L.replicate k 1]
+        | otherwise = L.concat [fmap (k':) (aux (n-k') (k-1) k') |
+                                k' <- [l..h]]
         where
           l = fromIntegral (ceiling (fromIntegral n / fromIntegral k))
           h = min (n-k+1) b
