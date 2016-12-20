@@ -10,7 +10,7 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-module Data.Algorithm.PPattern.Point
+module Data.Algorithm.PPattern.CPoint
 (
   CPoint(..)
 , C
@@ -23,23 +23,25 @@ module Data.Algorithm.PPattern.Point
 )
 where
 
-  type C = Int
+  import qualified Data.Algorithm.PPattern.Point as Point
 
-  data CPoint = CPoint { point :: Point
-                       , color :: C
+  type Color = Int
+
+  data CPoint = CPoint { point :: {-# UNPACK #-} !Point.Point
+                       , color :: {-# UNPACK #-} !Color
                        } deriving (Show, Eq)
 
   {-|
     'mkCPoint' mks a point from a point and a color.
   -}
-  mkCPoint :: Point -> Color -> CPoint
-  mkPoint p c = CPoint {point=p, color=c}
+  mkCPoint :: Point.Point -> Color -> CPoint
+  mkCPoint p c = CPoint {point=p, color=c}
 
   {-|
     'mkPoint'' mks a point from two integers and a color.
   -}
-  mkCPoint' :: Int -> Int -> C -> CPoint
-  mkCPoint' x y c = Point {point=mkPoint x y, color=c}
+  mkCPoint' :: Int -> Int -> Color -> CPoint
+  mkCPoint' x y c = CPoint {point=Point.mkPoint x y, color=c}
 
   {-|
     'sameC p1 p2' returns True if the two colored points 'p1' and 'p2' have the
@@ -48,5 +50,9 @@ where
   sameC :: CPoint -> CPoint -> Bool
   sameC p1 p2 = color p1 == color p2
 
+  {-|
+    'diffC p1 p2' returns True if the two colored points 'p1' and 'p2' have
+    different colors.
+  -}
   diffC :: CPoint -> CPoint -> Bool
   diffC p1 p2 = not $ sameC p1 p2

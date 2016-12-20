@@ -95,7 +95,7 @@ where
   leftmostCPointMapping [] _   = Just []
   leftmostCPointMapping _  []  = Nothing
   leftmostCPointMapping (cp1:cp1s) (cp2:cp2s)
-    | c1 = c2   = mkCPointLink cp1 cp2 >>= \cpl -> fmap (cpl:) (aux cp1s cp2s)
+    | c1 = c2   = mkCPointLink cp1 cp2 >>= \cpl -> fmap (cpl:) (leftmostCPointMapping cp1s cp2s)
     | otherwise = leftmostCPointMapping (cp1:cp1s) cp2s
     where
       c1 = CPoint.color cp1
@@ -178,13 +178,12 @@ where
 
   -}
   resolve1 :: State.State -> Maybe State.State
-  rsolve1 state = aux 
-  resolve1 []        = Just []
-  resolve1 [l]       = Just [l]
-  resolve1 (l:l':ls)
-    | conflict l l' = fmap (l:) (resolve1 (update1 l':ls))
-    | otherwise     = fmap (l:) (resolve1 l':ls)
+  rsolve1 state = aux (State.links state) [] (State.sourceStruct state) (State.targetStruct state)
     where
-      bichromatic l l'   = colour l /= colour l'
-      orderConflict l l' = (sPoint l) `southEastDomination` (tPoint l')
-      confict l l'       = bichromatic l l' && orderConflict l l'
+      aux []         acc srcStruct trgtStruct = Just (State.mkState (L.reverse acc)   srcStruct trgtStruct)
+      aux [l]        acc srcStruct trgtStruct = Just (State.mkState (L.reverse l:acc) srcStruct trgtStruct)
+      aux (l1:l2:ls) acc srcStruct trgtStruct
+        | conflict l1 l2 = update (l1:l2:ls) acc srcStruct trgtStruct
+        | otherwise      = aux (l2:ls) (l1:acc) srcStruct trgtStruct
+        where
+          confict l1 l2 = CPointCPointLink.ord l1 l2 && orderConflict l1 l2

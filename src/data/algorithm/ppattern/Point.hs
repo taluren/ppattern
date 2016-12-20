@@ -26,27 +26,26 @@ module Data.Algorithm.PPattern.Point
 )
 where
 
-  import qualified Data.Tuple as T
-
-  newtype Point = Point (Int, Int)
+  data Point = Point {-# UNPACK #-} !Int
+                     {-# UNPACK #-} !Int
 
   {-|
     'mkPoint' mks a point from two integers 'x' and 'y'.
   -}
   mkPoint :: Int -> Int -> Point
-  mkPoint x y = Point (x, y)
+  mkPoint x y = Point x y
 
   {-|
     'xCoord' returns the x-coordinate of a point.
   -}
   xCoord :: Point -> Int
-  xCoord (Point (x,_)) = x
+  xCoord (Point x _) = x
 
   {-|
     'yCoord' returns the y-coordinate of a point.
   -}
   yCoord :: Point -> Int
-  yCoord (Point (_,y)) = y
+  yCoord (Point _ y) = y
 
   {-|
     'southWestDomination p1 p2' takes two points. It returns True if and only if
