@@ -18,15 +18,15 @@ module Data.Algorithm.PPattern.Struct
 )
 where
 
-  import qualified Data.Algorithm.PPattern.CPoint            as CPoint
-  import qualified Data.Algorithm.PPattern.CPointPointMapMap as CPointPointMapMap
+  import qualified Data.Algorithm.PPattern.CPoint                as CPoint
+  import qualified Data.Algorithm.PPattern.CToPointToPointMapMap as CToPointToPointMapMap
 
   data Struct = Struct { cPoints :: [CPoint.CPoint]
-                       , mapping :: CPointPointMapMap.CPointPointMapMap
+                       , mapping :: CToPointToPointMapMap.CToPointToPointMapMap
                        } deriving (Show)
 
   {-|
     'mkPoint' mks a point from two integers 'x' and 'y'.
   -}
-  mkStruct :: [CPoint.CPoint] -> CPointPointMapMap.CPointPointMapMap -> Struct
+  mkStruct :: [CPoint.CPoint] -> CToPointToPointMapMap.CToPointToPointMapMap -> Struct
   mkStruct cps m = Struct {cPoints=cps, mapping=m}

@@ -26,8 +26,8 @@ where
   import qualified Data.Algorithm.PPattern.Permutation.Splitting as Splitting
   import qualified Data.Algorithm.PPattern.Point                 as Point
   import qualified Data.Algorithm.PPattern.CPoint                as CPoint
-  import qualified Data.Algorithm.PPattern.PointPointMap         as PointPointMap
-  import qualified Data.Algorithm.PPattern.CPointPointMap        as CPointPointMap
+  import qualified Data.Algorithm.PPattern.PointToPointMap         as PointToPointMap
+  import qualified Data.Algorithm.PPattern.CPointToPointMap        as CPointToPointMap
   import qualified Data.Algorithm.PPattern.CPointLink            as CPointLink
   import qualified Data.Algorithm.PPattern.CPointMapping         as CPointMapping
   import qualified Data.Algorithm.PPattern.State                 as State
@@ -37,14 +37,14 @@ where
   {-|
     'mkNextIncreasing'
   -}
-  mkNextIncreasing :: [Point.Point] -> PointPointMap
+  mkNextIncreasing :: [Point.Point] -> PointToPointMap
   mkNextIncreasing []     = Map.empty
   mkNextIncreasing (p:ps) = mkNextIncreasingAux ps s m
     where
       s = Stack.push Stack.empty p
       m = Map.empty
 
-  mkNextIncreasingAux :: [Point.Point] -> Stack Point.Point -> PointPointMap -> PointPointMap
+  mkNextIncreasingAux :: [Point.Point] -> Stack Point.Point -> PointToPointMap -> PointToPointMap
   mkNextIncreasingAux []     _            m = m
   mkNextIncreasingAux (p:ps) s@(Stack []) m = mkNextIncreasingAux ps (Stack.push s p) m
   mkNextIncreasingAux ps     s            m = aux ps s m
@@ -61,13 +61,13 @@ where
     'mkNextIncreasings' takes a list of colored points. It returns a map that
     associates to each distinct color the next increassing map to this color.
   -}
-  mkNextIncreasings :: [CPoint.CPoint] -> CPointPointMap.CPointPointMap
+  mkNextIncreasings :: [CPoint.CPoint] -> CPointToPointMap.CPointToPointMap
   mkNextIncreasings cps = mkNextIncreasingsAux cps cs m
     where
       cs = L.nub $ L.filter color cps
       m  = Map.empty
 
-  mkNextIncreasingsAux :: [CPoint.PointC] -> [CPoint.C] -> PointMap.PointMap -> CPointPointMap.CPointPointMap
+  mkNextIncreasingsAux :: [CPoint.PointC] -> [CPoint.C] -> PointMap.PointMap -> CPointToPointMap.CPointToPointMap
   mkNextIncreasingsAux cps []     m = m
   mkNextIncreasingsAux cps (c:cs) m = mkNextIncreasingsAux cps cs m'
     where
