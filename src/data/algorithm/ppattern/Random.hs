@@ -12,12 +12,12 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.Random
 (
-  randSelect
+  randChoose
+, randSelect
 , randPermutation
 , randPermutation'
 , randIntPartitionByL
-, randKIncreasing
-, randKIncreasingL
+, randKIncreasingByL
 , randShuffle
 )
 where
@@ -62,19 +62,12 @@ where
     'randPermutation' takes a list 'xs' and a generator 'g', and
     returns a random permutation of 'xs', together with a new generator.
   -}
-  randPermutation :: R.RandomGen g => Permutation.Permutation -> g -> (Permutation.Permutation, g)
-  randPermutation (Permutation xs) = Permutation.fromListUnsafe $ randSelect xs (L.length xs)
+  randPermutation :: R.RandomGen g => [a] -> g -> ([a], g)
+  randPermutation xs = randSelect xs (L.length xs)
 
   {-|
-    'randPermutation'' takes an integer 'n' and a generator 'g', and
-    returns a random permutation of '[1..n]', together with a new generator.
-  -}
-  randPermutation' :: R.RandomGen g => Int -> g -> (Permutation.Permutation, g)
-  randPermutation' n = randPermutation [1..n]
-
-  {-|
-    'randIntPartitionByL' takes two integers 'n' and 'k', and a generator 'g', and
-    returns a random 'k'-partition of '[1..n]', together with a new generator.
+    'randIntPartitionByL' takes two integers 'n' and 'k', and a generator 'g'.
+    It returns a random 'k'-partition of '[1..n]', together with a new generator.
   -}
   randIntPartitionByL :: (R.RandomGen g) => Int -> Int -> g -> ([Int], g)
   randIntPartitionByL n k g = (L.head ips, g')
@@ -98,44 +91,15 @@ where
               aux' ([x]:xss)     = (x, xss)
               aux' ((x:xs):xss') = (x, xs:xss')
 
-  -- {-|
-  --   'randKIncreasing' takes two integers 'n' and 'k' and a generator 'g', and
-  --   returns a random permutation of length 'n' that is the union of 'k'
-  --   increasings sequences, together with a new generator.
-  -- -}
-  -- randKIncreasing:: R.RandomGen g => Int -> Int -> g -> ([Int], g)
-  -- randKIncreasing n k g = (xs, g'')
-  --   where
-  --     (ip, g')   = randIntPartitionByL n k g
-  --     (xss, g'') = randKIncreasingL ip g'
-  --     (xs, g''') = randShuffle xss g''
-
-  randKIncreasing:: R.RandomGen g => Int -> Int -> g -> ([Int], g)
-  randKIncreasing n k g =
-    if Stringology.lenLongestDecreasingSub xs > k
-      then randKIncreasing n k g'
-      else (xs, g')
-    where
-      (xs, g') = randPermutation' n g
-
   {-|
-    'randKIncreasings' takes three integers 'n', 'k' and 'm' and a generator 'g',
-    and returns 'm' random permutations of length 'n' that are the union of 'k'
-    increasings sequences, together with a new generator.
+    'randKIncreasingByL' takes a list of integers 'ls' and a generator.
+    It return a random partition in 'k' parts of the list [1..N]
+    ('k' is the number of elements in 'ls' and N is the total sum of the elements
+    in 'ls') so that 'ls' corresponds to the length of the elements of the
+     partition. A new generator is also returned.
   -}
-  randKIncreasings :: (R.RandomGen g) => Int -> Int -> Int -> g -> ([[Int]], g)
-  randKIncreasings n k = aux []
-    where
-      aux acc 0 g = (acc, g)
-      aux acc m g = aux (xs:acc) (m-1) g'
-        where
-          (xs, g') = randKIncreasing n k g
-
-  {-|
-    'randKIncreasingL'
-  -}
-  randKIncreasingL :: R.RandomGen g => [Int] -> g -> ([[Int]], g)
-  randKIncreasingL ls = aux ls [1..Fold.sum ls] []
+  randKIncreasingByL :: R.RandomGen g => [Int] -> g -> ([[Int]], g)
+  randKIncreasingByL ls = aux ls [1..Fold.sum ls] []
     where
       aux []     [] acc g = (acc, g)
       aux (l:ls) xs acc g = aux ls (xs L.\\ xs') (xs':acc) g'

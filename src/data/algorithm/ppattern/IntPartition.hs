@@ -14,6 +14,8 @@ module Data.Algorithm.PPattern.IntPartition
   IntPartition(..)
   ---
 , fromList
+, mkIntPartition
+  --
 , toList
   --
 , intPartitions
@@ -34,6 +36,12 @@ where
   -}
   fromList :: [Int] -> IntPartition
   fromList xs = IntPartition xs
+
+  {-|
+
+  -}
+  mkIntPartition :: [Int] -> IntPartition
+  mkIntPartition = fromList
 
   {-|
 

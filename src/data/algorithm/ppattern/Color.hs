@@ -12,8 +12,9 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.Color
 (
-  Color
+  Color(..)
 )
 where
 
-  type Color = Int
+  data Color = Color {-# UNPACK #-} !Int
+               deriving (Show, Eq, Ord)

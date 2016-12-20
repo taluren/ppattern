@@ -41,7 +41,7 @@ where
     subsequences in 'xs'.
   -}
   lenLongestIncreasingSub:: Permutation.Permutation -> Int
-  lenLongestIncreasingSub = L.length . longestIncreasingSub
+  lenLongestIncreasingSub = Permutation.length . longestIncreasingSub
 
   {-|
     'longestDecreasingSub xs' returns a longest decreasing subsequences in 'xs'.
@@ -57,4 +57,4 @@ where
     subsequences in 'xs'.
   -}
   lenLongestDecreasingSub :: Permutation.Permutation -> Int
-  lenLongestDecreasingSub = L.length . longestDecreasingSub
+  lenLongestDecreasingSub = Permutation.length . longestDecreasingSub

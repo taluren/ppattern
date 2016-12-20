@@ -33,16 +33,16 @@ where
   {-|
     'mkCPoint' makes a colored point from a point and a color.
   -}
-  mkCPoint :: Point.Point -> Color -> CPoint
+  mkCPoint :: Point.Point -> Color.Color -> CPoint
   mkCPoint p c = CPoint {point=p, color=c}
 
   {-|
     'mkPoint'' makes a colored point from two integer coordinates and a color.
   -}
-  mkCPoint' :: Int -> Int -> Color -> CPoint
+  mkCPoint' :: Int -> Int -> Color.Color -> CPoint
   mkCPoint' x y c = p c
     where
-      p = Point.mkPoint Point.mkPoint x y
+      p = Point.mkPoint x y
 
   {-|
     'sameC p1 p2' returns True if the two colored points 'p1' and 'p2' have the

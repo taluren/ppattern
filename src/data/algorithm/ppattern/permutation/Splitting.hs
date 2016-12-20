@@ -70,7 +70,7 @@ where
   isClassLeader ps = xss == xss'
     where
       xss = [Permutation.toList p | p <- ps]
-      xss' = L.sort $ L.map L.sort xs
+      xss' = L.sort . fmap L.sort $ fmap Permutation.toList ps
 
   {-|
     'partitionsIncreasings p n' return all partitions of permutation 'p' into 'k'
