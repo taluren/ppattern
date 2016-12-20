@@ -27,10 +27,10 @@ module Data.Algorithm.PPattern.CPointCPointLink
 )
 where
 
-  import qualified Data.Algorithm.PPattern.Cpoint as CPoint
+  import qualified Data.Algorithm.PPattern.CPoint as CPoint
 
-  data CPointCPointLink = CPointCPointLink { src  :: CPoint.CPoint
-                                           , trgt :: CPoint.CPoint
+  data CPointCPointLink = CPointCPointLink { src  :: {-# UNPACK #-} !CPoint.CPoint
+                                           , trgt :: {-# UNPACK #-} !CPoint.CPoint
                                            } deriving (Show, Eq)
   {-|
     'mkCPointCPointLink' makes a CPointCPointLink object from two colored points with the

@@ -13,8 +13,10 @@ commentary with @some markup@.
 module Data.Algorithm.PPattern.Permutation
 (
   Permutation(..)
+  ---
 , fromList
 , fromListUnsafe
+  ---
 , increasings
 , decreasing
 , empty
@@ -39,7 +41,7 @@ where
   {-|
     'fromList xs' construct a reduced permutation from list xs.
   -}
-  fromList :: (Ord a) => [a] -> Permutation
+  fromList ::  [Int] -> Permutation
   fromList = reduce . Permutation
 
   {-|

@@ -14,7 +14,7 @@ module Data.Algorithm.PPattern.Stack
 (
   Stack(..)
   --
-, mkEmpty
+, empty
 , fromList
   --
 , isEmpty
@@ -23,6 +23,7 @@ module Data.Algorithm.PPattern.Stack
 , push
 , pop
 , popUnsafe
+, multiPop
 , top
 , topUnsafe
 )
@@ -35,8 +36,8 @@ where
   {-|
     'mkPoint' mks a point from two integers 'x' and 'y'.
   -}
-  mkEmpty :: Stack a
-  mkEmpty = []
+  empty :: Stack a
+  empty = Stack []
 
   {-|
     'mkPoint' mks a point from two integers 'x' and 'y'.
@@ -70,6 +71,13 @@ where
   -}
   popUnsafe :: Stack a -> Stack a
   popUnsafe (Stack (_:xs)) = Stack xs
+
+  {-|
+  -}
+  multiPop :: Stack a -> Int -> Maybe (Stack a)
+  multiPop s              0 = Just s
+  multiPop (Stack [])     _ = Nothing
+  multiPop (Stack (_:xs)) n = multiPop (Stack xs) (n-1)
 
   {-|
   -}

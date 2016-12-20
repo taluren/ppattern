@@ -26,7 +26,7 @@ where
   import qualified Data.Foldable   as Fold
   import qualified System.Random   as R
 
-  import qualified Data.Algorithm.PPattern.Tools                  Combi as Tools
+  import qualified Data.Algorithm.PPattern.Tools                   as Tools
   import qualified Data.Algorithm.PPattern.Combinatorics           as Combinatorics
   import qualified Data.Algorithm.PPattern.IntPartition            as IntPartition
   import qualified Data.Algorithm.PPattern.Permutation             as Permutation
@@ -112,7 +112,7 @@ where
 
   randKIncreasing:: R.RandomGen g => Int -> Int -> g -> ([Int], g)
   randKIncreasing n k g =
-    if LCS.lenLongestDecreasingSub xs > k
+    if Stringology.lenLongestDecreasingSub xs > k
       then randKIncreasing n k g'
       else (xs, g')
     where

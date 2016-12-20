@@ -30,7 +30,6 @@ where
 
   import qualified Data.Algorithm.PPattern.Permutation  as Permutation
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
-  import qualified Data.Algorithm.PPattern.LCS          as LCS
 
   {-|
     'increasingsByL xs k' return the list of all increasing subsequences
