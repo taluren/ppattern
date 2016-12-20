@@ -28,6 +28,7 @@ where
 
   data Point = Point {-# UNPACK #-} !Int
                      {-# UNPACK #-} !Int
+                     deriving (Show, Eq)
 
   {-|
     'mkPoint' mks a point from two integers 'x' and 'y'.

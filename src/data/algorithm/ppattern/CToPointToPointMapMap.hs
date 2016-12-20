@@ -19,6 +19,7 @@ where
   import qualified Data.Map.Strict as Map
 
   import qualified Data.Algorithm.PPattern.PointToPointMap as PointToPointMap
+  import qualified Data.Algorithm.PPattern.Color           as Color
 
 
-  type CToPointToPointMapMap = Map.Map C PointToPointMap.PointToPointMap
+  type CToPointToPointMapMap = Map.Map Color.Color PointToPointMap.PointToPointMap
