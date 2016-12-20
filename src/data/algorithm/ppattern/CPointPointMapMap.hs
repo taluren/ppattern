@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.PPattern.CPointCPointMap
+Module      : Data.Algorithm.PPattern.CPointPointMapMapMap
 Description : Short description
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -10,9 +10,9 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-module Data.Algorithm.PPattern.CPointCPointMap
+module Data.Algorithm.PPattern.CPointPointMapMap
 (
-  CPointPointMap
+  CPointPointMapMap
 )
 where
 
@@ -21,4 +21,4 @@ where
   import qualified Data.Algorithm.PPattern.PointPointMap as PointPointMap
 
 
-  type CPointPointMap = Map.Map C PointPointMap.PointPointMap
+  type CPointPointMapMap = Map.Map C PointPointMap.PointPointMap

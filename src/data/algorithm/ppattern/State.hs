@@ -21,13 +21,13 @@ where
   import qualified Data.Algorithm.PPattern.Struct           as Struct
   import qualified Data.Algorithm.PPattern.CPointCPointLink as CPointCPointLink
 
-  data State = State { sourceStruct :: Struct.Struct
-                     , targetStruct :: Struct.Struct
-                     , links        :: [CPointCPointLink.CPointCPointLink]
+  data State = State { src   :: Struct.Struct
+                     , trgt  :: Struct.Struct
+                     , links :: [CPointCPointLink.CPointCPointLink]
                      } deriving (Show)
 
   {-|
 
   -}
   mkState :: Struct.Struct -> Struct.Struct -> [CPointCPointLink.CPointCPointLink] -> State
-  mkState s t ls = State { sourceStruct=s, targetStruct=t, links=ls }                                                  , links=links}
+  mkState s t ls = State {src=s, trgt=t, links=ls} 

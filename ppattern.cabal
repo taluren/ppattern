@@ -38,7 +38,11 @@ library
     Data.Algorithm.PPattern.Tools
     Data.Algorithm.PPattern.Point
     Data.Algorithm.PPattern.CPoint
-    Data.Algorithm.PPattern.CPointLink
+    Data.Algorithm.PPattern.PointPointMap
+    Data.Algorithm.PPattern.CPointPointMapMap
+    Data.Algorithm.PPattern.CPointCPointLink
+    Data.Algorithm.PPattern.Struct
+    Data.Algorithm.PPattern.State
 
 executable ppattern
   main-is:             Main.hs
