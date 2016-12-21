@@ -13,8 +13,17 @@ commentary with @some markup@.
 module Data.Algorithm.PPattern.Color
 (
   Color(..)
+  ---
+, mkColor
 )
 where
 
   data Color = Color {-# UNPACK #-} !Int
                deriving (Show, Eq, Ord)
+
+
+  {-|
+   'mkColor' makes a color from an integer.
+  -}
+  mkColor :: Int -> Color
+  mkColor = Color

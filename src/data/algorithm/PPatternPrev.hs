@@ -122,52 +122,67 @@ where
       f (xs, i) = L.zip xs $ colors i
 
   {-|
-    'mkSrc p k' returns all 'k'-coloring of permutation 'p', where each coloring
-    is an increasing subsequence.
   -}
-  mkSrc :: Permutation.Permutation -> Int -> [[CPoint.CPoint]]
-  mkSrc p k = aux $ Permutation.partitionsIncreasings p k
+  mkSourceStructs :: Permutation.Permutation -> Int -> [Struct.Struct]
+  mkSourceStructs p k = aux $ Permutation.partitionsIncreasings p k
     where
       aux []                     = []
-      aux (partition:partitions) = cps:aux partitions
+      aux (partition:partitions) = Struct.mkStruct cps next:aux partitions
         where
           cps  = mkCPoints p (mapFromPartition partition)
+          next = mkNextIncreasings cps
 
   {-|
-    the 'mkTrgt' function is in charge of finding a k-increasing-coloring
-    of a given permutation. It returns the next function for each color in the
-    form of a map.
+
   -}
-  mkTrgt :: Permutation.Permutation -> ColorMap.ColorMap
-  mkTrgt p = mkNextIncreasings cps
+  mkTargetStruct :: Permutation.Permutation -> Struct.Struct
+  mkTargetStruct p = Struct.mkStruct cps next
     where
       partition = Permutation.greedyPartitionIncreasings1 p
       cps       = mkCPoints p (mapFromPartition partition)
+      next      = mkNextIncreasings cps
+  -- mkTargetStruct :: Permutation.Permutation -> Struct.Struct
+  -- mkTargetStruct p = Struct.mkStruct cps next
+  --   where
+  --     partition = Permutation.greedyPartitionIncreasings1 p
+  --     cps       = mkCPoints p (mapFromPartition partition)
+  --     next      = mkNextIncreasings cps
+
+  -- {-|
+  --   The 'parSearch'
+  -- -}
+  -- parSearch :: Permutation.Permutation -> Permutation.Permutation -> Int -> Maybe State.State
+  -- parSearch p1 p2 = aux (mkSourceStructs p1) (mkTargetStruct p2)
+  --   where
+  --     aux []                     _          = Nothing
+  --     aux (src:srcs) trgt = aux $ doSearch src trgt
+  --       where
+  --         aux Nothing = aux srcs trgt
+  --         aux Just q  = Just q
 
   {-|
     The 'search' function takes two permutations 'p' and 'q', and it returns
     (if possible) an order-isomorphic occurrence of 'p' in 'q'.
   -}
-  search :: Permutation.Permutation -> Permutation.Permutation -> Maybe [CPointLink]
-  search p q = SearchAux srcs trgt
+  search :: Permutation.Permutation -> Permutation.Permutation -> Maybe State.State
+  search p q = aux srcStructs trgtStruct
     where
       -- make target structure
-      trgt = mkTrgt q
+      trgtStruct = mkTargetStruct q
 
       -- make all source structures
-      srcs = mkSrc p (ColorMap.nbColors trgt)
+      srcStructs = mkSourceStructs p (Struct.nbColors trgtStruct)
 
-  searchAux :: [[CPoint.CPoint]] -> ColorMap.ColorMap -> Maybe [CPointLink]
-  searchAux []         _    = Nothing
-  searchAux (src:srcs) trgt = case doSearch src trgt of
-                                Nothing -> aux srcs trgt
-                                Just q  -> Just q
+      aux []          _   = Nothing
+      aux (src:srcs) trgt = case doSearch src trgt of
+        Nothing -> aux srcs trgt
+        Just q  -> Just q
 
   {-|
 
   -}
-  doSearch :: [CPoint.CPoint] -> ColorMap.ColorMap  -> Maybe Maybe [CPointLink]
-  doSearch src trgt = mapping >>= mkState >>= doSearchAux
+  doSearch :: Struct.Struct -> Struct.Struct -> Maybe State.State
+  doSearch srcStruct trgtStruct = mapping >>= mkState >>= doSearchAux
     where
       srcCPoints  = Struct.cPoints srcStruct
       trgtCPoints = Struct.cPoints trgtStruct
