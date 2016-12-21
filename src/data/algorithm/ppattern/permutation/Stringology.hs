@@ -25,7 +25,7 @@ where
   import qualified Data.Map                as Map
   import qualified Data.Algorithm.Patience as Patience
 
-  import qualified Data.Algorithm.PPattern.Permutation as Permutation
+  import qualified Data.Algorithm.PPattern.Permutation.Core as Permutation
 
   {-|
     'longestIncreasingSub xs' returns a longest increasing subsequences in 'xs'.

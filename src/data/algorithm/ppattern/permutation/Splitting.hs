@@ -30,7 +30,7 @@ where
   import qualified Data.Monoid   as Monoid
   import Control.Applicative
 
-  import qualified Data.Algorithm.PPattern.Permutation             as Permutation
+  import qualified Data.Algorithm.PPattern.Permutation.Core        as Permutation
   import qualified Data.Algorithm.PPattern.Permutation.Stringology as Stringology
   import qualified Data.Algorithm.PPattern.IntPartition            as IntPartition
 

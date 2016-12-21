@@ -11,8 +11,13 @@ commentary with @some markup@.
 -}
 
 module Data.Algorithm.PPattern.Permutation
+(
+  module Data.Algorithm.PPattern.Permutation.Utilities
+, module Data.Algorithm.PPattern.Permutation.Splitting
+, module Data.Algorithm.PPattern.Permutation.Stringology
+)
 where
 
-  import Data.Algorithm.PPattern.Permutation.Permutation
+  import Data.Algorithm.PPattern.Permutation.Utilities
   import Data.Algorithm.PPattern.Permutation.Splitting
   import Data.Algorithm.PPattern.Permutation.Stringology
