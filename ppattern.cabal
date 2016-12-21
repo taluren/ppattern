@@ -29,10 +29,6 @@ library
   hs-source-dirs: src
   exposed-modules:
     Data.Algorithm.PPattern.Permutation
-    Data.Algorithm.PPattern.Permutation.Core
-    Data.Algorithm.PPattern.Permutation.Splitting
-    Data.Algorithm.PPattern.Permutation.Stringology
-    Data.Algorithm.PPattern.Permutation.Random
     Data.Algorithm.PPattern.IntPartition
     Data.Algorithm.PPattern.Combinatorics
     Data.Algorithm.PPattern.Types

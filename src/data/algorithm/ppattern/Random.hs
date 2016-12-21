@@ -27,8 +27,6 @@ where
   import qualified Data.Algorithm.PPattern.Tools                   as Tools
   import qualified Data.Algorithm.PPattern.Combinatorics           as Combinatorics
   import qualified Data.Algorithm.PPattern.IntPartition            as IntPartition
-  import qualified Data.Algorithm.PPattern.Permutation             as Permutation
-  import qualified Data.Algorithm.PPattern.Permutation.Stringology as Stringology
 
   {-|
     'randChoose' takes a list 'xs', an integer 'k' and a generator 'g', and

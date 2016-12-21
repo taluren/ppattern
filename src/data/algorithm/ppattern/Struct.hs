@@ -15,10 +15,16 @@ module Data.Algorithm.PPattern.Struct
   Struct(..)
   --
 , mkStruct
+  ---
+, colors
+, nbColors
 )
 where
 
+  import qualified Data.List as L
+
   import qualified Data.Algorithm.PPattern.CPoint                as CPoint
+  import qualified Data.Algorithm.PPattern.Color                 as Color
   import qualified Data.Algorithm.PPattern.CToPointToPointMapMap as CToPointToPointMapMap
 
   data Struct = Struct { cPoints :: [CPoint.CPoint]
@@ -30,3 +36,15 @@ where
   -}
   mkStruct :: [CPoint.CPoint] -> CToPointToPointMapMap.CToPointToPointMapMap -> Struct
   mkStruct cps m = Struct {cPoints=cps, mapping=m}
+
+  {-|
+
+  -}
+  colors :: CToPointToPointMapMap.CToPointToPointMapMap -> [Color.Color]
+  colors = Map.keys
+
+  {-|
+
+  -}
+  nbColors :: CToPointToPointMapMap.CToPointToPointMapMap -> [Color.Color]
+  nbColors = L.length . colors
