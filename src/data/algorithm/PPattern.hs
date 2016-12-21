@@ -115,7 +115,6 @@ where
       f (xs, i) = L.zip xs (L.repeat i)
 
   {-|
-partitionsIncreasings
   -}
   mkSourceStructs ::Permutation.Permutation -> Int -> [Struct.Struct]
   mkSourceStructs p k = aux $ Permutation.partitionsIncreasings p k

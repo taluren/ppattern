@@ -36,9 +36,9 @@ library
     Data.Algorithm.PPattern.Tools
     Data.Algorithm.PPattern.Point
     Data.Algorithm.PPattern.CPoint
-    Data.Algorithm.PPattern.PointToPointMap
-    Data.Algorithm.PPattern.CToPointToPointMapMap
-    Data.Algorithm.PPattern.CPointCPointLink
+    Data.Algorithm.PPattern.PointMap
+    Data.Algorithm.PPattern.ColorMap
+    Data.Algorithm.PPattern.CPointLink
     Data.Algorithm.PPattern.Struct
     Data.Algorithm.PPattern.State
     Data.Algorithm.PPattern

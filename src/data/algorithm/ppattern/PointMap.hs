@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.PPattern.PointToPointMap
+Module      : Data.Algorithm.PPattern.PointMap
 Description : Short description
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -10,9 +10,9 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-module Data.Algorithm.PPattern.PointToPointMap
+module Data.Algorithm.PPattern.PointMap
 (
-  PointToPointMap
+  PointMap
 )
 where
 
@@ -20,4 +20,4 @@ where
 
   import qualified Data.Algorithm.PPattern.Point as Point
 
-  type PointToPointMap = Map.Map Point.Point Point.Point
+  type PointMap = Map.Map Point.Point Point.Point

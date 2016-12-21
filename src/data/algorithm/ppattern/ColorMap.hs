@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.PPattern.CToPointToPointMapMapMap
+Module      : Data.Algorithm.PPattern.ColorMap
 Description : Short description
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -10,9 +10,9 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-module Data.Algorithm.PPattern.CToPointToPointMapMap
+module Data.Algorithm.PPattern.ColorMap
 (
-  CToPointToPointMapMap
+  ColorMap
 )
 where
 
@@ -22,4 +22,4 @@ where
   import qualified Data.Algorithm.PPattern.Color           as Color
 
 
-  type CToPointToPointMapMap = Map.Map Color.Color PointToPointMap.PointToPointMap
+  type ColorMap = Map.Map Color.Color PointToPointMap.PointToPointMap
