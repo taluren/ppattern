@@ -35,7 +35,7 @@ where
 
   -}
   fromList :: [Int] -> IntPartition
-  fromList xs = IntPartition xs
+  fromList = IntPartition
 
   {-|
 

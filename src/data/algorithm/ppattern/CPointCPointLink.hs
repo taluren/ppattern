@@ -18,7 +18,7 @@ module Data.Algorithm.PPattern.CPointCPointLink
   --
 , color
   --
-, monoChormatic
+, monoChromatic
 , biChromatic
 , orderConflict
 , valueConflict
@@ -27,7 +27,9 @@ module Data.Algorithm.PPattern.CPointCPointLink
 )
 where
 
+  import qualified Data.Algorithm.PPattern.Point  as Point
   import qualified Data.Algorithm.PPattern.CPoint as CPoint
+  import qualified Data.Algorithm.PPattern.Color  as Color
 
   data CPointCPointLink = CPointCPointLink { src  :: {-# UNPACK #-} !CPoint.CPoint
                                            , trgt :: {-# UNPACK #-} !CPoint.CPoint
@@ -38,13 +40,13 @@ where
   -}
   mkCPointCPointLink :: CPoint.CPoint -> CPoint.CPoint -> Maybe CPointCPointLink
   mkCPointCPointLink src trgt
-    | CPointCPointLink.diffC src trgt = Nothing
-    | otherwise                       = Just (mkCPointCPointLink src trgt)
+    | CPoint.diffC src trgt = Nothing
+    | otherwise             = Just (CPointCPointLink src trgt)
 
   {-|
     'color' return the color of a CPointCPointLink.
   -}
-  color :: CPointCPointLink -> CPoint.C
+  color :: CPointCPointLink -> Color.Color
   color = CPoint.color . src
 
   {-|
@@ -58,7 +60,7 @@ where
 
   -}
   biChromatic :: CPointCPointLink -> CPointCPointLink -> Bool
-  biChromatic = not . monoChromatic
+  biChromatic cpl1 cpl2 = not $ monoChromatic cpl1 cpl2
 
   {-|
 

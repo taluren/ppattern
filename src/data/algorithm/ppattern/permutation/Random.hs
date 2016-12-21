@@ -19,7 +19,10 @@ module Data.Algorithm.PPattern.Permutation.Random
 )
 where
 
+  import qualified System.Random as R
+
   import qualified Data.Algorithm.PPattern.Permutation             as Permutation
+  import qualified Data.Algorithm.PPattern.Permutation.Internal as Stringology
   import qualified Data.Algorithm.PPattern.Permutation.Stringology as Stringology
   import qualified Data.Algorithm.PPattern.Random                  as Random
 
@@ -28,16 +31,19 @@ where
     returns a random permutation of 'p', together with a new generator.
   -}
   randPermutation :: R.RandomGen g => Permutation.Permutation -> g -> (Permutation.Permutation, g)
-  randPermutation = Permutation.fromListUnsafe . Random.randPermutation . Permutation.toList
+  randPermutation p g = (Permutation.fromListUnsafe xs, g')
+    where
+      (xs, g') = flip Random.randPermutation g $ Permutation.toList p
 
   {-|
     'randPermutation'' takes an integer 'n' and a generator 'g', and
     returns a random permutation of '[1..n]', together with a new generator.
   -}
   randPermutation' :: R.RandomGen g => Int -> g -> (Permutation.Permutation, g)
-  randPermutation' n = randPermutation p
+  randPermutation' n g = (p', g')
     where
-      p = Permutation.increasing n
+      p        = Permutation.increasing n
+      (p', g') = randPermutation p g
 
   -- {-|
   --   'randKIncreasing' takes two integers 'n' and 'k' and a generator 'g'.

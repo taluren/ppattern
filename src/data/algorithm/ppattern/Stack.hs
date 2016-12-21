@@ -59,7 +59,7 @@ where
   {-|
   -}
   push :: Stack a -> a -> Stack a
-  push (Stack xs) x = Stack x:xs
+  push (Stack xs) x = Stack (x:xs)
 
   {-|
   -}
@@ -83,9 +83,9 @@ where
   -}
   top :: Stack a -> Maybe a
   top (Stack [])     = Nothing
-  top (Stack (x:xs)) = Just x
+  top (Stack (x:_)) = Just x
 
   {-|
   -}
   topUnsafe :: Stack a -> a
-  top (Stack (x:_)) = x
+  topUnsafe (Stack (x:_)) = x

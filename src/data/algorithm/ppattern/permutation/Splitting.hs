@@ -27,40 +27,53 @@ where
   import qualified Data.Foldable as Fold
   import qualified Data.Tuple    as T
   import qualified Data.Set      as Set
+  import qualified Data.Monoid   as Monoid
+  import Control.Applicative
 
-  import qualified Data.Algorithm.PPattern.Permutation  as Permutation
-  import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
+  import qualified Data.Algorithm.PPattern.Permutation             as Permutation
+  import qualified Data.Algorithm.PPattern.Permutation.Stringology as Stringology
+  import qualified Data.Algorithm.PPattern.IntPartition            as IntPartition
 
   {-|
     'increasingsByL xs k' return the list of all increasing subsequences
-    of length 'k' of 'xs'.
+    of length 'k' of the list 'xs'.
   -}
-  increasingsByL :: (Ord a) => [a] ->  Int -> [[a]]
-  increasingsByL [] _ = [[]]
-  increasingsByL xs k = aux xs k (L.head xs)
+  increasingsByL' :: [Int] ->  Int -> [[Int]]
+  increasingsByL' [] _ = []
+  increasingsByL' xs k = aux xs k (L.head xs)
     where
       aux _      0 _  = [[]]
       aux []     _ _  = []
       aux (x:xs) k' x'
-        | k == k' || x > x' = fmap (x:) (aux xs (k'-1) x) ++ aux xs k' x'
+        | k == k' || x > x' = fmap (x:) xss `Monoid.mappend` aux xs k' x'
         | otherwise         = aux xs k' x'
+        where
+          xss = aux xs (k'-1) x
+
+  {-|
+    'increasingsByL p k' return the list of all increasing subsequences
+    of length 'k' of the permutation 'p'.
+  -}
+  increasingsByL :: Permutation.Permutation ->  Int -> [Permutation.Permutation]
+  increasingsByL (Permutation.Permutation xs) k = fmap Permutation.fromListUnsafe (increasingsByL' xs k)
 
   {-|
     'partitionsIncreasingsByL xs ks' returns all partitions of 'xs' into |ks|
     increasing subsequences of length ks = [k1, k2, ..., kp].
   -}
   partitionsIncreasingsByL :: Permutation.Permutation -> IntPartition.IntPartition -> [[Permutation.Permutation]]
-  partitionsIncreasingsByL p intPartition = aux xs ls
+  partitionsIncreasingsByL p intPartition = fmap Permutation.fromListUnsafe <$> aux xs ls
     where
       xs = Permutation.toList p
+
       ls = IntPartition.toList intPartition
 
       aux [] []     = [[]]
       aux [] _      = []
       aux _  []     = []
-      aux xs (l:ls) = fmap (fmap Permutation.fromListUnsafe) ps
-        where
-          ps = [is:iss | is  <- increasingsByL xs l, iss <- aux (xs L.\\ is) ls]
+      aux xs (l:ls) = [is:iss |
+                       is  <- increasingsByL' xs l,
+                       iss <- aux (xs L.\\ is) ls]
 
   {-|
     'isClassLeader xss' returns 'True' if and only if xss is composed of
@@ -76,28 +89,30 @@ where
     'partitionsIncreasings p n' return all partitions of permutation 'p' into 'k'
     increasing subsequences.
   -}
-  partitionsIncreasings :: Permutation -> Int -> [[Permutation]]
-  partitionsIncreasings p k
+  partitionsIncreasings :: Permutation.Permutation -> Int -> [[Permutation.Permutation]]
+  partitionsIncreasings p@(Permutation.Permutation xs) k
     | Stringology.lenLongestDecreasingSub p > k = []
     | otherwise                                 = aux xs k
     where
-      aux xs k = [fmap Permutation.fromListUnsafe ip' |
+      aux xs k = [pPartition |
                   intPartition <- IntPartition.intPartitionsByL n k,
                   pPartition   <- partitionsIncreasingsByL p intPartition,
-                  isClassLeader psPartition]
+                  isClassLeader pPartition]
       n = Permutation.length p
 
   {-|
     'greedyPartitionIncreasings xs f' return a partition of xs into increasing
-    subsequences by repeatidily calling function 'f' on the remaining subsequence.
+    subsequences by repeatedly calling function 'f' on the remaining subsequence.
   -}
   greedyPartitionIncreasings :: (Permutation.Permutation -> Permutation.Permutation) -> Permutation.Permutation -> [Permutation.Permutation]
-  greedyPartitionIncreasings f (Permutation.Permutation xs) = aux [] xs
+  greedyPartitionIncreasings f = aux []
     where
-      aux acc [] = Permutation.fromListUnsafe acc
-      aux acc xs = aux (xs':acc) (xs L.\\ xs')
+      aux acc (Permutation.Permutation []) = acc
+      aux acc p                            = aux (q1:acc) q2
         where
-          xs' = f xs
+          q1  = f p
+
+          q2 = p Permutation.\\ q1
 
   {-|
     'greedyPartitionIncreasings1' takes a list 'xs'. It greedily computes a partition

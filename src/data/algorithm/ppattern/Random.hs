@@ -15,8 +15,6 @@ module Data.Algorithm.PPattern.Random
   randChoose
 , randSelect
 , randPermutation
-, randPermutation'
-, randIntPartitionByL
 , randKIncreasingByL
 , randShuffle
 )
@@ -64,15 +62,6 @@ where
   -}
   randPermutation :: R.RandomGen g => [a] -> g -> ([a], g)
   randPermutation xs = randSelect xs (L.length xs)
-
-  {-|
-    'randIntPartitionByL' takes two integers 'n' and 'k', and a generator 'g'.
-    It returns a random 'k'-partition of '[1..n]', together with a new generator.
-  -}
-  randIntPartitionByL :: (R.RandomGen g) => Int -> Int -> g -> ([Int], g)
-  randIntPartitionByL n k g = (L.head ips, g')
-    where
-      (ips, g') = randSelect (IntPartition.intPartitionsByL n k) 1 g
 
   {-|
     'randShuffle' takes a list of lists 'xss' and a generator 'g', and

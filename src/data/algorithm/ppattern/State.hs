@@ -12,7 +12,9 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.State
 (
-  State
+  State(..)
+  ---
+, mkState
 )
 where
 
@@ -30,4 +32,4 @@ where
 
   -}
   mkState :: Struct.Struct -> Struct.Struct -> [CPointCPointLink.CPointCPointLink] -> State
-  mkState s t ls = State {src=s, trgt=t, links=ls} 
+  mkState s t ls = State {src=s, trgt=t, links=ls}

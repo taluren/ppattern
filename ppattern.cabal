@@ -44,6 +44,7 @@ library
     Data.Algorithm.PPattern.CPointCPointLink
     Data.Algorithm.PPattern.Struct
     Data.Algorithm.PPattern.State
+    Data.Algorithm.PPattern
 
 executable ppattern
   main-is:             Main.hs

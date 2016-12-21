@@ -34,7 +34,7 @@ where
     'mkPoint' mks a point from two integers 'x' and 'y'.
   -}
   mkPoint :: Int -> Int -> Point
-  mkPoint x y = Point x y
+  mkPoint = Point
 
   {-|
     'xCoord' returns the x-coordinate of a point.

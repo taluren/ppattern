@@ -13,7 +13,6 @@ commentary with @some markup@.
 module Data.Algorithm.PPattern.CPoint
 (
   CPoint(..)
-, Color
   --
 , mkCPoint
 , mkCPoint'
@@ -40,7 +39,7 @@ where
     'mkPoint'' makes a colored point from two integer coordinates and a color.
   -}
   mkCPoint' :: Int -> Int -> Color.Color -> CPoint
-  mkCPoint' x y c = p c
+  mkCPoint' x y = mkCPoint p
     where
       p = Point.mkPoint x y
 
