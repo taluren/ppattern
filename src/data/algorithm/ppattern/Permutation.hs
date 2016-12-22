@@ -216,8 +216,10 @@ where
     subsequences by repeatedly calling function 'f' on the remaining subsequence.
   -}
   greedyPartitionIncreasings :: (Permutation -> Permutation) -> Permutation -> [Permutation]
-  greedyPartitionIncreasings f = aux []
+  greedyPartitionIncreasings f = g . aux []
     where
+      g = L.sortBy (flip compare `Fun.on` Data.Algorithm.PPattern.Permutation.length)
+
       aux acc (Permutation []) = acc
       aux acc p                = aux (q1:acc) q2
         where
