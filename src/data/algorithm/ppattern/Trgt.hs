@@ -29,15 +29,12 @@ where
   import qualified Data.List       as L
   import qualified Data.Map.Strict as Map
 
-  import qualified Data.Algorithm.PPattern.Permutation as Permutation
   import qualified Data.Algorithm.PPattern.CPoint      as CPoint
-  import qualified Data.Algorithm.PPattern.Point       as Point
   import qualified Data.Algorithm.PPattern.Color       as Color
-  import qualified Data.Algorithm.PPattern.PointMap    as PointMap
   import qualified Data.Algorithm.PPattern.ColorMap    as ColorMap
 
   -- | Trgt data
-  newtype Trgt = Trgt ([CPoint.CPoint],  ColorMap.ColorMap)
+  newtype Trgt = Trgt ([CPoint.CPoint], ColorMap.ColorMap)
                  deriving (Show)
 
   {-|
@@ -45,19 +42,19 @@ where
     mapping.
   -}
   mkTrgt :: [CPoint.CPoint] -> ColorMap.ColorMap -> Trgt
-  mkTrgt cps m = Struct (cps, m)
+  mkTrgt cps m = Trgt (cps, m)
 
   {-|
     The 'cPoints' function returns the colored points stored in 'trgt'.
   -}
   cPoints :: Trgt -> [CPoint.CPoint]
-  cPoints Trgt (cPoints, _) = cPoints
+  cPoints (Trgt (cps, _)) = cps
 
   {-|
     The 'nextMap' function returns the next map.
   -}
   nextMaps :: Trgt -> ColorMap.ColorMap
-  nextMaps Trgt (_, m) = m
+  nextMaps (Trgt (_, m)) = m
 
   {-|
     The 'colors' function returns the list of all colors in the target.
@@ -68,5 +65,5 @@ where
   {-|
     The 'nbColors' function returns the number of colors in the target.
   -}
-  nbColors :: Trgt -> [Color.Color]
+  nbColors :: Trgt -> Int
   nbColors = L.length . colors

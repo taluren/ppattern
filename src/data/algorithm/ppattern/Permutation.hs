@@ -12,35 +12,46 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.Permutation
 (
+  -- * The @T@ type
   T
+
+  -- * The @Permutation@ type
 , Permutation(..)
-  ---
 , fromList
 , fromListUnsafe
-  ---
 , mkEmpty
+, reduce
+
+  -- * Monotonic permutations
 , mkIncreasing
 , mkDecreasing
-  ---
+
+  -- * Conversions
 , toList
-  ---
-, reduce
-  ---
+
+  -- * Querying
 , Data.Algorithm.PPattern.Permutation.length
+
   ---
 , diff
-  ---
+
+  -- * Enumerating subsequences
+, increasingsByL
+
+  -- * Partitioning
 , partitionsIncreasings
 , greedyIncreasing1
 , greedyPartitionIncreasings1
 , greedyIncreasing2
 , greedyPartitionIncreasings2
-  ---
+
+  -- * LCS
 , longestIncreasingSub
 , lenLongestIncreasingSub
 , longestDecreasingSub
 , lenLongestDecreasingSub
-  ---
+
+  -- * Random
 , randPermutation
 , randPermutation'
 , randKIncreasing
@@ -49,21 +60,19 @@ module Data.Algorithm.PPattern.Permutation
 where
 
   import qualified Data.List               as L
-  import qualified Data.Foldable           as Fold
   import qualified Data.Tuple              as T
-  import qualified Data.Set                as Set
   import qualified Data.Monoid             as Monoid
   import qualified Data.Function           as Fun
   import qualified System.Random           as R
   import qualified Data.Algorithm.Patience as Patience
-  import Control.Applicative
 
   import qualified Data.Algorithm.PPattern.Random       as Random
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
 
+  -- | Permutation of integers.
   type T = Int
 
-  newtype Permutation = Permutation [T] deriving (Show, Eq, Ord)
+  newtype Permutation = Permutation [T] deriving (Eq, Ord, Show, Read)
 
   {-|
     'fromList xs' construct a reduced permutation from list xs.
@@ -100,28 +109,6 @@ where
   toList (Permutation xs) = xs
 
   {-|
-    'preIdx p' returns the pre-indexed form of the permutation 'p'.
-
-    λ: preIdx $ fromListUnsafe []
-    []
-    λ: preIdx $ fromListUnsafe [4,2,1,3]
-    [(1,4),(2,2),(3,1),(4,3)]
-  -}
-  preIdx :: Permutation -> [(Integer, T)]
-  preIdx  = L.zip [1..] . toList
-
-  {-|
-    'postIdx p' returns the post-indexed form of the permutation 'p'.
-
-    λ: postIdx $ fromListUnsafe []
-    []
-    λ: postIdx $ fromListUnsafe [4,2,1,3]
-    [(4,1),(2,2),(1,3),(3,4)]
-  -}
-  postIdx :: Permutation -> [(T, Integer)]
-  postIdx = flip L.zip [1..] . toList
-
-  {-|
     'reduce p' returns the reduced permutation of permutation 'p'.
 
     λ: reduce []
@@ -132,11 +119,12 @@ where
     [3,5,1,4,2]
   -}
   reduce :: Permutation -> Permutation
-  reduce = fromListUnsafe . get . sortByIdx . L.zip [1..] . sortByVal . L.zip [1..] . toList
+  reduce = fromListUnsafe . get . sortByIdx . L.zip is . sortByVal . L.zip is . toList
     where
       sortByVal = L.sortBy (compare `Fun.on` T.snd)
       sortByIdx = L.sortBy (compare `Fun.on` (T.fst . T.snd))
       get       = fmap T.fst
+      is        = [1..] :: [T]
 
 
   {-|
@@ -151,7 +139,7 @@ where
   diff :: Permutation -> Permutation -> Permutation
   diff p q = fromListUnsafe zs
     where
-      zs = (toList p) L.\\ (toList q)
+      zs = toList p L.\\ toList q
 
   {-|
     'increasingsByL xs k' return the list of all increasing subsequences
@@ -159,15 +147,16 @@ where
   -}
   increasingsByL' :: [Int] ->  Int -> [[Int]]
   increasingsByL' [] _ = []
-  increasingsByL' xs k = aux xs k (L.head xs)
+  increasingsByL' xs k = increasingsByLAux' xs k k (L.head xs)
+
+  increasingsByLAux' ::  [Int] ->  Int -> Int -> Int -> [[Int]]
+  increasingsByLAux' _      _ 0 _  = [[]]
+  increasingsByLAux' []     _ _ _  = []
+  increasingsByLAux' (x:xs) k k' x'
+    | k == k' || x > x' = fmap (x:) xss `Monoid.mappend` increasingsByLAux' xs k k' x'
+    | otherwise         = increasingsByLAux' xs k k' x'
     where
-      aux _      0 _  = [[]]
-      aux []     _ _  = []
-      aux (x:xs) k' x'
-        | k == k' || x > x' = fmap (x:) xss `Monoid.mappend` aux xs k' x'
-        | otherwise         = aux xs k' x'
-        where
-          xss = aux xs (k'-1) x
+      xss = increasingsByLAux' xs k (k'-1) x
 
   {-|
     'increasingsByL p k' return the list of all increasing subsequences
@@ -181,18 +170,18 @@ where
     increasing subsequences of length ks = [k1, k2, ..., kp].
   -}
   partitionsIncreasingsByL :: Permutation -> IntPartition.IntPartition -> [[Permutation]]
-  partitionsIncreasingsByL p intPartition = fmap fromListUnsafe <$> aux xs ls
+  partitionsIncreasingsByL p intPartition = fmap fromListUnsafe <$> partitionsIncreasingsByLAux xs ls
     where
       xs = toList p
-
       ls = IntPartition.toList intPartition
 
-      aux [] []     = [[]]
-      aux [] _      = []
-      aux _  []     = []
-      aux xs (l:ls) = [is:iss |
-                       is  <- increasingsByL' xs l,
-                       iss <- aux (xs L.\\ is) ls]
+  partitionsIncreasingsByLAux :: [T] -> [Int] -> [[[T]]]
+  partitionsIncreasingsByLAux [] []     = [[]]
+  partitionsIncreasingsByLAux [] _      = []
+  partitionsIncreasingsByLAux _  []     = []
+  partitionsIncreasingsByLAux xs (l:ls) = [is:iss |
+                   is  <- increasingsByL' xs l,
+                   iss <- partitionsIncreasingsByLAux (xs L.\\ is) ls]
 
   {-|
     'isClassLeader xss' returns 'True' if and only if xss is composed of
@@ -209,14 +198,17 @@ where
     increasing subsequences.
   -}
   partitionsIncreasings :: Permutation -> Int -> [[Permutation]]
-  partitionsIncreasings p@(Permutation xs) k
+  partitionsIncreasings p k
     | lenLongestDecreasingSub p > k = []
-    | otherwise                                 = aux xs k
+    | otherwise                     = partitionsIncreasingsAux p k
+
+
+  partitionsIncreasingsAux :: Permutation -> Int -> [[Permutation]]
+  partitionsIncreasingsAux p k = [pPartition |
+                                  intPartition <- IntPartition.intPartitionsByL n k,
+                                  pPartition   <- partitionsIncreasingsByL p intPartition,
+                                  isClassLeader pPartition]
     where
-      aux xs k = [pPartition |
-                  intPartition <- IntPartition.intPartitionsByL n k,
-                  pPartition   <- partitionsIncreasingsByL p intPartition,
-                  isClassLeader pPartition]
       n = Data.Algorithm.PPattern.Permutation.length p
 
   {-|
@@ -245,12 +237,13 @@ where
   -}
   greedyIncreasing1 :: Permutation -> Permutation
   greedyIncreasing1 (Permutation [])     = mkEmpty
-  greedyIncreasing1 (Permutation (x:xs)) = fromListUnsafe $ x:aux x xs
-    where
-      aux _ []      = []
-      aux x (x':xs)
-        | x' > x    = x':aux x' xs
-        | otherwise =    aux x  xs
+  greedyIncreasing1 (Permutation (x:xs)) = fromListUnsafe $ x:greedyIncreasing1Aux x xs
+
+  greedyIncreasing1Aux :: T -> [T] -> [T]
+  greedyIncreasing1Aux _ []      = []
+  greedyIncreasing1Aux x (x':xs)
+    | x' > x    = x':greedyIncreasing1Aux x' xs
+    | otherwise =    greedyIncreasing1Aux x  xs
 
   {-|
     'greedyPartitionIncreasings1' takes a list 'xs'. It greedily computes a partition
@@ -273,7 +266,8 @@ where
   longestIncreasingSub :: Permutation -> Permutation
   longestIncreasingSub = post . Patience.longestIncreasing . pre
     where
-      pre  = flip L.zip [1..] . toList
+      is   = [1..] :: [Int]
+      pre  = flip L.zip is . toList
       post =  fromListUnsafe . L.map T.fst . L.reverse
 
   {-|
@@ -289,7 +283,8 @@ where
   longestDecreasingSub :: Permutation -> Permutation
   longestDecreasingSub = post . Patience.longestIncreasing . pre
     where
-      pre  = flip L.zip [1..] . L.reverse . toList
+      is   = [1..] :: [Int]
+      pre  = flip L.zip is . L.reverse . toList
       post = fromListUnsafe . L.reverse . L.map T.fst . L.reverse
 
   {-|

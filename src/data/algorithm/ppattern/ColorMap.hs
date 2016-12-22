@@ -12,20 +12,26 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.ColorMap
 (
+  -- * The @ColorMap@ type
   ColorMap
-  ---
+
+  -- * Querying
 , colors
 , nbColors
-  ---
-, findNext
+, next
+
+  -- * Updating
+, updateForNext
 )
 where
 
+  import qualified Data.List       as L
   import qualified Data.Map.Strict as Map
 
-  import qualified Data.Algorithm.PPattern.PointMap as PointMap
-  import qualified Data.Algorithm.PPattern.Color    as Color
-
+  import qualified Data.Algorithm.PPattern.Permutation as Permutation
+  import qualified Data.Algorithm.PPattern.Point       as Point
+  import qualified Data.Algorithm.PPattern.PointMap    as PointMap
+  import qualified Data.Algorithm.PPattern.Color       as Color
 
   type ColorMap = Map.Map Color.Color PointMap.PointMap
 
@@ -34,6 +40,7 @@ where
   -}
   colors :: ColorMap -> [Color.Color]
   colors = Map.keys
+
   {-|
 
   -}
@@ -43,8 +50,8 @@ where
   {-|
 
   -}
-  next :: Color.Color -> Point.Point -> ColorMap -> Maybe (Point.Point)
-  next c p m = Map.lookup c m >>= PointMap.next x
+  next :: Color.Color -> Point.Point -> ColorMap -> Maybe Point.Point
+  next c p m = Map.lookup c m >>= PointMap.next p
 
   {-|
 

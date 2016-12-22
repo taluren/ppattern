@@ -23,10 +23,11 @@ where
   import qualified Data.Tuple as T
 
   removeAt :: (Eq a, Num a) => [b] -> a -> (b, [b])
+  removeAt []     _ = error "Cannot removeAt an empty list"
   removeAt (x:xs) 0 = (x, xs)
   removeAt (x:xs) n = (x', x:xs')
-	 where
-     (x', xs') = removeAt xs (n-1)
+    where
+      (x', xs') = removeAt xs (n-1)
 
   removeAt' :: (Eq a, Num a) => [b] -> a -> [b]
   removeAt' xs i = T.snd $ removeAt xs i
@@ -38,7 +39,7 @@ where
   sortPairFst :: Ord a => [(a, b)] -> [(a, b)]
   sortPairFst = L.sortBy comp
     where
-      comp t1 t2 = (T.fst t1) `compare` (T.fst t2)
+      comp t1 t2 = T.fst t1 `compare` T.fst t2
 
   {-|
     The 'square' function squares an integer.
@@ -47,4 +48,4 @@ where
   sortPairSnd :: Ord b => [(a, b)] -> [(a, b)]
   sortPairSnd = L.sortBy comp
     where
-      comp t1 t2 = (T.snd t1) `compare` (T.snd t2)
+      comp t1 t2 = T.snd t1 `compare` T.snd t2

@@ -70,6 +70,7 @@ where
   {-|
   -}
   popUnsafe :: Stack a -> Stack a
+  popUnsafe (Stack [])     = error "Cannot pop empty stack"
   popUnsafe (Stack (_:xs)) = Stack xs
 
   {-|
@@ -88,4 +89,5 @@ where
   {-|
   -}
   topUnsafe :: Stack a -> a
+  topUnsafe (Stack [])    = error "Cannot top empty stack"
   topUnsafe (Stack (x:_)) = x

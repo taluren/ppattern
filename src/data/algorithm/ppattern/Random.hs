@@ -26,7 +26,6 @@ where
 
   import qualified Data.Algorithm.PPattern.Tools                   as Tools
   import qualified Data.Algorithm.PPattern.Combinatorics           as Combinatorics
-  import qualified Data.Algorithm.PPattern.IntPartition            as IntPartition
 
   {-|
     'randChoose' takes a list 'xs', an integer 'k' and a generator 'g', and
@@ -44,15 +43,16 @@ where
     'xs', together with a new generator.
   -}
   randSelect :: R.RandomGen g => [a] -> Int -> g -> ([a], g)
-  randSelect xs = aux xs []
-     where
-        aux xs acc k g
-          | k == 0    = (acc, g)
-          | otherwise = aux (Tools.removeAt' xs i) (x:acc) (k-1) g'
-          where
-            n       = L.length xs
-            (i, g') = R.randomR (0, n-1) g
-            x       = xs L.!! i
+  randSelect xs = randSelectAux xs []
+
+  randSelectAux :: R.RandomGen g => [a] -> [a] -> Int -> g -> ([a], g)
+  randSelectAux xs acc k g
+    | k == 0    = (acc, g)
+    | otherwise = randSelectAux (Tools.removeAt' xs i) (x:acc) (k-1) g'
+    where
+      n       = L.length xs
+      (i, g') = R.randomR (0, n-1) g
+      x       = xs L.!! i
 
   {-|
     'randPermutation' takes a list 'xs' and a generator 'g', and
@@ -67,16 +67,20 @@ where
     result), together with a new generator.
   -}
   randShuffle :: R.RandomGen g => [[a]] -> g -> ([a], g)
-  randShuffle xss = aux xss []
+  randShuffle xss = randShuffleAux xss []
+
+  randShuffleAux :: R.RandomGen g => [[a]] -> [a] -> g -> ([a], g)
+  randShuffleAux []  acc g = (L.reverse acc, g)
+  randShuffleAux xss acc g = randShuffleAux xss'' (x:acc) g'
     where
-      aux []  acc g = (L.reverse acc, g)
-      aux xss acc g = aux xss'' (x:acc) g'
-        where
-          (xss', g') = randPermutation xss g
-          (x, xss'') = aux' xss'
-            where
-              aux' ([x]:xss)     = (x, xss)
-              aux' ((x:xs):xss') = (x, xs:xss')
+      (xss', g') = randPermutation xss g
+      (x, xss'') = randShuffleAux' xss'
+
+  randShuffleAux' :: [[a]] -> (a, [[a]])
+  randShuffleAux' []            = error "We shouldn't be there"
+  randShuffleAux' ([]:_)        = error "We shouldn't be there"
+  randShuffleAux' ([x]:xss)     = (x, xss)
+  randShuffleAux' ((x:xs):xss') = (x, xs:xss')
 
   {-|
     'randKIncreasingByL' takes a list of integers 'ls' and a generator.
@@ -86,9 +90,11 @@ where
      partition. A new generator is also returned.
   -}
   randKIncreasingByL :: R.RandomGen g => [Int] -> g -> ([[Int]], g)
-  randKIncreasingByL ls = aux ls [1..Fold.sum ls] []
+  randKIncreasingByL ls = randKIncreasingByLAux ls [1..Fold.sum ls] []
+
+  randKIncreasingByLAux :: R.RandomGen g => [Int] -> [Int] -> [[Int]] -> g -> ([[Int]], g)
+  randKIncreasingByLAux []     (_:_) _   _ = error "We shouldn't be there"
+  randKIncreasingByLAux []     []    acc g = (acc, g)
+  randKIncreasingByLAux (l:ls) xs    acc g = randKIncreasingByLAux ls (xs L.\\ xs') (xs':acc) g'
     where
-      aux []     [] acc g = (acc, g)
-      aux (l:ls) xs acc g = aux ls (xs L.\\ xs') (xs':acc) g'
-        where
-          (xs', g') = randChoose xs l g
+      (xs', g') = randChoose xs l g

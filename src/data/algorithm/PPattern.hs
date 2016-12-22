@@ -21,13 +21,13 @@ where
   import qualified Data.Map.Strict as Map
   import qualified Data.Tuple.HT   as THT
   import qualified Data.Foldable   as Fold
-  import qualified Data.Function   as Fun
   import Data.Maybe
 
   import qualified Data.Algorithm.PPattern.Permutation as Permutation
   import qualified Data.Algorithm.PPattern.Point       as Point
   import qualified Data.Algorithm.PPattern.CPoint      as CPoint
   import qualified Data.Algorithm.PPattern.Color       as Color
+  import qualified Data.Algorithm.PPattern.Trgt        as Trgt
   import qualified Data.Algorithm.PPattern.PointMap    as PointMap
   import qualified Data.Algorithm.PPattern.ColorMap    as ColorMap
   import qualified Data.Algorithm.PPattern.CPointLink  as CPointLink
@@ -47,20 +47,22 @@ where
       m = Map.empty
 
   {-|
-    Helper function for 'mkNextIncreasing'.
+    Helper functions for 'mkNextIncreasing'.
   -}
   mkNextIncreasingAux :: [Point.Point] -> Stack.Stack Point.Point -> PointMap.PointMap -> PointMap.PointMap
   mkNextIncreasingAux []     _                  m = m
   mkNextIncreasingAux (p:ps) s@(Stack.Stack []) m = mkNextIncreasingAux ps (Stack.push s p) m
-  mkNextIncreasingAux ps     s                  m = aux ps s m
+  mkNextIncreasingAux ps     s                  m = mkNextIncreasingAux' ps s m
+
+  mkNextIncreasingAux' :: [Point.Point] -> Stack.Stack Point.Point -> PointMap.PointMap -> PointMap.PointMap
+  mkNextIncreasingAux' ps     s@(Stack.Stack [])     m = mkNextIncreasingAux ps s m
+  mkNextIncreasingAux' []     (Stack.Stack (_ : _))  _ = error "We shouldn't be there"
+  mkNextIncreasingAux' (p:ps) s@(Stack.Stack (p':_)) m
+    | x' < x    = mkNextIncreasingAux' (p:ps) (Stack.popUnsafe s) (Map.insert p' p m)
+    | otherwise = mkNextIncreasingAux ps (Stack.push s p) m
     where
-      aux ps     s@(Stack.Stack [])       m = mkNextIncreasingAux ps s m
-      aux (p:ps) s@(Stack.Stack (p':ps')) m
-        | x' < x    = aux (p:ps) (Stack.popUnsafe s) (Map.insert p' p m)
-        | otherwise = mkNextIncreasingAux ps (Stack.push s p) m
-        where
-          x  = Point.xCoord p
-          x' = Point.xCoord p'
+      x  = Point.xCoord p
+      x' = Point.xCoord p'
 
   {-|
     'mkNextIncreasings' takes a list of colored points. It returns a map that
@@ -76,7 +78,7 @@ where
 
   -}
   mkNextIncreasingsAux :: [CPoint.CPoint] -> [Color.Color] -> ColorMap.ColorMap -> ColorMap.ColorMap
-  mkNextIncreasingsAux cps []     m = m
+  mkNextIncreasingsAux _ []     m = m
   mkNextIncreasingsAux cps (c:cs) m = mkNextIncreasingsAux cps cs m'
     where
       cps' = L.filter (\cp -> CPoint.color cp == c) cps
@@ -150,29 +152,29 @@ where
     The 'search' function takes two permutations 'p' and 'q', and it returns
     (if possible) an order-isomorphic occurrence of 'p' in 'q'.
   -}
-  search :: Permutation.Permutation -> Permutation.Permutation -> Maybe [CPointLink]
-  search p q = SearchAux srcs trgt
+  search :: Permutation.Permutation -> Permutation.Permutation -> Maybe [CPointLink.CPointLink]
+  search p q = searchAux srcs trgt
     where
       -- make target structure
       trgt = mkTrgt q
 
       -- make all source structures
-      srcs = mkSrc p (ColorMap.nbColors trgt)
+      srcs = mkSrc p (Trgt.nbColors trgt)
 
-  searchAux :: [[CPoint.CPoint]] -> Trgt.Trgt -> Maybe [CPointLink]
+  searchAux :: [[CPoint.CPoint]] -> Trgt.Trgt -> Maybe [CPointLink.CPointLink]
   searchAux []               _    = Nothing
   searchAux (srcCps:srcCpss) trgt = case doSearch srcCps trgt of
-                                      Nothing -> aux srcCpss trgt
+                                      Nothing -> searchAux srcCpss trgt
                                       Just q  -> Just q
 
   {-|
 
   -}
   doSearch :: [CPoint.CPoint] -> Trgt.Trgt -> Maybe [CPointLink.CPointLink]
-  doSearch srcCps trgt = ls >>= mkState >>= doSearchAux
+  doSearch src trgt = ls >>= mkState >>= doSearchAux
     where
-      ls          = leftmostCPointMapping srcCPoints (Trgt.cPoints trgt)
-      mkState m   = Just (State.mkState ls (Trgt.nextMaps trgt))
+      ls          = leftmostCPointMapping src (Trgt.cPoints trgt)
+      mkState ls' = Just (State.mkState (Trgt.nextMaps trgt) ls')
 
   {-|
     The 'doSearchAux' performs one step of the algorithm (resolve type 1 and
@@ -192,14 +194,6 @@ where
   {-|
 
   -}
-  getOccurrence :: [CPointLink.CPointLink] -> Permutation.Permutation
-  getOccurrence = Permutation.fromListUnsafe . fmap f
-    where
-      f = Point.yCoord . CPoint.point . CPointLink.trgt
-
-  {-|
-
-  -}
   resolve1 :: State.State -> Maybe State.State
   resolve1 s = resolve1Aux (State.links s) [] (State.nextMaps s)
     where
@@ -209,21 +203,34 @@ where
         | CPointLink.biChromaticOrderConflict l1 l2 = update1 (l1:l2:ls)  acc      m
         | otherwise                                 = resolve1Aux (l2:ls) (l1:acc) m
 
-      update1 (l1:l2:ls) acc m = ColorMap.updateForNext c p x m >>= update1Aux
+      -- Update CpointLink l2.
+      update1 []         _   _ = error "We shouldn't be there"
+      update1 [_]        _   _ = error "We shouldn't be there"
+      update1 (l1:l2:ls) acc m = ColorMap.updateForNext c trgt2 x m >>= update1Aux
         where
-          c    = CPointLink.color l2
-          src  = CPointLink.src   l2
-          trgt = CPointLink.trgt  l2
+          c      = CPointLink.color l2
+          cSrc2  = CPointLink.src  l2
+          cTrgt2 = CPointLink.trgt l2
+          trgt2  = CPoint.point cTrgt2
 
-          x = Point.xCoord (CPointLink.trgt l1)
+          -- New threshold.
+          cSrc1 = CPointLink.trgt l1
+          src1  = CPoint.point cSrc1
+          x     = Point.xCoord src1
 
-          updateLink l' m = ColorMap.next c trgt m' >>= updateLinkAux
+          -- resolve CPointLink l2
+          updateLink m' = updateLinkAux (ColorMap.next c trgt2 m')
             where
-              updateLinkAux = CPointLink.mkCPointLink src 
+              updateLinkAux Nothing       = error "We shouldn't be there !"
+              updateLinkAux (Just trgt2') = CPointLink.mkCPointLinkUnsafe cSrc2 cTrgt2'
+                where
+                  cTrgt2' = CPoint.mkCPoint trgt2' c
 
-          update1Aux m p' = resolve1Aux (updateLink m:ls) (l1:acc) m
+          -- keep on resolving conflict type 1
+          update1Aux m' = resolve1Aux (updateLink m':ls) (l1:acc) m'
 
+  {-|
 
-
+  -}
   resolve2 :: State.State -> Maybe State.State
   resolve2 s = Just s

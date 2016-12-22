@@ -16,9 +16,6 @@ module Data.Algorithm.PPattern.Combinatorics
 )
 where
 
-  import qualified Data.List as L
-  import qualified Data.Set  as Set
-
   {-|
     The 'partitionsByLength' function returns all k-partitions of an integer.
   -}

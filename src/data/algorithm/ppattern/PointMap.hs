@@ -17,28 +17,32 @@ module Data.Algorithm.PPattern.PointMap
 
   -- * Querying
 , next
+
+  -- * Updating
+, updateForNext
 )
 where
 
   import qualified Data.Map.Strict as Map
 
-  import qualified Data.Algorithm.PPattern.Point as Point
+  import qualified Data.Algorithm.PPattern.Permutation as Permutation
+  import qualified Data.Algorithm.PPattern.Point       as Point
 
   type PointMap = Map.Map Point.Point Point.Point
 
 
   {-|
   -}
-  next :: Point.Point -> PointMap -> Maybe (Point.Point)
+  next :: Point.Point -> PointMap -> Maybe Point.Point
   next = Map.lookup
 
   {-|
 
   -}
-  updateForNext :: Point.Point -> Permutation.T -> ColorMap -> Maybe ColorMap
+  updateForNext :: Point.Point -> Permutation.T -> PointMap -> Maybe PointMap
   updateForNext p x m = aux p
     where
-      aux p' = Map.lookup p m >>= aux'
+      aux p' = Map.lookup p' m >>= aux'
 
       aux' p'
         | Point.xCoord p' > x = Just (Map.update (\_ -> Just p') p m)

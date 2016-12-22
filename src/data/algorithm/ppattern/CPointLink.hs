@@ -17,9 +17,12 @@ module Data.Algorithm.PPattern.CPointLink
 , mkCPointLink
 , mkCPointLinkUnsafe
 
-  --
+  -- * Querying
 , color
-  --
+, getSrc
+, getTrgt
+
+  -- * Querying two @CPointLink@
 , monoChromatic
 , biChromatic
 , orderConflict
@@ -29,9 +32,10 @@ module Data.Algorithm.PPattern.CPointLink
 )
 where
 
-  import qualified Data.Algorithm.PPattern.Point  as Point
-  import qualified Data.Algorithm.PPattern.CPoint as CPoint
-  import qualified Data.Algorithm.PPattern.Color  as Color
+  import qualified Data.Algorithm.PPattern.Permutation as Permutation
+  import qualified Data.Algorithm.PPattern.Point       as Point
+  import qualified Data.Algorithm.PPattern.CPoint      as CPoint
+  import qualified Data.Algorithm.PPattern.Color       as Color
 
   data CPointLink = CPointLink { src  :: {-# UNPACK #-} !CPoint.CPoint
                                , trgt :: {-# UNPACK #-} !CPoint.CPoint
@@ -40,15 +44,17 @@ where
     'mkCPointLink' makes a CPointLink object from two colored points with the
     the same color.
   -}
-  mkCPointLink :: CPoint.CPoint -> CPoint.CPoint -> CPointLink
-  mkCPointLink src trgt = CPointLink {src=src, trgt=trgt}
+  mkCPointLink :: CPoint.CPoint -> CPoint.CPoint -> Maybe CPointLink
+  mkCPointLink srcPoint trgtPoint
+    | CPoint.color srcPoint /= CPoint.color trgtPoint = Nothing
+    | otherwise                                       = Just (mkCPointLinkUnsafe srcPoint trgtPoint)
 
   {-|
     'mkCPointLink' makes a CPointLink object from two colored points with the
     the same color.
   -}
-  mkCPointLinkUnsafe :: CPoint.CPoint -> CPoint.CPoint -> Maybe CPointLink
-  mkCPointLinkUnsafe src trgt = CPointLink {src=src, trgt=trgt}
+  mkCPointLinkUnsafe :: CPoint.CPoint -> CPoint.CPoint -> CPointLink
+  mkCPointLinkUnsafe srcPoint trgtPoint = CPointLink {src=srcPoint, trgt=trgtPoint}
 
   {-|
     'color' return the color of a CPointLink.
@@ -100,3 +106,23 @@ where
 
   biChromaticValueConflict :: CPointLink -> CPointLink -> Bool
   biChromaticValueConflict l1 l2 = biChromatic l1 l2 && valueConflict l1 l2
+
+  {-|
+
+  -}
+  get :: (CPointLink -> CPoint.CPoint) -> [CPointLink] -> Permutation.Permutation
+  get f = Permutation.fromListUnsafe . fmap g
+    where
+      g = Point.yCoord . CPoint.point . f
+
+  {-|
+
+  -}
+  getSrc :: [CPointLink] -> Permutation.Permutation
+  getSrc = get src
+
+  {-|
+
+  -}
+  getTrgt :: [CPointLink] -> Permutation.Permutation
+  getTrgt = get trgt

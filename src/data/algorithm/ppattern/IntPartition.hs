@@ -15,11 +15,14 @@ module Data.Algorithm.PPattern.IntPartition
   IntPartition(..)
 , fromList
 , mkIntPartition
+
   --
 , toList
+
   --
 , intPartitions
 , nbIntPartitions
+
   --
 , intPartitionsByL
 , nbIntPartitionsByL
@@ -27,7 +30,6 @@ module Data.Algorithm.PPattern.IntPartition
 where
 
   import qualified Data.List as L
-  import Control.Applicative
 
   -- | Partition of integer.
   newtype IntPartition = IntPartition [Int]
@@ -87,18 +89,19 @@ where
     []
   -}
   intPartitionsByL :: Int -> Int -> [IntPartition]
-  intPartitionsByL n k = fromList <$> aux n k n
+  intPartitionsByL n k = fromList <$> intPartitionsByLAux n k n
+
+  intPartitionsByLAux :: Int -> Int -> Int -> [[Int]]
+  intPartitionsByLAux _ 0 _ = [[]]
+  intPartitionsByLAux n 1 _ = [[n]]
+  intPartitionsByLAux n k b
+    | n < k     = []
+    | n == k    = [L.replicate k 1]
+    | otherwise = L.concat [fmap (k':) (intPartitionsByLAux (n-k') (k-1) k') |
+                            k' <- [l..h]]
     where
-      aux _ 0 _ = [[]]
-      aux n 1 _ = [[n]]
-      aux n k b
-        | n < k     = []
-        | n == k    = [L.replicate k 1]
-        | otherwise = L.concat [fmap (k':) (aux (n-k') (k-1) k') |
-                                k' <- [l..h]]
-        where
-          l = fromIntegral (ceiling (fromIntegral n / fromIntegral k))
-          h = min (n-k+1) b
+      l = fromIntegral (ceiling ((fromIntegral n / fromIntegral k) :: Double) :: Int) 
+      h = min (n-k+1) b
 
   {-|
     'nbIntPartitionsByL n k' returns the number of ordered partitions of integer
