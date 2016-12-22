@@ -12,15 +12,17 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.Trgt
 (
+  -- * The @Trgt@ type
   Trgt(..)
-  --
 , mkTrgt
-  ---
+
+-- * Accessors
+, nextMaps
+, cPoints
+
+-- * Querying
 , colors
 , nbColors
-  ---
-, nextMap
-, nextByColorMap
 )
 where
 
@@ -29,27 +31,42 @@ where
 
   import qualified Data.Algorithm.PPattern.Permutation as Permutation
   import qualified Data.Algorithm.PPattern.CPoint      as CPoint
+  import qualified Data.Algorithm.PPattern.Point       as Point
   import qualified Data.Algorithm.PPattern.Color       as Color
   import qualified Data.Algorithm.PPattern.PointMap    as PointMap
   import qualified Data.Algorithm.PPattern.ColorMap    as ColorMap
 
+  -- | Trgt data
   newtype Trgt = Trgt ([CPoint.CPoint],  ColorMap.ColorMap)
                  deriving (Show)
 
   {-|
-    'mkPoint' mks a point from two integers 'x' and 'y'.
+    'mkTrgt' makes a target from a list of colored points 'cps' and a next
+    mapping.
   -}
   mkTrgt :: [CPoint.CPoint] -> ColorMap.ColorMap -> Trgt
   mkTrgt cps m = Struct (cps, m)
 
+  {-|
+    The 'cPoints' function returns the colored points stored in 'trgt'.
+  -}
   cPoints :: Trgt -> [CPoint.CPoint]
   cPoints Trgt (cPoints, _) = cPoints
 
-  nextMap :: Trgt -> ColorMap.ColorMap
-  nextMap Trgt (_, next) = next
+  {-|
+    The 'nextMap' function returns the next map.
+  -}
+  nextMaps :: Trgt -> ColorMap.ColorMap
+  nextMaps Trgt (_, m) = m
 
-  nextByColorMap :: Trgt -> Color.Color -> Maybe (PointMap.PointMap)
-  nextByColorMap trgt c = Map.lookup c (nextMap trgt)
+  {-|
+    The 'colors' function returns the list of all colors in the target.
+  -}
+  colors :: Trgt -> [Color.Color]
+  colors = Map.keys . nextMaps
 
-  next :: Trgt -> Color.Color -> Permutation.T -> Maybe (Point.Point)
-  next trgt c x = nextByColorMap trgt c >>= PointMap.next x
+  {-|
+    The 'nbColors' function returns the number of colors in the target.
+  -}
+  nbColors :: Trgt -> [Color.Color]
+  nbColors = L.length . colors

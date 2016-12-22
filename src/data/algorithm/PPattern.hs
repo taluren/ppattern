@@ -32,7 +32,6 @@ where
   import qualified Data.Algorithm.PPattern.ColorMap    as ColorMap
   import qualified Data.Algorithm.PPattern.CPointLink  as CPointLink
   import qualified Data.Algorithm.PPattern.State       as State
-  import qualified Data.Algorithm.PPattern.Struct      as Struct
   import qualified Data.Algorithm.PPattern.Stack       as Stack
 
   {-|
@@ -126,8 +125,10 @@ where
     is an increasing subsequence.
   -}
   mkSrc :: Permutation.Permutation -> Int -> [[CPoint.CPoint]]
-  mkSrc p k = aux $ Permutation.partitionsIncreasings p k
+  mkSrc p k = aux pis
     where
+      pis = Permutation.partitionsIncreasings p k
+
       aux []                     = []
       aux (partition:partitions) = cps:aux partitions
         where
@@ -138,11 +139,12 @@ where
     of a given permutation. It returns the next function for each color in the
     form of a map.
   -}
-  mkTrgt :: Permutation.Permutation -> ColorMap.ColorMap
-  mkTrgt p = mkNextIncreasings cps
+  mkTrgt :: Permutation.Permutation -> Trgt.Trgt
+  mkTrgt p = Trgt.mkTrgt cps next
     where
       partition = Permutation.greedyPartitionIncreasings1 p
       cps       = mkCPoints p (mapFromPartition partition)
+      next      = mkNextIncreasings cps
 
   {-|
     The 'search' function takes two permutations 'p' and 'q', and it returns
@@ -157,36 +159,36 @@ where
       -- make all source structures
       srcs = mkSrc p (ColorMap.nbColors trgt)
 
-  searchAux :: [[CPoint.CPoint]] -> ColorMap.ColorMap -> Maybe [CPointLink]
-  searchAux []         _    = Nothing
-  searchAux (src:srcs) trgt = case doSearch src trgt of
-                                Nothing -> aux srcs trgt
-                                Just q  -> Just q
+  searchAux :: [[CPoint.CPoint]] -> Trgt.Trgt -> Maybe [CPointLink]
+  searchAux []               _    = Nothing
+  searchAux (srcCps:srcCpss) trgt = case doSearch srcCps trgt of
+                                      Nothing -> aux srcCpss trgt
+                                      Just q  -> Just q
 
   {-|
 
   -}
-  doSearch :: [CPoint.CPoint] -> ColorMap.ColorMap  -> Maybe Maybe [CPointLink]
-  doSearch src trgt = mapping >>= mkState >>= doSearchAux
+  doSearch :: [CPoint.CPoint] -> Trgt.Trgt -> Maybe [CPointLink.CPointLink]
+  doSearch srcCps trgt = ls >>= mkState >>= doSearchAux
     where
-      srcCPoints  = Struct.cPoints srcStruct
-      trgtCPoints = Struct.cPoints trgtStruct
-      mapping     = leftmostCPointMapping srcCPoints trgtCPoints
-
-      mkState m   = Just (State.mkState srcStruct trgtStruct m)
+      ls          = leftmostCPointMapping srcCPoints (Trgt.cPoints trgt)
+      mkState m   = Just (State.mkState ls (Trgt.nextMaps trgt))
 
   {-|
-
+    The 'doSearchAux' performs one step of the algorithm (resolve type 1 and
+    type 2 conflicts). It iterates till fixed-point (returns Nothing in case
+    of failure).
   -}
-  doSearchAux :: State.State -> Maybe State.State
+  doSearchAux :: State.State -> Maybe [CPointLink.CPointLink]
   doSearchAux state = resolve1 state >>= resolve2 >>= loop
     where
-      loop state'
-        | links /= links' = doSearchAux state'
-        | otherwise       = Just state'
+      loop newState
+        | links /= newLinks = doSearchAux newState
+        | otherwise         = Just newLinks
         where
-          links  = State.links state
-          links' = State.links state'
+          links    = State.links state
+          newLinks = State.links newState
+
   {-|
 
   -}
@@ -199,18 +201,29 @@ where
 
   -}
   resolve1 :: State.State -> Maybe State.State
-  resolve1 s = aux (State.links s) [] (State.src s) (State.trgt s)
+  resolve1 s = resolve1Aux (State.links s) [] (State.nextMaps s)
     where
-      aux []         acc src trgt = Just (State.mkState src trgt (L.reverse acc))
-      aux [l]        acc src trgt = Just (State.mkState src trgt (L.reverse (l:acc)))
-      aux (l1:l2:ls) acc src trgt
-        | CPointLink.biChromaticOrderConflict l1 l2 = update1 (l1:l2:ls) acc src trgt
-        | otherwise                                 = aux (l2:ls) (l1:acc) src trgt
+      resolve1Aux []         acc m = Just (State.mkState m (L.reverse acc))
+      resolve1Aux [l]        acc m = Just (State.mkState m (L.reverse (l:acc)))
+      resolve1Aux (l1:l2:ls) acc m
+        | CPointLink.biChromaticOrderConflict l1 l2 = update1 (l1:l2:ls)  acc      m
+        | otherwise                                 = resolve1Aux (l2:ls) (l1:acc) m
 
-  {-|
+      update1 (l1:l2:ls) acc m = ColorMap.updateForNext c p x m >>= update1Aux
+        where
+          c    = CPointLink.color l2
+          src  = CPointLink.src   l2
+          trgt = CPointLink.trgt  l2
 
-  -}
-  update1 (l1:l2:ls) ls' src trgt = aux (Struct.next )
+          x = Point.xCoord (CPointLink.trgt l1)
+
+          updateLink l' m = ColorMap.next c trgt m' >>= updateLinkAux
+            where
+              updateLinkAux = CPointLink.mkCPointLink src 
+
+          update1Aux m p' = resolve1Aux (updateLink m:ls) (l1:acc) m
+
+
 
   resolve2 :: State.State -> Maybe State.State
-  resolve2 _ = Nothing
+  resolve2 s = Just s

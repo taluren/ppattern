@@ -12,12 +12,14 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.Point
 (
+  -- * The @Point@ type
   Point(..)
-  --
 , mkPoint
-  --
+
+  -- * Querying
 , xCoord
 , yCoord
+
   --
 , northWestDomination
 , northEastDomination
@@ -26,8 +28,9 @@ module Data.Algorithm.PPattern.Point
 )
 where
 
-  data Point = Point {-# UNPACK #-} !Int
-                     {-# UNPACK #-} !Int
+  -- | 2D point
+  data Point = Point {-# UNPACK #-} !Int -- ^ x coordinate
+                     {-# UNPACK #-} !Int -- ^ y coordinate
                      deriving (Show, Eq, Ord)
 
   {-|

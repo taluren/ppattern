@@ -12,9 +12,11 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.CPointLink
 (
+  -- * The @CPointLink@ type
   CPointLink(..)
-  --
 , mkCPointLink
+, mkCPointLinkUnsafe
+
   --
 , color
   --
@@ -32,16 +34,21 @@ where
   import qualified Data.Algorithm.PPattern.Color  as Color
 
   data CPointLink = CPointLink { src  :: {-# UNPACK #-} !CPoint.CPoint
-                                           , trgt :: {-# UNPACK #-} !CPoint.CPoint
-                                           } deriving (Show, Eq)
+                               , trgt :: {-# UNPACK #-} !CPoint.CPoint
+                               } deriving (Show, Eq)
   {-|
     'mkCPointLink' makes a CPointLink object from two colored points with the
     the same color.
   -}
-  mkCPointLink :: CPoint.CPoint -> CPoint.CPoint -> Maybe CPointLink
-  mkCPointLink src trgt
-    | CPoint.diffC src trgt = Nothing
-    | otherwise             = Just (CPointLink src trgt)
+  mkCPointLink :: CPoint.CPoint -> CPoint.CPoint -> CPointLink
+  mkCPointLink src trgt = CPointLink {src=src, trgt=trgt}
+
+  {-|
+    'mkCPointLink' makes a CPointLink object from two colored points with the
+    the same color.
+  -}
+  mkCPointLinkUnsafe :: CPoint.CPoint -> CPoint.CPoint -> Maybe CPointLink
+  mkCPointLinkUnsafe src trgt = CPointLink {src=src, trgt=trgt}
 
   {-|
     'color' return the color of a CPointLink.

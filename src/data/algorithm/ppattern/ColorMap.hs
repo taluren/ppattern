@@ -43,5 +43,13 @@ where
   {-|
 
   -}
-  findNext :: ColorMap -> Color.Color -> Point.Point -> Maybe (Point.Point)
-  findNext s c p = Map.lookup c m >> Map.lookup p
+  next :: Color.Color -> Point.Point -> ColorMap -> Maybe (Point.Point)
+  next c p m = Map.lookup c m >>= PointMap.next x
+
+  {-|
+
+  -}
+  updateForNext :: Color.Color -> Point.Point -> Permutation.T -> ColorMap -> Maybe ColorMap
+  updateForNext c p x m =  Map.lookup c m >>= PointMap.updateForNext p x >>= aux
+    where
+      aux m' = Just (Map.update (\_ -> Just m') c m)

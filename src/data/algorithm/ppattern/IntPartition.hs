@@ -11,8 +11,8 @@ Integer partitions.
 
 module Data.Algorithm.PPattern.IntPartition
 (
+  -- * The @IntPartition@ type
   IntPartition(..)
-  ---
 , fromList
 , mkIntPartition
   --
@@ -29,6 +29,7 @@ where
   import qualified Data.List as L
   import Control.Applicative
 
+  -- | Partition of integer.
   newtype IntPartition = IntPartition [Int]
 
   {-|
