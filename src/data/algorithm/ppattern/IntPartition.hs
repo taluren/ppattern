@@ -16,16 +16,17 @@ module Data.Algorithm.PPattern.IntPartition
 , fromList
 , mkIntPartition
 
-  --
+  -- * Transforming
 , toList
 
-  --
+  -- * Generating and counting
 , intPartitions
 , nbIntPartitions
-
-  --
 , intPartitionsByL
 , nbIntPartitionsByL
+
+  -- * Comparing
+, compatible
 )
 where
 
@@ -100,7 +101,7 @@ where
     | otherwise = L.concat [fmap (k':) (intPartitionsByLAux (n-k') (k-1) k') |
                             k' <- [l..h]]
     where
-      l = fromIntegral (ceiling ((fromIntegral n / fromIntegral k) :: Double) :: Int) 
+      l = fromIntegral (ceiling ((fromIntegral n / fromIntegral k) :: Double) :: Int)
       h = min (n-k+1) b
 
   {-|
@@ -109,3 +110,17 @@ where
   -}
   nbIntPartitionsByL :: Int -> Int -> Int
   nbIntPartitionsByL n k = L.length $ intPartitionsByL n k
+
+  {-|
+    'compatible ip1 ip2' returns True if and only if 'ip1' is a subpartition of
+    'ip2'. Both 'ip1' and 'ip2' need to be reverse sorted
+  -}
+  compatible :: IntPartition -> IntPartition -> Bool
+  compatible ip1 ip2 = aux (toList ip1) (toList ip2)
+    where
+      aux [] []     = True
+      aux _  []     = False
+      aux [] _      = True
+      aux (x1:x1s) (x2:x2s)
+        | x1 <= x2  = aux  x1s     x2s
+        | otherwise = aux (x1:x1s) x2s

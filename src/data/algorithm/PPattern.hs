@@ -23,16 +23,17 @@ where
   import qualified Data.Foldable   as Fold
   import Data.Maybe
 
-  import qualified Data.Algorithm.PPattern.Permutation as Permutation
-  import qualified Data.Algorithm.PPattern.Point       as Point
-  import qualified Data.Algorithm.PPattern.CPoint      as CPoint
-  import qualified Data.Algorithm.PPattern.Color       as Color
-  import qualified Data.Algorithm.PPattern.Trgt        as Trgt
-  import qualified Data.Algorithm.PPattern.PointMap    as PointMap
-  import qualified Data.Algorithm.PPattern.ColorMap    as ColorMap
-  import qualified Data.Algorithm.PPattern.CPointLink  as CPointLink
-  import qualified Data.Algorithm.PPattern.State       as State
-  import qualified Data.Algorithm.PPattern.Stack       as Stack
+  import qualified Data.Algorithm.PPattern.Permutation  as Permutation
+  import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
+  import qualified Data.Algorithm.PPattern.Point        as Point
+  import qualified Data.Algorithm.PPattern.CPoint       as CPoint
+  import qualified Data.Algorithm.PPattern.Color        as Color
+  import qualified Data.Algorithm.PPattern.Trgt         as Trgt
+  import qualified Data.Algorithm.PPattern.PointMap     as PointMap
+  import qualified Data.Algorithm.PPattern.ColorMap     as ColorMap
+  import qualified Data.Algorithm.PPattern.CPointLink   as CPointLink
+  import qualified Data.Algorithm.PPattern.State        as State
+  import qualified Data.Algorithm.PPattern.Stack        as Stack
 
   {-|
     'mkNextIncreasing ps' takes a list of points and return a map that associates
@@ -123,17 +124,29 @@ where
       f (xs, i) = L.zip xs $ colors i
 
   {-|
+    'toIntPartition ps' returns the lengths of all partition.
+  -}
+  toIntPartition :: [Permutation.Permutation] -> IntPartition.IntPartition
+  toIntPartition ps = IntPartition.mkIntPartition ls'
+    where
+      ls  = fmap Permutation.size ps
+      ls' = L.sortBy (flip compare) ls
+
+  {-|
     'mkSrc p k' returns all 'k'-coloring of permutation 'p', where each coloring
     is an increasing subsequence.
   -}
-  mkSrc :: Permutation.Permutation -> Int -> [[CPoint.CPoint]]
-  mkSrc p k = aux pis
+  mkSrc :: Permutation.Permutation -> Int -> IntPartition.IntPartition -> [[CPoint.CPoint]]
+  mkSrc p k ip = aux pis
     where
       pis = Permutation.partitionsIncreasings p k
 
-      aux []                     = []
-      aux (partition:partitions) = cps:aux partitions
+      aux []= []
+      aux (partition:partitions)
+        | IntPartition.compatible ip2 ip = cps:aux partitions
+        | otherwise                      = aux partitions
         where
+          ip2 = toIntPartition partition
           cps  = mkCPoints p (mapFromPartition partition)
 
   {-|
@@ -141,8 +154,8 @@ where
     of a given permutation. It returns the next function for each color in the
     form of a map.
   -}
-  mkTrgt :: Permutation.Permutation -> Trgt.Trgt
-  mkTrgt p = Trgt.mkTrgt cps next
+  mkTrgt :: Permutation.Permutation -> (Trgt.Trgt, IntPartition.IntPartition)
+  mkTrgt p = (Trgt.mkTrgt cps next, toIntPartition partition)
     where
       partition = Permutation.greedyPartitionIncreasings1 p
       cps       = mkCPoints p (mapFromPartition partition)
@@ -156,10 +169,10 @@ where
   search p q = searchAux srcs trgt
     where
       -- make target structure
-      trgt = mkTrgt q
+      (trgt, ip) = mkTrgt q
 
       -- make all source structures
-      srcs = mkSrc p (Trgt.nbColors trgt)
+      srcs = mkSrc p (Trgt.nbColors trgt) ip
 
   searchAux :: [[CPoint.CPoint]] -> Trgt.Trgt -> Maybe [CPointLink.CPointLink]
   searchAux []               _    = Nothing

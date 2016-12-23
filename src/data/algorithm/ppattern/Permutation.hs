@@ -30,7 +30,7 @@ module Data.Algorithm.PPattern.Permutation
 , toList
 
   -- * Querying
-, Data.Algorithm.PPattern.Permutation.length
+, size
 
   ---
 , diff
@@ -126,12 +126,11 @@ where
       get       = fmap T.fst
       is        = [1..] :: [T]
 
-
   {-|
-    'length p' returns the length of the permutation 'p'.
+    'size p' returns the length of the permutation 'p'.
   -}
-  length :: Permutation -> Int
-  length = L.length . toList
+  size :: Permutation -> Int
+  size = L.length . toList
 
   {-|
     'diff p q' returns the difference permutation of 'p' and 'q'.
@@ -209,7 +208,7 @@ where
                                   pPartition   <- partitionsIncreasingsByL p intPartition,
                                   isClassLeader pPartition]
     where
-      n = Data.Algorithm.PPattern.Permutation.length p
+      n = size p
 
   {-|
     'greedyPartitionIncreasings xs f' return a partition of xs into increasing
@@ -218,7 +217,7 @@ where
   greedyPartitionIncreasings :: (Permutation -> Permutation) -> Permutation -> [Permutation]
   greedyPartitionIncreasings f = g . aux []
     where
-      g = L.sortBy (flip compare `Fun.on` Data.Algorithm.PPattern.Permutation.length)
+      g = L.sortBy (flip compare `Fun.on` size)
 
       aux acc (Permutation []) = acc
       aux acc p                = aux (q1:acc) q2
@@ -277,7 +276,7 @@ where
     subsequences in 'xs'.
   -}
   lenLongestIncreasingSub:: Permutation -> Int
-  lenLongestIncreasingSub = Data.Algorithm.PPattern.Permutation.length . longestIncreasingSub
+  lenLongestIncreasingSub = size . longestIncreasingSub
 
   {-|
     'longestDecreasingSub xs' returns a longest decreasing subsequences in 'xs'.
@@ -294,7 +293,7 @@ where
     subsequences in 'xs'.
   -}
   lenLongestDecreasingSub :: Permutation -> Int
-  lenLongestDecreasingSub = Data.Algorithm.PPattern.Permutation.length . longestDecreasingSub
+  lenLongestDecreasingSub = size . longestDecreasingSub
 
   {-|
     'randPermutation' takes a permutation 'p' and a generator 'g', and

@@ -16,14 +16,17 @@ import System.Random
 
 import qualified Data.Algorithm.PPattern.Permutation as Permutation
 
-data Options = Options { len :: Int
-                       , num :: Int
+data Options = Options { len            :: Int
+                       , num            :: Int
+                       , outputFilename :: FilePath
                        } deriving (Data, Typeable)
 
 options :: Options
-options = Options { len = 100  &= help "The length of each permutation"
-                  , num = 1000 &= help "The number of generated permutations"
+options = Options { len            = def  &= help "The length of each permutation"
+                  , num            = def &= help "The number of generated permutations"
+                  , outputFilename = def &= help "The output filename"
                   }
+                  &= verbosity
                   &= summary "ppattern-rand v0.1.0.0, (C) Stéphane Vialette 2016"
                   &= program "ppattern-rand"
 
@@ -39,4 +42,4 @@ main :: IO ()
 main = do
   opts <- cmdArgs options
   g    <- getStdGen
-  mapM_ print $ go opts g
+  writeFile (outputFilename opts) . unlines . fmap show $ go opts g
