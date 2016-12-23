@@ -21,8 +21,9 @@ where
   import qualified Data.Algorithm.PPattern.ColorMap   as ColorMap
   import qualified Data.Algorithm.PPattern.CPointLink as CPointLink
 
-  data State = State { nextMaps :: ColorMap.ColorMap       -- ^ next maps
-                     , links    :: [CPointLink.CPointLink] -- ^ occurrence mapping
+  data State = State { xMaps :: ColorMap.ColorMap       -- ^ x-next maps
+                     , yMaps :: ColorMap.ColorMap       -- ^ y-next maps
+                     , links :: [CPointLink.CPointLink] -- ^ occurrence mapping
                      } deriving (Show)
 
   {-|
@@ -30,4 +31,4 @@ where
     and the occurrence mapping.
   -}
   mkState :: ColorMap.ColorMap -> [CPointLink.CPointLink] -> State
-  mkState m ls = State {nextMaps=m, links=ls}
+  mkState xms yms lks = State {xMaps=m, yMaps=yms, links=lks}

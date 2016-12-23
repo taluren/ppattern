@@ -14,6 +14,8 @@ module Data.Algorithm.PPattern.ColorMap
 (
   -- * The @ColorMap@ type
   ColorMap
+, emptyXCoordColorMap
+, emptyYCoordColorMap
 
   -- * Querying
 , colors
@@ -25,24 +27,26 @@ module Data.Algorithm.PPattern.ColorMap
 )
 where
 
-  import qualified Data.List       as L
-  import qualified Data.Map.Strict as Map
+  import qualified Data.List          as L
+  import qualified Data.IntMap.Strict as IntMap
 
-  import qualified Data.Algorithm.PPattern.Permutation as Permutation
-  import qualified Data.Algorithm.PPattern.Point       as Point
-  import qualified Data.Algorithm.PPattern.PointMap    as PointMap
-  import qualified Data.Algorithm.PPattern.Color       as Color
+  import qualified Data.Algorithm.PPattern.Permutation    as Permutation
+  import qualified Data.Algorithm.PPattern.Point          as Point
+  import qualified Data.Algorithm.PPattern.PointMap       as PointMap
+  import qualified Data.Algorithm.PPattern.Color          as Color
+  import qualified Data.Algorithm.PPattern.CoordSelection as CoordSelection
 
-  type ColorMap = Map.Map Color.Color PointMap.PointMap
+  newtype ColorMap = ColorMap (IntMap.IntMap (PointMap.PointMap))
+                     deriving (Show)
 
   {-|
-
+    'colors m' return the colors (i.e. keys) used by the map.
   -}
   colors :: ColorMap -> [Color.Color]
-  colors = Map.keys
+  colors = IntMap.keys
 
   {-|
-
+    'nbColors m' return the number of colors (i.e. keys) used by the map.
   -}
   nbColors :: ColorMap -> Int
   nbColors = L.length . colors
@@ -51,7 +55,7 @@ where
 
   -}
   next :: Color.Color -> Point.Point -> ColorMap -> Maybe Point.Point
-  next c p m = Map.lookup c m >>= PointMap.next p
+  next c p m = IntMap.lookup c m >>= PointMap.next p
 
   {-|
 
@@ -59,4 +63,4 @@ where
   updateForNext :: Color.Color -> Point.Point -> Permutation.T -> ColorMap -> Maybe ColorMap
   updateForNext c p x m =  Map.lookup c m >>= PointMap.updateForNext p x >>= aux
     where
-      aux m' = Just (Map.update (\_ -> Just m') c m)
+      aux m' = Just (IntMap.update (\_ -> Just m') c m)
