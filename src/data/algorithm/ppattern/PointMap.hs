@@ -17,6 +17,9 @@ module Data.Algorithm.PPattern.PointMap
 , emptyXPointMap
 , emptyYPointMap
 
+  -- * The @PointMapType@ type
+, PointMapType(..)
+
   -- * Querying
 , next
 

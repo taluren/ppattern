@@ -37,30 +37,24 @@ where
   newtype Trgt = Trgt ([CPoint.CPoint], ColorMap.ColorMap)
                  deriving (Show)
 
-  {-|
-    'mkTrgt' makes a target from a list of colored points 'cps' and a next
-    mapping.
-  -}
-  mkTrgt :: [CPoint.CPoint] -> ColorMap.ColorMap -> Trgt
-  mkTrgt cps m = Trgt (cps, m)
+   -- | Trgt data
+   data Trgt = Trgt { cPoints   :: [CPoint.CPoint]
+                    , xColorMap :: ColorMap.ColorMap
+                    , yColorMap :: ColorMap.ColorMap
+                    } deriving (Show)
 
   {-|
-    The 'cPoints' function returns the colored points stored in 'trgt'.
+    'mkTrgt' makes a target from a list of colored points 'cps', the x-coordinate
+    next mapping and the y-coordinate next mapping.
   -}
-  cPoints :: Trgt -> [CPoint.CPoint]
-  cPoints (Trgt (cps, _)) = cps
-
-  {-|
-    The 'nextMap' function returns the next map.
-  -}
-  nextMaps :: Trgt -> ColorMap.ColorMap
-  nextMaps (Trgt (_, m)) = m
+  mkTrgt :: [CPoint.CPoint] -> ColorMap.ColorMap -> ColorMap.ColorMap -> Trgt
+  mkTrgt cps xcm ycm = Trgt {cPoints=cps, xColorMap:xcm, yColorMap=ycm}
 
   {-|
     The 'colors' function returns the list of all colors in the target.
   -}
   colors :: Trgt -> [Color.Color]
-  colors = Map.keys . nextMaps
+  colors = Map.keys . xColorMap
 
   {-|
     The 'nbColors' function returns the number of colors in the target.

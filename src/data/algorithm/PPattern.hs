@@ -14,6 +14,11 @@ module Data.Algorithm.PPattern
 (
   search
 , resolve1
+
+  -- to be removed from export
+, mkNextIncreasing
+, mkNextIncreasings
+, leftmostCPointMapping
 )
 where
 
@@ -40,58 +45,57 @@ where
     to each point 'p' the smallest point on its right that is greater than 'p'
     (if any).
   -}
-  mkNextIncreasing :: [Point.Point] -> PointMap.PointMap
-  mkNextIncreasing []     = Map.empty
-  mkNextIncreasing (p:ps) = mkNextIncreasingAux ps s m
+  mkNextIncreasing :: [Point.Point] -> PointMap.PointMapType -> PointMap.PointMap
+  mkNextIncreasing []     _   = Map.empty
+  mkNextIncreasing (p:ps) pmt = mkNextIncreasingAux ps pmt s m
     where
       s = Stack.push Stack.empty p
-      m = Map.empty
+      m = case pmt of
+            XCoord -> PointMap.emptyXPointMap
+            YCoord -> PointMap.emptyYPointMap
 
-  {-|
-    Helper functions for 'mkNextIncreasing'.
-  -}
-  mkNextIncreasingAux :: [Point.Point] -> Stack.Stack Point.Point -> PointMap.PointMap -> PointMap.PointMap
-  mkNextIncreasingAux []     _                  m = m
-  mkNextIncreasingAux (p:ps) s@(Stack.Stack []) m = mkNextIncreasingAux ps (Stack.push s p) m
-  mkNextIncreasingAux ps     s                  m = mkNextIncreasingAux' ps s m
+  mkNextIncreasingAux :: [Point.Point] -> PointMap.PointMapType -> Stack.Stack Point.Point -> PointMap.PointMap -> PointMap.PointMap
+  mkNextIncreasingAux []     _ _                  m = m
+  mkNextIncreasingAux (p:ps) f s@(Stack.Stack []) m = mkNextIncreasingAux ps f (Stack.push s p) m
+  mkNextIncreasingAux ps     f s                  m = mkNextIncreasingAux' ps f s m
 
-  mkNextIncreasingAux' :: [Point.Point] -> Stack.Stack Point.Point -> PointMap.PointMap -> PointMap.PointMap
-  mkNextIncreasingAux' ps     s@(Stack.Stack [])     m = mkNextIncreasingAux ps s m
-  mkNextIncreasingAux' []     (Stack.Stack (_ : _))  _ = error "We shouldn't be there"
-  mkNextIncreasingAux' (p:ps) s@(Stack.Stack (p':_)) m
-    | x' < x    = mkNextIncreasingAux' (p:ps) (Stack.popUnsafe s) (Map.insert p' p m)
-    | otherwise = mkNextIncreasingAux ps (Stack.push s p) m
+  mkNextIncreasingAux' :: [Point.Point] -> PointMap.PointMapType -> Stack.Stack Point.Point -> PointMap.PointMap -> PointMap.PointMap
+  mkNextIncreasingAux' ps     pmt s@(Stack.Stack [])     m = mkNextIncreasingAux ps pmt s m
+  mkNextIncreasingAux' []     _   (Stack.Stack (_ : _))  _ = error "We shouldn't be there"
+  mkNextIncreasingAux' (p:ps) pmt s@(Stack.Stack (p':_)) m
+    | v' < v    = mkNextIncreasingAux' (p:ps) f (Stack.popUnsafe s) (Map.insert p' p m)
+    | otherwise = mkNextIncreasingAux ps f (Stack.push s p) m
     where
-      x  = Point.xCoord p
-      x' = Point.xCoord p'
+      f = case pmt of
+            XCoord -> Point.xCoord
+            YCoord -> Point.yCoord
+      v  = f p
+      v' = f p'
 
   {-|
     'mkNextIncreasings' takes a list of colored points. It returns a map that
-    associates to each distinct color the next increassing map to this color.
+    associates to each distinct color the next increassing map.
   -}
-  mkNextIncreasings :: [CPoint.CPoint] -> ColorMap.ColorMap
-  mkNextIncreasings cps = mkNextIncreasingsAux cps cs m
+  mkNextIncreasings :: [CPoint.CPoint] -> PointMap.PointMapType -> ColorMap.ColorMap
+  mkNextIncreasings cps pmt = mkNextIncreasingsAux cps pmt cs m
     where
       cs = L.nub $ L.map CPoint.color cps
-      m  = Map.empty
+      m  = ColorMap.empty
 
-  {-|
-
-  -}
-  mkNextIncreasingsAux :: [CPoint.CPoint] -> [Color.Color] -> ColorMap.ColorMap -> ColorMap.ColorMap
-  mkNextIncreasingsAux _ []     m = m
-  mkNextIncreasingsAux cps (c:cs) m = mkNextIncreasingsAux cps cs m'
+  mkNextIncreasingsAux :: [CPoint.CPoint] -> PointMap.PointMapType -> [Color.Color] -> ColorMap.ColorMap -> ColorMap.ColorMap
+  mkNextIncreasingsAux _   _   []     m = m
+  mkNextIncreasingsAux cps pmt (c:cs) m = mkNextIncreasingsAux cps pmt cs m'
     where
       cps' = L.filter (\cp -> CPoint.color cp == c) cps
       ps'  = fmap CPoint.point cps'
-      cm   = mkNextIncreasing ps'
+      cm   = mkNextIncreasing ps' pmt f
       m'   = Map.insert c cm m
 
   {-|
     The 'mkCPoints' function takes a permutation and a color mapping given
     in the form of a map, and it return a list of CPoint.
   -}
-  mkCPoints :: Permutation.Permutation -> Map.Map Permutation.T Color.Color -> [CPoint.CPoint]
+  mkCPoints :: Permutation.Permutation -> IntMap.IntMap Color.Color -> [CPoint.CPoint]
   mkCPoints (Permutation.Permutation xs) m = L.map (THT.uncurry3 CPoint.mkCPoint') t3s
     where
       cs  = Fold.foldr (\x acc -> (fromJust (Map.lookup x m)):acc) [] xs
@@ -116,7 +120,7 @@ where
     'mapFromPartition' transform an integer partition into a map object that
     associates to each each element a color.
   -}
-  mapFromPartition :: [Permutation.Permutation] -> Map.Map Permutation.T Color.Color
+  mapFromPartition :: [Permutation.Permutation] -> IntMap.IntMap Color.Color
   mapFromPartition = Map.fromList . Fold.concatMap f . flip zip [1..] . fmap Permutation.toList
     where
       colors i  = L.repeat $ Color.mkColor i
@@ -141,13 +145,14 @@ where
     where
       pis = Permutation.partitionsIncreasings p k
 
+      -- Add every compatible partition.
       aux []= []
       aux (partition:partitions)
         | IntPartition.compatible ip2 ip = cps:aux partitions
         | otherwise                      = aux partitions
         where
           ip2 = toIntPartition partition
-          cps  = mkCPoints p (mapFromPartition partition)
+          cps = mkCPoints p (mapFromPartition partition)
 
   {-|
     the 'mkTrgt' function is in charge of finding a k-increasing-coloring
@@ -155,11 +160,14 @@ where
     form of a map.
   -}
   mkTrgt :: Permutation.Permutation -> (Trgt.Trgt, IntPartition.IntPartition)
-  mkTrgt p = (Trgt.mkTrgt cps next, toIntPartition partition)
+  mkTrgt p = (trgt, intPartition)
     where
-      partition = Permutation.greedyPartitionIncreasings1 p
-      cps       = mkCPoints p (mapFromPartition partition)
-      next      = mkNextIncreasings cps
+      partition    = Permutation.greedyPartitionIncreasings1 p
+      cps          = mkCPoints p (mapFromPartition partition)
+      xcm          = mkNextIncreasings cps PointMap.XCoord
+      ycm          = mkNextIncreasings cps PointMap.YCoord
+      trgt         = Trgt.mkTrgt cps xcm ycm
+      intPartition = toIntPartition partition
 
   {-|
     The 'search' function takes two permutations 'p' and 'q', and it returns

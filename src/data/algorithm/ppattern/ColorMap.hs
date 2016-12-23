@@ -14,8 +14,7 @@ module Data.Algorithm.PPattern.ColorMap
 (
   -- * The @ColorMap@ type
   ColorMap
-, emptyXCoordColorMap
-, emptyYCoordColorMap
+, empty
 
   -- * Querying
 , colors
@@ -38,6 +37,9 @@ where
 
   newtype ColorMap = ColorMap (IntMap.IntMap (PointMap.PointMap))
                      deriving (Show)
+
+  empty :: ColorMap
+  empty = ColorMap IntMap.empty
 
   {-|
     'colors m' return the colors (i.e. keys) used by the map.
