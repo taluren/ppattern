@@ -29,7 +29,7 @@ library
   default-language: Haskell2010
   hs-source-dirs: src
   exposed-modules:
-    Data.Algorithm.PPattern.Permutation
+    Data.Algorithm.PPattern.Perm
     Data.Algorithm.PPattern.IntPartition
     Data.Algorithm.PPattern.Combinatorics
     Data.Algorithm.PPattern.Types
@@ -37,9 +37,10 @@ library
     Data.Algorithm.PPattern.Tools
     Data.Algorithm.PPattern.Point
     Data.Algorithm.PPattern.CPoint
-    Data.Algorithm.PPattern.PointMap
-    Data.Algorithm.PPattern.ColorMap
-    Data.Algorithm.PPattern.CPointLink
+    Data.Algorithm.PPattern.PMap
+    Data.Algorithm.PPattern.CMap
+    Data.Algorithm.PPattern.CMaps
+    Data.Algorithm.PPattern.CPLink
     Data.Algorithm.PPattern.Trgt
     Data.Algorithm.PPattern.State
     Data.Algorithm.PPattern

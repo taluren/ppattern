@@ -16,48 +16,28 @@ module Data.Algorithm.PPattern.Trgt
   Trgt(..)
 , mkTrgt
 
--- * Accessors
-, nextMaps
-, cPoints
-
 -- * Querying
-, colors
 , nbColors
 )
 where
 
-  import qualified Data.List       as L
-  import qualified Data.Map.Strict as Map
-
-  import qualified Data.Algorithm.PPattern.CPoint      as CPoint
-  import qualified Data.Algorithm.PPattern.Color       as Color
-  import qualified Data.Algorithm.PPattern.ColorMap    as ColorMap
+  import qualified Data.Algorithm.PPattern.CPoint as CPoint
+  import qualified Data.Algorithm.PPattern.CMaps  as CMaps
 
   -- | Trgt data
-  newtype Trgt = Trgt ([CPoint.CPoint], ColorMap.ColorMap)
-                 deriving (Show)
-
-   -- | Trgt data
-   data Trgt = Trgt { cPoints   :: [CPoint.CPoint]
-                    , xColorMap :: ColorMap.ColorMap
-                    , yColorMap :: ColorMap.ColorMap
-                    } deriving (Show)
+  data Trgt = Trgt { cPoints :: [CPoint.CPoint]
+                   , cMaps   :: CMaps.CMaps
+                   } deriving (Show)
 
   {-|
     'mkTrgt' makes a target from a list of colored points 'cps', the x-coordinate
     next mapping and the y-coordinate next mapping.
   -}
-  mkTrgt :: [CPoint.CPoint] -> ColorMap.ColorMap -> ColorMap.ColorMap -> Trgt
-  mkTrgt cps xcm ycm = Trgt {cPoints=cps, xColorMap:xcm, yColorMap=ycm}
-
-  {-|
-    The 'colors' function returns the list of all colors in the target.
-  -}
-  colors :: Trgt -> [Color.Color]
-  colors = Map.keys . xColorMap
+  mkTrgt :: [CPoint.CPoint] -> CMaps.CMaps -> Trgt
+  mkTrgt cps cms = Trgt {cPoints=cps, cMaps=cms}
 
   {-|
     The 'nbColors' function returns the number of colors in the target.
   -}
   nbColors :: Trgt -> Int
-  nbColors = L.length . colors
+  nbColors = CMap.nbColors . xCMap . cMaps

@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.PPattern.CPointLink
+Module      : Data.Algorithm.PPattern.CPLink
 Description : Short description
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -10,25 +10,27 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-module Data.Algorithm.PPattern.CPointLink
+module Data.Algorithm.PPattern.CPLink
 (
-  -- * The @CPointLink@ type
-  CPointLink(..)
-, mkCPointLink
-, mkCPointLinkUnsafe
+  -- * The @CPLink@ type
+  CPLink(..)
+, mkCPLink
+, mkCPLinkUnsafe
 
   -- * Querying
 , color
 , getSrc
 , getTrgt
 
-  -- * Querying two @CPointLink@
+  -- * Querying two @CPLink@
 , monoChromatic
 , biChromatic
 , orderConflict
 , valueConflict
+, monoChromaticOrderConflict
 , biChromaticOrderConflict
-, biChromaticValueConflict
+, monoChromaticValueConflict
+, biChromaticOrderConflict
 )
 where
 
@@ -37,48 +39,48 @@ where
   import qualified Data.Algorithm.PPattern.CPoint      as CPoint
   import qualified Data.Algorithm.PPattern.Color       as Color
 
-  data CPointLink = CPointLink { src  :: {-# UNPACK #-} !CPoint.CPoint
+  data CPLink = CPLink { src  :: {-# UNPACK #-} !CPoint.CPoint
                                , trgt :: {-# UNPACK #-} !CPoint.CPoint
                                } deriving (Show, Eq)
   {-|
-    'mkCPointLink' makes a CPointLink object from two colored points with the
+    'mkCPLink' makes a CPLink object from two colored points with the
     the same color.
   -}
-  mkCPointLink :: CPoint.CPoint -> CPoint.CPoint -> Maybe CPointLink
-  mkCPointLink srcPoint trgtPoint
+  mkCPLink :: CPoint.CPoint -> CPoint.CPoint -> Maybe CPLink
+  mkCPLink srcPoint trgtPoint
     | CPoint.color srcPoint /= CPoint.color trgtPoint = Nothing
-    | otherwise                                       = Just (mkCPointLinkUnsafe srcPoint trgtPoint)
+    | otherwise                                       = Just (mkCPLinkUnsafe srcPoint trgtPoint)
 
   {-|
-    'mkCPointLink' makes a CPointLink object from two colored points with the
+    'mkCPLink' makes a CPLink object from two colored points with the
     the same color.
   -}
-  mkCPointLinkUnsafe :: CPoint.CPoint -> CPoint.CPoint -> CPointLink
-  mkCPointLinkUnsafe srcPoint trgtPoint = CPointLink {src=srcPoint, trgt=trgtPoint}
+  mkCPLinkUnsafe :: CPoint.CPoint -> CPoint.CPoint -> CPLink
+  mkCPLinkUnsafe srcPoint trgtPoint = CPLink {src=srcPoint, trgt=trgtPoint}
 
   {-|
-    'color' return the color of a CPointLink.
+    'color' return the color of a CPLink.
   -}
-  color :: CPointLink -> Color.Color
+  color :: CPLink -> Color.Color
   color = CPoint.color . src
 
   {-|
-    'sameColor' takes two CPointLink objects. It returns True if and only if the
+    'sameColor' takes two CPLink objects. It returns True if and only if the
     two links have the same color.
   -}
-  monoChromatic :: CPointLink -> CPointLink -> Bool
+  monoChromatic :: CPLink -> CPLink -> Bool
   monoChromatic cpl1 cpl2 = color cpl1 == color cpl2
 
   {-|
 
   -}
-  biChromatic :: CPointLink -> CPointLink -> Bool
+  biChromatic :: CPLink -> CPLink -> Bool
   biChromatic cpl1 cpl2 = not $ monoChromatic cpl1 cpl2
 
   {-|
 
   -}
-  orderConflict :: CPointLink -> CPointLink -> Bool
+  orderConflict :: CPLink -> CPLink -> Bool
   orderConflict l1 l2 = (x1 < x2 && x1' > x2') || (x1 > x2 && x1' < x2')
     where
       x1  = Point.xCoord . CPoint.point $ src  l1
@@ -89,13 +91,18 @@ where
 
   {-|
   -}
-  biChromaticOrderConflict :: CPointLink -> CPointLink -> Bool
+  monoChromaticOrderConflict :: CPLink -> CPLink -> Bool
+  monoChromaticOrderConflict l1 l2 = monoChromatic l1 l2 && orderConflict l1 l2
+
+  {-|
+  -}
+  biChromaticOrderConflict :: CPLink -> CPLink -> Bool
   biChromaticOrderConflict l1 l2 = biChromatic l1 l2 && orderConflict l1 l2
 
   {-|
 
   -}
-  valueConflict :: CPointLink -> CPointLink -> Bool
+  valueConflict :: CPLink -> CPLink -> Bool
   valueConflict l1 l2 = (y1 < y2 && y1' > y2') || (y1 > y2 && y1' < y2')
     where
       y1  = Point.yCoord . CPoint.point $ src  l1
@@ -104,13 +111,16 @@ where
       y2  = Point.yCoord . CPoint.point $ src  l2
       y2' = Point.yCoord . CPoint.point $ trgt l2
 
-  biChromaticValueConflict :: CPointLink -> CPointLink -> Bool
+  monoChromaticValueConflict :: CPLink -> CPLink -> Bool
+  monoChromaticValueConflict l1 l2 = monoChromatic l1 l2 && valueConflict l1 l2
+
+  biChromaticValueConflict :: CPLink -> CPLink -> Bool
   biChromaticValueConflict l1 l2 = biChromatic l1 l2 && valueConflict l1 l2
 
   {-|
 
   -}
-  get :: (CPointLink -> CPoint.CPoint) -> [CPointLink] -> Permutation.Permutation
+  get :: (CPLink -> CPoint.CPoint) -> [CPLink] -> Permutation.Permutation
   get f = Permutation.fromListUnsafe . fmap g
     where
       g = Point.yCoord . CPoint.point . f
@@ -118,11 +128,11 @@ where
   {-|
 
   -}
-  getSrc :: [CPointLink] -> Permutation.Permutation
+  getSrc :: [CPLink] -> Permutation.Permutation
   getSrc = get src
 
   {-|
 
   -}
-  getTrgt :: [CPointLink] -> Permutation.Permutation
+  getTrgt :: [CPLink] -> Permutation.Permutation
   getTrgt = get trgt
