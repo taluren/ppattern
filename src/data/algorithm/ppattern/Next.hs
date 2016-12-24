@@ -66,7 +66,7 @@ where
     | v' < v    = mkNextIncreasingAux' (p:ps) t (Stack.popUnsafe s) (PMap.insert p' p m)
     | otherwise = mkNextIncreasingAux ps t (Stack.push s p) m
     where
-      f = case pmt of
+      f = case t of
             PMap.XCoord -> Point.xCoord
             PMap.YCoord -> Point.yCoord
       v  = f p

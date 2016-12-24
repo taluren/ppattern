@@ -36,6 +36,10 @@ where
 
   type CMap = IntMap.IntMap PMap.PMap
 
+  -- Propagating update data
+  newtype PPCMap = PPCMap (Point.Point, Point.Point, CMap)
+                   deriving (Show)
+
   {-|
     The empty color map.
   -}
@@ -49,21 +53,33 @@ where
   nbColors = L.length . IntMap.keys
 
   {-|
-    'next c p' calls 'next p' on the 'c'-colored map.
-  -}
-  next :: Color.Color -> Point.Point -> CMap -> Maybe Point.Point
-  next c p m = IntMap.lookup c m >>= PMap.next p
-
-  {-|
-
-  -}
-  updateForNext :: Color.Color -> Point.Point -> Perm.T -> CMap -> Maybe CMap
-  updateForNext c p val m =  IntMap.lookup c m >>= PMap.updateForNext p val >>= aux
-    where
-      aux pm = Just (IntMap.update (\_ -> Just pm) c m)
-
-  {-|
     Delegate insert to IntMap.
   -}
   insert :: Color.Color -> PMap.PMap -> CMap -> CMap
   insert = IntMap.insert
+
+  {-|
+  -}
+  afterNext :: CMap -> PMap.PPPMap -> Maybe PPCMap
+  afterNext cm (PPMap (p, p', pm))
+    | p == p'   = Just $ PPCMap (p, p', cm)
+    | otherwise = Just $ PPCMap (p, p', cm')
+    where
+      cm' = IntMap.update (\_ -> Just p') p cp
+
+  {-|
+  -}
+  next :: Color.Color -> Point.Point -> Perm.T -> CMap -> PPCMap
+  next c p thrshld cm = IntMap.lookup c cm >>= PMap.next p thrshld >>= afterNext cm
+
+  {-|
+    Promote 'PPMap'
+  -}
+  afterQueryNext ::CMap -> PMap.PPPMap -> Maybe PPCMap
+  afterQueryNext cm (PMap.PPMap (p, p', _)) = Just $ PPCMap (p, p', cm)
+
+  {-|
+
+  -}
+  queryNext :: Color.Color -> Point.Point -> Perm.T -> CMap -> Maybe PPCMap
+  queryNext c p thrshld cms = IntMap.lookup c cm >>= PMap.queryNext p thrshld >>= afterQueryNext cm

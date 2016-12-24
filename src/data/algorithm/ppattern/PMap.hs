@@ -17,8 +17,8 @@ module Data.Algorithm.PPattern.PMap
 , emptyXPMap
 , emptyYPMap
 
-  -- * The @PMapType@ type
-, T(..)
+  -- * The @PPPMap@ type
+, PPPMap
 
   -- * Querying
 , next
@@ -37,28 +37,19 @@ where
   data T = XCoord | YCoord
            deriving (Show, Eq, Ord)
 
-  data PMap = PMap { getMap :: Map.Map Point.Point Point.Point
-                   , t      :: T
-                   } deriving (Show)
+  newtype PMap = PMap (Map.Map Point.Point Point.Point)
+                 deriving (Show)
+
+  -- Propagating update data
+  newtype PPPMap = PPPMap (Point.Point, Point.Point, PMap)
+                   deriving (Show)
 
   {-|
   'emptyXPMap' constructs an empty map for x-coordinate comparisons.
   -}
-  emptyXPMap :: PMap
-  emptyXPMap = PMap { getMap=Map.empty, t=XCoord }
+  empty :: PMap
+  empty = PMap (Map.empty)
 
-  {-|
-  'emptyYPMap' constructs an empty map for y-coordinate comparisons.
-  -}
-  emptyYPMap :: PMap
-  emptyYPMap = PMap { getMap=Map.empty, t=YCoord }
-
-  {-|
-   'next p m' returns the next point in the map (i.e., the smallest point for is
-   greater than 'p')
-  -}
-  next :: Point.Point -> PMap -> Maybe Point.Point
-  next p = Map.lookup p . getMap
 
   {-|
     'compareToVal pm p val' compare the point 'p' to 'val'.
@@ -94,3 +85,17 @@ where
   -}
   insert :: Point.Point -> Point.Point -> PMap -> PMap
   insert p p' pm = updatePMap pm . Map.insert p p' $ getMap pm
+
+  {-|
+  -}
+  afterNext :: CMap -> PMap.PPPMap -> Maybe PPCMap
+  afterNext cm (PPMap (p, p', pm))
+    | p == p'   = Just $ PPCMap (p, p', cm)
+    | otherwise = Just $ PPCMap (p, p', cm')
+    where
+      cm' = IntMap.update (\_ -> Just p') p cp
+
+  {-|
+  -}
+  next :: Color.Color -> Point.Point -> Perm.T -> PMap -> PPPMap
+  next c p thrshld cm = IntMap.lookup c cm >>= PMap.next p thrshld >>= afterNext cm

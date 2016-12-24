@@ -20,10 +20,14 @@ where
 
   import qualified Data.Algorithm.PPattern.CMaps  as CMaps
   import qualified Data.Algorithm.PPattern.CPLink as CPLink
+  import qualified Data.Algorithm.PPattern.Action as Action
 
   data State = State { links :: [CPLink.CPLink] -- ^ occurrence mapping
                      , cMaps :: CMaps.CMaps     -- ^ x/y-next maps
                      } deriving (Show)
+
+  newtype PPState = PPState (Point.Point, Point.Point, State)
+                    deriving (Show)
 
   {-|
     The 'mkState' function constructs a new state from the color-next functions
@@ -46,36 +50,36 @@ where
 
   {-|
   -}
-  update :: State -> (Point.Point, CMaps.CMaps, Action.Action) -> Maybe (Point.Point, State)
-  update state (p, _,   Action.Propagate) = Just (p, state)
-  update state (p, cms, Action.Update)    = Just (p, state')
+  afterNext :: State -> PPCMaps -> Maybe PPState
+  afterNext state (PPCMaps (p, p', cms))
+    | p == p'   = Just $ PPState (p, p', state)
+    | otherwise = Just $ PPState (p, p', state')
     where
       state' = updateCMaps cms state
 
   {-|
   -}
-  nextX :: Color.Color -> Point.Point -> State -> Maybe (Point.Point, State)
-  nextX c p state = CMaps.nextX c p (cMaps state) >>= update state
+  nextX :: Color.Color -> Point.Point -> Perm.T -> State -> Maybe PPState
+  nextX c p thrshld state = CMaps.nextX c p thrshld (cMaps state) >>= afterNext state
 
   {-|
   -}
-  nextY :: Color.Color -> Point.Point -> State -> Maybe (Point.Point, State)
-  nextY c p state = CMaps.nextY c p (cMaps state) >>= update state
+  nextY :: Color.Color -> Point.Point -> Perm.T -> State ->  Maybe PPState
+  nextY c p thrshld state = CMaps.nextY c pval (cMaps state) >>= afterNext state
 
   {-|
-
   -}
-  queryNextX :: Color.Color -> Point.Point -> Perm.T -> State -> Maybe Point.Point
-  queryNextY c p state = CMap.next c p xcm
-    where
-      cm  = cMaps state
-      ycm = CMap.xCMap
+  afterQueryNext :: State -> PPCMaps -> Maybe PPState
+  afterQueryNext state (PPCMaps (p, p', _)) = Just $ PPState (p, p', state)
 
   {-|
 
   -}
-  queryNextY :: Color.Color -> Point.Point -> Perm.T -> State -> Maybe Point.Point
-  queryNextY c p state = CMap.next c p ycm
-    where
-      cm  = cMaps state
-      ycm = CMap.yCMap
+  queryNextX :: Color.Color -> Point.Point -> Perm.T -> State -> Maybe PPState
+  queryNextY c p thrshld state = CMaps.queryNextX c p thrshld (cMaps state) >>= afterQueryNext state
+
+  {-|
+
+  -}
+  queryNextY :: Color.Color -> Point.Point -> Perm.T -> State -> Maybe PPState
+  queryNextY c p thrshld state = CMaps.queryNextY c p thrshld (cMaps state) >>= afterQueryNext state
