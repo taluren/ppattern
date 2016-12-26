@@ -16,12 +16,17 @@ module Data.Algorithm.PPattern.CMap
   CMap
 , empty
 
+  -- * The @PPCMap@ type
+, PPCMap(..)
+
   -- * Querying
 , nbColors
+, queryNext
+
+  -- * Querying & modifying
 , next
 
   -- * Modifying
-, updateForNext
 , insert
 )
 where
@@ -29,10 +34,10 @@ where
   import qualified Data.List          as L
   import qualified Data.IntMap.Strict as IntMap
 
-  import qualified Data.Algorithm.PPattern.Perm    as Perm
-  import qualified Data.Algorithm.PPattern.Point          as Point
-  import qualified Data.Algorithm.PPattern.PMap       as PMap
-  import qualified Data.Algorithm.PPattern.Color          as Color
+  import qualified Data.Algorithm.PPattern.Perm  as Perm
+  import qualified Data.Algorithm.PPattern.Point as Point
+  import qualified Data.Algorithm.PPattern.PMap  as PMap
+  import qualified Data.Algorithm.PPattern.Color as Color
 
   type CMap = IntMap.IntMap PMap.PMap
 
@@ -60,26 +65,26 @@ where
 
   {-|
   -}
-  afterNext :: CMap -> PMap.PPPMap -> Maybe PPCMap
-  afterNext cm (PPMap (p, p', pm))
+  afterNext :: Color.Color -> CMap -> PMap.PPPMap -> Maybe PPCMap
+  afterNext c cm (PMap.PPPMap (p, p', pm))
     | p == p'   = Just $ PPCMap (p, p', cm)
     | otherwise = Just $ PPCMap (p, p', cm')
     where
-      cm' = IntMap.update (\_ -> Just p') p cp
+      cm' = IntMap.update (\_ -> Just pm) c cm
 
   {-|
   -}
   next :: Color.Color -> Point.Point -> Perm.T -> CMap -> Maybe PPCMap
-  next c p thrshld cm = IntMap.lookup c cm >>= PMap.next p thrshld >>= afterNext cm
+  next c p thrshld cm = IntMap.lookup c cm >>= PMap.next p thrshld >>= afterNext c cm
 
   {-|
     Promote 'PPMap'
   -}
-  afterQueryNext :: CMap -> PMap.PPPMap -> Maybe PPCMap
-  afterQueryNext cm (PMap.PPMap (p, p', _)) = Just $ PPCMap (p, p', cm)
+  afterQueryNext :: Color.Color -> CMap -> PMap.PPPMap -> Maybe PPCMap
+  afterQueryNext _ cm (PMap.PPPMap (p, p', _)) = Just $ PPCMap (p, p', cm)
 
   {-|
 
   -}
   queryNext :: Color.Color -> Point.Point -> Perm.T -> CMap -> Maybe PPCMap
-  queryNext c p thrshld cms = IntMap.lookup c cm >>= PMap.queryNext p thrshld >>= afterQueryNext cm
+  queryNext c p thrshld cm = IntMap.lookup c cm >>= PMap.queryNext p thrshld >>= afterQueryNext c cm

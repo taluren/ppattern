@@ -214,7 +214,7 @@ where
 
 
   partitionsIncreasingsAux :: Perm -> Int -> [[Perm]]
-  partitionsIncreasingsAux p k = [pPartition |
+  partitionsIncreasingsAux p k = [partition |
                                   intPartition <- IntPartition.intPartitionsByL n k,
                                   partition    <- partitionsIncreasingsByL p intPartition,
                                   isClassLeader partition]

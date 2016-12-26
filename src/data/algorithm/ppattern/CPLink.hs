@@ -27,21 +27,19 @@ module Data.Algorithm.PPattern.CPLink
 , biChromatic
 , orderConflict
 , valueConflict
+, biChromaticValueConflict
 , monoChromaticOrderConflict
-, biChromaticOrderConflict
-, monoChromaticValueConflict
-, biChromaticOrderConflict
 )
 where
 
-  import qualified Data.Algorithm.PPattern.Permutation as Permutation
-  import qualified Data.Algorithm.PPattern.Point       as Point
-  import qualified Data.Algorithm.PPattern.CPoint      as CPoint
-  import qualified Data.Algorithm.PPattern.Color       as Color
+  import qualified Data.Algorithm.PPattern.Perm   as Perm
+  import qualified Data.Algorithm.PPattern.Point  as Point
+  import qualified Data.Algorithm.PPattern.CPoint as CPoint
+  import qualified Data.Algorithm.PPattern.Color  as Color
 
   data CPLink = CPLink { src  :: {-# UNPACK #-} !CPoint.CPoint
-                               , trgt :: {-# UNPACK #-} !CPoint.CPoint
-                               } deriving (Show, Eq)
+                       , trgt :: {-# UNPACK #-} !CPoint.CPoint
+                       } deriving (Show, Eq)
   {-|
     'mkCPLink' makes a CPLink object from two colored points with the
     the same color.
@@ -95,11 +93,6 @@ where
   monoChromaticOrderConflict l1 l2 = monoChromatic l1 l2 && orderConflict l1 l2
 
   {-|
-  -}
-  biChromaticOrderConflict :: CPLink -> CPLink -> Bool
-  biChromaticOrderConflict l1 l2 = biChromatic l1 l2 && orderConflict l1 l2
-
-  {-|
 
   -}
   valueConflict :: CPLink -> CPLink -> Bool
@@ -111,28 +104,25 @@ where
       y2  = Point.yCoord . CPoint.point $ src  l2
       y2' = Point.yCoord . CPoint.point $ trgt l2
 
-  monoChromaticValueConflict :: CPLink -> CPLink -> Bool
-  monoChromaticValueConflict l1 l2 = monoChromatic l1 l2 && valueConflict l1 l2
-
   biChromaticValueConflict :: CPLink -> CPLink -> Bool
   biChromaticValueConflict l1 l2 = biChromatic l1 l2 && valueConflict l1 l2
 
   {-|
 
   -}
-  get :: (CPLink -> CPoint.CPoint) -> [CPLink] -> Permutation.Permutation
-  get f = Permutation.fromListUnsafe . fmap g
+  get :: (CPLink -> CPoint.CPoint) -> [CPLink] -> Perm.Perm
+  get f = Perm.fromListUnsafe . fmap g
     where
       g = Point.yCoord . CPoint.point . f
 
   {-|
 
   -}
-  getSrc :: [CPLink] -> Permutation.Permutation
+  getSrc :: [CPLink] -> Perm.Perm
   getSrc = get src
 
   {-|
 
   -}
-  getTrgt :: [CPLink] -> Permutation.Permutation
+  getTrgt :: [CPLink] -> Perm.Perm
   getTrgt = get trgt

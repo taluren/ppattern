@@ -14,7 +14,7 @@ module Data.Algorithm.PPattern.Random
 (
   randChoose
 , randSelect
-, randPermutation
+, randPerm
 , randKIncreasingByL
 , randShuffle
 )
@@ -55,11 +55,11 @@ where
       x       = xs L.!! i
 
   {-|
-    'randPermutation' takes a list 'xs' and a generator 'g', and
+    'randPerm' takes a list 'xs' and a generator 'g', and
     returns a random permutation of 'xs', together with a new generator.
   -}
-  randPermutation :: R.RandomGen g => [a] -> g -> ([a], g)
-  randPermutation xs = randSelect xs (L.length xs)
+  randPerm :: R.RandomGen g => [a] -> g -> ([a], g)
+  randPerm xs = randSelect xs (L.length xs)
 
   {-|
     'randShuffle' takes a list of lists 'xss' and a generator 'g', and
@@ -73,7 +73,7 @@ where
   randShuffleAux []  acc g = (L.reverse acc, g)
   randShuffleAux xss acc g = randShuffleAux xss'' (x:acc) g'
     where
-      (xss', g') = randPermutation xss g
+      (xss', g') = randPerm xss g
       (x, xss'') = randShuffleAux' xss'
 
   randShuffleAux' :: [[a]] -> (a, [[a]])

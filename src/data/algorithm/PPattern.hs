@@ -27,7 +27,7 @@ where
   import qualified Data.Foldable      as Fold
   import Data.Maybe
 
-  import qualified Data.Algorithm.PPattern.Permutation  as Permutation
+  import qualified Data.Algorithm.PPattern.Perm         as Perm
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
   import qualified Data.Algorithm.PPattern.Point        as Point
   import qualified Data.Algorithm.PPattern.CPoint       as CPoint
@@ -116,10 +116,10 @@ where
       cps          = mkCPoints p (mapFromPartition partition)
 
       -- Next color point map for x-coordinates
-      xcm          = Next.mkNextIncreasings cps PMap.XCoord
+      xcm          = Next.mkNextIncreasings cps PMap.X
 
       -- Next color point map for y-ccordinates
-      ycm          = Next.mkNextIncreasings cps PMap.YCoord
+      ycm          = Next.mkNextIncreasings cps PMap.Y
 
   {-|
     The 'search' function takes two permutations 'p' and 'q', and it returns
@@ -137,16 +137,19 @@ where
   searchAux :: [[CPoint.CPoint]] -> Trgt.Trgt -> Maybe [CPLink.CPLink]
   searchAux []               _    = Nothing
   searchAux (srcCps:srcCpss) trgt = case doSearch srcCps trgt of
-                                      Nothing -> searchAux srcCpss trgt
-                                      Just q  -> Just q
+                                      Nothing    -> searchAux srcCpss trgt
+                                      Just lnks  -> Just lnks
 
   {-|
-    Perform the search for a given coloring of the source permutation.
+    Perform the search for a given coloring of the source Perm.
   -}
   doSearch :: [CPoint.CPoint] -> Trgt.Trgt -> Maybe [CPLink.CPLink]
   doSearch srcPoints trgt = lnks >>= mkState >>= doSearchAux
     where
-      lnks          = leftmostCPMapping srcPoints (Trgt.cPoints trgt)
+      -- initial mapping
+      lnks = leftmostCPMapping srcPoints (Trgt.cPoints trgt)
+
+      -- make initial state
       xcm           = Trgt.xCMap trgt
       ycm           = Trgt.yCMap trgt
       cms           = CMaps.mkCMaps xcm ycm
@@ -156,20 +159,21 @@ where
   doSearchAux state = resolve1 state >>= resolve2 >>= loop
     where
       loop state'
-        | lnks /= lnks' = doSearchAux state'
-        | otherwise     = Just lkns'
+        | lnks /= lnks' = doSearchAux state' -- some conflicts have beed resolved
+        | otherwise     = Just lnks'         -- no conflict has been resolved
         where
           lnks  = State.links state
           lnks' = State.links state'
 
   {-|
-    Resolve type 1 conflicts.
+    Resolve type 1 (i.e., order) conflicts.
   -}
   resolve1 :: State.State -> Maybe State.State
   resolve1 state = resolve1Aux (State.links state) [] state
 
-  resolve1Aux []               acc state = Just state'
-  resolve1Aux [lnk]            acc state = Just state''
+  resolve1Aux :: [CPLink.CPLink] -> [CPLink.CPLink] -> State.State -> Maybe State.State
+  resolve1Aux []    acc state = Just $ State.updateLinks (L.reverse acc)       state
+  resolve1Aux [lnk] acc state = Just $ State.updateLinks (L.reverse (lnk:acc)) state
   resolve1Aux (lnk1:lnk2:lnks) acc state
     | conflict lnk1 lnk2 = update1 (lnk1:lnk2:lnks) acc state
     | otherwise          = resolve1Aux (lkn2:lnks) (lnk1:acc) state
@@ -177,42 +181,27 @@ where
       -- Two links with the same color but reverse x-coordinate order
       confict = CPLink.monoChromaticOrderConflict
 
-      -- Done, propagate a new state
-      state' = State.mkState (L.reverse acc) cms
+  -- Update link lnk2 (which type 1 (i.e. order)  conflict with lnk2).
+  update1 :: [CPLink.CPLink] -> [CPLink.CPLink] -> State.State -> Maybe State.State
+  update1 []               _   _     = error "We shouldn't be there" -- Werror option
+  update1 [_]              _   _     = error "We shouldn't be there" -- Werror option
+  update1 (lnk1:lnk2:lnks) acc state = State.nextX c p thrshld state >>= update1Aux
+    where
+      -- color
+      c = CPLink.color lnk2
+
+      -- moving point
+      p  = CPoint.point $ CPLink.trgt lnk2
+
+      -- threshold.
+      thrshld = Point.xCoord . CPoint.point $ CPLink.trgt lnk1
+
+      -- resolve link lnk2
+      updateAux1 (State.PPPState _ p' state') = resolve1Aux (lnk2':lnks) (lnk1:acc) state'
         where
-          cms = CMaps.mkCMaps (State.xCMaps state) (State.yCMap state)
-
-      -- Done, propagate a new state
-      state'' = State.mkState (L.reverse (lnk:acc)) cms
-        where
-          cms = CMaps.mkCMaps (State.xCMaps state) (State.yCMap state)
-
-
-      -- Update link l2.
-      update1 []         _   _     = error "We shouldn't be there"
-      update1 [_]        _   _     = error "We shouldn't be there"
-      update1 (l1:l2:ls) acc state = CMap.updateForNext c trgt2 x m >>= update1Aux
-        where
-          c      = CPLink.color l2
-          cSrc2  = CPLink.src  l2
-          cTrgt2 = CPLink.trgt l2
-          trgt2  = CPoint.point cTrgt2
-
-          -- New threshold.
-          cSrc1 = CPLink.trgt l1
-          src1  = CPoint.point cSrc1
-          x     = Point.xCoord src1
-
-          -- resolve CPLink l2
-          updateLink m' = updateLinkAux (CMap.next c trgt2 m')
-            where
-              updateLinkAux Nothing       = error "We shouldn't be there !"
-              updateLinkAux (Just trgt2') = CPLink.mkCPLinkUnsafe cSrc2 cTrgt2'
-                where
-                  cTrgt2' = CPoint.mkCPoint trgt2' c
-
-          -- keep on resolving conflict type 1
-          update1Aux m' = resolve1Aux (updateLink m':ls) (l1:acc) m'
+          srcCP2  = CPLink.src lnk2
+          trgtCP2 = CPoint.mkCPoint p' c
+          lnk2'   = CPLink.mkCPLinkUnsafe srcCP2 trgtCP2
 
   {-|
 

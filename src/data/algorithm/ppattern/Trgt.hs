@@ -18,11 +18,14 @@ module Data.Algorithm.PPattern.Trgt
 
 -- * Querying
 , nbColors
+, xCMap
+, yCMap
 )
 where
 
   import qualified Data.Algorithm.PPattern.CPoint as CPoint
   import qualified Data.Algorithm.PPattern.CMaps  as CMaps
+  import qualified Data.Algorithm.PPattern.CMap   as CMap
 
   -- | Trgt data
   data Trgt = Trgt { cPoints :: [CPoint.CPoint]
@@ -40,4 +43,14 @@ where
     The 'nbColors' function returns the number of colors in the target.
   -}
   nbColors :: Trgt -> Int
-  nbColors = CMap.nbColors . xCMap . cMaps
+  nbColors = CMaps.nbColors . cMaps
+
+  {-|
+  -}
+  xCMap :: Trgt -> CMap.CMap
+  xCMap = CMaps.xCMap . cMaps
+
+  {-|
+  -}
+  yCMap :: Trgt -> CMap.CMap
+  yCMap = CMaps.yCMap . cMaps

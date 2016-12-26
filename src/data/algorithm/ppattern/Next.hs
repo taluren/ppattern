@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.Next
+Module      : Data.Algorithm.PPattern.Next
 Structription : Short Structription
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -10,31 +10,21 @@ Here is a longer Structription of this module, containing some
 commentary with @some markup@.
 -}
 
-module Data.Algorithm.Next
+module Data.Algorithm.PPattern.Next
 (
   mkNextIncreasings
 )
 where
 
-  import qualified Data.List          as L
-  import qualified Data.Map.Strict    as Map
-  import qualified Data.IntMap.Strict as IntMap
-  import qualified Data.Tuple.HT      as THT
-  import qualified Data.Foldable      as Fold
-  import Data.Maybe
+  import qualified Data.List   as L
+  import qualified Data.IntSet as IntSet
 
-  import qualified Data.Algorithm.NextIncreasings.Permutation  as Permutation
-  import qualified Data.Algorithm.NextIncreasings.IntPartition as IntPartition
-  import qualified Data.Algorithm.NextIncreasings.Point        as Point
-  import qualified Data.Algorithm.NextIncreasings.CPoint       as CPoint
-  import qualified Data.Algorithm.NextIncreasings.Color        as Color
-  import qualified Data.Algorithm.NextIncreasings.Trgt         as Trgt
-  import qualified Data.Algorithm.NextIncreasings.PMap         as PMap
-  import qualified Data.Algorithm.NextIncreasings.CMap         as CMap
-  import qualified Data.Algorithm.NextIncreasings.CMaps        as CMaps
-  import qualified Data.Algorithm.NextIncreasings.CPLink       as CPLink
-  import qualified Data.Algorithm.NextIncreasings.State        as State
-  import qualified Data.Algorithm.NextIncreasings.Stack        as Stack
+  import qualified Data.Algorithm.PPattern.Point  as Point
+  import qualified Data.Algorithm.PPattern.CPoint as CPoint
+  import qualified Data.Algorithm.PPattern.Color  as Color
+  import qualified Data.Algorithm.PPattern.PMap   as PMap
+  import qualified Data.Algorithm.PPattern.CMap   as CMap
+  import qualified Data.Algorithm.PPattern.Stack  as Stack
 
   {-|
     'mkNextIncreasing ps' takes a list of points and return a map that associates
@@ -42,17 +32,17 @@ where
     (if any).
   -}
   mkNextIncreasing :: [Point.Point] -> PMap.T -> PMap.PMap
-  mkNextIncreasing []     PMap.XCoord = PMap.emptyXPMap
-  mkNextIncreasing []     PMap.YCoord = PMap.emptyYPMap
-  mkNextIncreasing (p:ps) t           = mkNextIncreasingAux ps t s pm
+  mkNextIncreasing []     PMap.X = PMap.emptyX
+  mkNextIncreasing []     PMap.Y = PMap.emptyY
+  mkNextIncreasing (p:ps) t      = mkNextIncreasingAux ps t s pm
     where
-      -- Start with the first point in the stack
-      s = Stack.push Stack.empty p
-
-      -- Empty PMap
+      -- empty map for x-ccordinate
       pm = case t of
-            PMap.XCoord -> PMap.emptyXPMap
-            PMap.YCoord -> PMap.emptyYPMap
+        PMap.X -> PMap.emptyX
+        PMap.Y -> PMap.emptyY
+
+      -- Start with the first point on the stack
+      s = Stack.push Stack.empty p
 
   mkNextIncreasingAux :: [Point.Point] -> PMap.T -> Stack.Stack Point.Point -> PMap.PMap -> PMap.PMap
   mkNextIncreasingAux []     _ _                  m = m
@@ -67,8 +57,8 @@ where
     | otherwise = mkNextIncreasingAux ps t (Stack.push s p) m
     where
       f = case t of
-            PMap.XCoord -> Point.xCoord
-            PMap.YCoord -> Point.yCoord
+            PMap.X -> Point.xCoord
+            PMap.Y -> Point.yCoord
       v  = f p
       v' = f p'
 
@@ -79,14 +69,22 @@ where
   mkNextIncreasings :: [CPoint.CPoint] -> PMap.T -> CMap.CMap
   mkNextIncreasings cps t = mkNextIncreasingsAux cps t cs cm
     where
-      cs = L.nub $ L.map CPoint.color cps
+      -- collect colors
+      cs = IntSet.toList . IntSet.fromList $ L.map CPoint.color cps
+
+      -- initial empty map
       cm = CMap.empty
 
   mkNextIncreasingsAux :: [CPoint.CPoint] -> PMap.T -> [Color.Color] -> CMap.CMap -> CMap.CMap
   mkNextIncreasingsAux _   _   []     cm = cm
   mkNextIncreasingsAux cps t   (c:cs) cm = mkNextIncreasingsAux cps t cs cm'
     where
+      -- filter colored points by color
       cps' = L.filter (\cp -> CPoint.color cp == c) cps
+
+      -- collect points
       ps'  = fmap CPoint.point cps'
+
+      -- compute and store next function for color c and points ps'
       pm   = mkNextIncreasing ps' t
       cm'  = CMap.insert c pm cm
