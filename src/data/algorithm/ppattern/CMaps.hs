@@ -65,7 +65,7 @@ where
     where
       cms' = updateYCMap ycm cms
 
-  nextY :: Color.Color -> Point.Point -> Perm.T -> CMaps -> PPCMaps
+  nextY :: Color.Color -> Point.Point -> Perm.T -> CMaps -> Maybe PPCMaps
   nextY c p thrshld cms = CMap.next c p thrshld (xCMap cms) >>= afterNextY cms
 
   {-|

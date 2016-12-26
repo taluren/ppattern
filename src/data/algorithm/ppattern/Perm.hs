@@ -204,7 +204,7 @@ where
       xss' = L.sort . fmap L.sort $ fmap toList ps
 
   {-|
-    'partitionsIncreasings p n' return all partitions of the permutation 'p' into
+    'partitionsIncreasings p k' return all partitions of the permutation 'p' into
     'k' increasing subsequences.
   -}
   partitionsIncreasings :: Perm -> Int -> [[Perm]]

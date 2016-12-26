@@ -69,13 +69,13 @@ where
 
   {-|
   -}
-  next :: Color.Color -> Point.Point -> Perm.T -> CMap -> PPCMap
+  next :: Color.Color -> Point.Point -> Perm.T -> CMap -> Maybe PPCMap
   next c p thrshld cm = IntMap.lookup c cm >>= PMap.next p thrshld >>= afterNext cm
 
   {-|
     Promote 'PPMap'
   -}
-  afterQueryNext ::CMap -> PMap.PPPMap -> Maybe PPCMap
+  afterQueryNext :: CMap -> PMap.PPPMap -> Maybe PPCMap
   afterQueryNext cm (PMap.PPMap (p, p', _)) = Just $ PPCMap (p, p', cm)
 
   {-|

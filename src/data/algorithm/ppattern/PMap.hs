@@ -13,19 +13,22 @@ commentary with @some markup@.
 module Data.Algorithm.PPattern.PMap
 (
   -- * The @PMap@ type
-  PMap
+  PMap(..)
 , emptyXPMap
 , emptyYPMap
 
+-- * The @PPPMap@ type
+, T(..)
+
   -- * The @PPPMap@ type
-, PPPMap
+, PPPMap(..)
 
   -- * Querying
-, next
+, queryNext
 
   -- * Modifying
-, updateForNext
-, insert
+, next
+, inser
 )
 where
 
@@ -34,51 +37,28 @@ where
   import qualified Data.Algorithm.PPattern.Permutation as Permutation
   import qualified Data.Algorithm.PPattern.Point       as Point
 
-  data T = XCoord | YCoord
+  data T = X | Y
            deriving (Show, Eq, Ord)
 
-  newtype PMap = PMap (Map.Map Point.Point Point.Point)
-                 deriving (Show)
+  data PMap = PMap { getMap :: Map.Map Point.Point Point.Point
+                      , t :: T
+                      } deriving (Show)
 
   -- Propagating update data
   newtype PPPMap = PPPMap (Point.Point, Point.Point, PMap)
                    deriving (Show)
 
   {-|
-  'emptyXPMap' constructs an empty map for x-coordinate comparisons.
+  'emptyX' constructs an empty map for x-coordinate comparisons.
   -}
-  empty :: PMap
-  empty = PMap (Map.empty)
-
+  emptyX :: PMap
+  emptyX = PMap { getMap=Map.empty, t=X)
 
   {-|
-    'compareToVal pm p val' compare the point 'p' to 'val'.
-    For 't=XCoord', the comparison is on the x-coordinate.
-    For 't=YCoord', the comparison is on the y-coordinate.
+  'emptyX' constructs an empty map for x-coordinate comparisons.
   -}
-  compareToVal :: PMap -> Point.Point -> Permutation.T -> Bool
-  compareToVal (PMap {t=XCoord}) p val = Point.xCoord p > val
-  compareToVal (PMap {t=YCoord}) p val = Point.yCoord p > val
-
-  {-|
-    'updatePMap pm m' "updates" the map of a PMap.
-  -}
-  updatePMap :: PMap -> Map.Map Point.Point Point.Point -> PMap
-  updatePMap pm m = pm { getMap = m }
-
-  {-|
-    'updateForNext p val pm'
-  -}
-  updateForNext :: Point.Point -> Permutation.T -> PMap -> Maybe PMap
-  updateForNext p val pm = aux (getMap pm) p
-    where
-      -- Find next point
-      aux m p'= Map.lookup p' m >>= aux' m
-
-      -- Return the next point if it is greater than the requested val.
-      aux' m p'
-        | compareToVal pm p val = Just $ updatePMap pm (Map.update (\_ -> Just p') p m)
-        | otherwise             = aux m p'
+  emptyY :: PMap
+  emptyY = PMap { getMap=Map.empty, t=Y)
 
   {-|
     Insert a key/value in the point map.
@@ -87,15 +67,56 @@ where
   insert p p' pm = updatePMap pm . Map.insert p p' $ getMap pm
 
   {-|
+    'compareToVal pm p val' compare the point 'p' to 'val'.
+    For 't=XCoord', the comparison is on the x-coordinate.
+    For 't=YCoord', the comparison is on the y-coordinate.
   -}
-  afterNext :: CMap -> PMap.PPPMap -> Maybe PPCMap
-  afterNext cm (PPMap (p, p', pm))
-    | p == p'   = Just $ PPCMap (p, p', cm)
-    | otherwise = Just $ PPCMap (p, p', cm')
-    where
-      cm' = IntMap.update (\_ -> Just p') p cp
+  aboveThreshold :: PMap -> Point.Point -> Permutation.T -> Bool
+  aboveThreshold (PMap {t=XCoord}) p val = Point.xCoord p > val
+  aboveThreshold (PMap {t=YCoord}) p val = Point.yCoord p > val
+
+  {-|
+    'updatePMap pm m' "updates" the map of a PMap.
+  -}
+  updatePMap :: PMap -> Map.Map Point.Point Point.Point -> PMap
+  updatePMap pm m = pm { getMap = m }
 
   {-|
   -}
-  next :: Color.Color -> Point.Point -> Perm.T -> PMap -> PPPMap
-  next c p thrshld cm = IntMap.lookup c cm >>= PMap.next p thrshld >>= afterNext cm
+  afterNext :: PMap -> Point.Point -> Point.Point -> Maybe PPPMap
+  afterNext pm p p'
+    | p == p'   = Just $ PPPMap (p, p', pm)
+    | otherwise = Just $ PPCMap (p, p', pm')
+    where
+      m   = getMap pm
+      m'  = Map.update (\_ -> Just p') p m
+      pm' = updateGetMap m' pm
+
+  {-|
+  -}
+  next :: Point.Point -> Perm.T -> PMap -> Maybe PPPMap
+  next p thrshld pm = aux p (getMap pm)
+    where
+      aux p' m = Map.lookup p' m >>= aux'
+        where
+          aux' p''
+            | aboveThreshold p'' thrshld (t m) = afterNext pm p p''
+            | otherwise                        = aux p'' m
+
+  {-|
+    Promote 'PPMap'
+  -}
+  afterQueryNext :: CMap -> Point.Point -> Point.Point -> Maybe PPCMap
+  afterQueryNext cm p p' = Just $ PPPMap (p, p', cm)
+
+  {-|
+
+  -}
+  queryNext :: Point.Point -> Perm.T -> CMap -> Maybe PPCMap
+  queryNext p thrshld pm = aux p (getMap pm)
+    where
+      aux p' m = Map.lookup p' m >>= aux'
+        where
+          aux' p''
+            | aboveThreshold p'' thrshld (t m) = afterQueryNext pm p p''
+            | otherwise                        = aux p'' m
