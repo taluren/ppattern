@@ -14,7 +14,7 @@ commentary with @some markup@.
 import System.Console.CmdArgs
 import System.Random
 
-import qualified Data.Algorithm.PPattern.Permutation as Permutation
+import qualified Data.Algorithm.PPattern.Perm as Perm
 
 data Options = Options { len            :: Int
                        , num            :: Int
@@ -30,13 +30,13 @@ options = Options { len            = def  &= help "The length of each permutatio
                   &= summary "ppattern-rand v0.1.0.0, (C) Stéphane Vialette 2016"
                   &= program "ppattern-rand"
 
-go :: RandomGen g => Options -> g -> [Permutation.Permutation]
+go :: RandomGen g => Options -> g -> [Perm.Perm]
 go opts = aux (len opts) (num opts) []
   where
     aux _ 0 acc _ = acc
     aux n m acc g = aux n (m-1) (p:acc) g'
       where
-        (p, g') = Permutation.randPermutation' n g
+        (p, g') = Perm.randPerm' n g
 
 main :: IO ()
 main = do

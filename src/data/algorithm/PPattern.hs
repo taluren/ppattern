@@ -21,7 +21,6 @@ module Data.Algorithm.PPattern
 where
 
   import qualified Data.List          as L
-  import qualified Data.Map.Strict    as Map
   import qualified Data.IntMap.Strict as IntMap
   import qualified Data.Tuple.HT      as THT
   import qualified Data.Foldable      as Fold
@@ -34,11 +33,9 @@ where
   import qualified Data.Algorithm.PPattern.Color        as Color
   import qualified Data.Algorithm.PPattern.Trgt         as Trgt
   import qualified Data.Algorithm.PPattern.PMap         as PMap
-  import qualified Data.Algorithm.PPattern.CMap         as CMap
   import qualified Data.Algorithm.PPattern.CMaps        as CMaps
   import qualified Data.Algorithm.PPattern.CPLink       as CPLink
   import qualified Data.Algorithm.PPattern.State        as State
-  import qualified Data.Algorithm.PPattern.Stack        as Stack
   import qualified Data.Algorithm.PPattern.Next         as Next
 
   {-|
@@ -48,7 +45,7 @@ where
   mkCPoints :: Perm.Perm -> IntMap.IntMap Color.Color -> [CPoint.CPoint]
   mkCPoints (Perm.Perm xs) m = L.map (THT.uncurry3 CPoint.mkCPoint') t3s
     where
-      cs  = Fold.foldr (\x acc -> (fromJust (Map.lookup x m)):acc) [] xs
+      cs  = Fold.foldr (\x acc -> (fromJust (IntMap.lookup x m)):acc) [] xs
       t3s = L.zip3 [1..] xs cs
 
   {-|
@@ -71,8 +68,9 @@ where
     associates to each each element a color.
   -}
   mapFromPartition :: [Perm.Perm] -> IntMap.IntMap Color.Color
-  mapFromPartition = Map.fromList . Fold.concatMap f . flip zip [1..] . fmap Perm.toList
+  mapFromPartition = IntMap.fromList . Fold.concatMap f . flip zip [1..] . fmap Perm.toList
     where
+      -- use colors 1, 2, ...
       colors i  = L.repeat i
 
       f (xs, i) = L.zip xs $ colors i
@@ -110,17 +108,15 @@ where
     form of a map.
   -}
   mkTrgt :: Perm.Perm -> (Trgt.Trgt, IntPartition.IntPartition)
-  mkTrgt p = (Trgt.mkTrgt cps xcm ycm, toIntPartition partition)
+  mkTrgt p = (Trgt.mkTrgt cps cms, toIntPartition partition)
     where
-      partition    = Perm.greedyPartitionIncreasings1 p
-      cps          = mkCPoints p (mapFromPartition partition)
+      partition = Perm.greedyPartitionIncreasings1 p
+      cps       = mkCPoints p (mapFromPartition partition)
 
-      -- Next color point map for x-coordinates
-      xcm          = Next.mkNextIncreasings cps PMap.X
-
-      -- Next color point map for y-ccordinates
-      ycm          = Next.mkNextIncreasings cps PMap.Y
-
+      -- Next color point map for x/y-coordinates
+      xcm = Next.mkNextIncreasings cps PMap.X
+      ycm = Next.mkNextIncreasings cps PMap.Y
+      cms = CMaps.mkCMaps xcm ycm
   {-|
     The 'search' function takes two permutations 'p' and 'q', and it returns
     (if possible) an order-isomorphic occurrence of 'p' in 'q'.
@@ -137,23 +133,23 @@ where
   searchAux :: [[CPoint.CPoint]] -> Trgt.Trgt -> Maybe [CPLink.CPLink]
   searchAux []               _    = Nothing
   searchAux (srcCps:srcCpss) trgt = case doSearch srcCps trgt of
-                                      Nothing    -> searchAux srcCpss trgt
-                                      Just lnks  -> Just lnks
+                                      Nothing   -> searchAux srcCpss trgt
+                                      Just lnks -> Just lnks
 
   {-|
     Perform the search for a given coloring of the source Perm.
   -}
   doSearch :: [CPoint.CPoint] -> Trgt.Trgt -> Maybe [CPLink.CPLink]
-  doSearch srcPoints trgt = lnks >>= mkState >>= doSearchAux
+  doSearch cps trgt = lnks >>= mkInitialState >>= doSearchAux
     where
       -- initial mapping
-      lnks = leftmostCPMapping srcPoints (Trgt.cPoints trgt)
+      lnks = leftmostCPMapping cps (Trgt.cPoints trgt)
 
       -- make initial state
-      xcm           = Trgt.xCMap trgt
-      ycm           = Trgt.yCMap trgt
-      cms           = CMaps.mkCMaps xcm ycm
-      mkState lnks' = Just (State.mkState cms lnks')
+      xcm = Trgt.xCMap trgt
+      ycm = Trgt.yCMap trgt
+      cms = CMaps.mkCMaps xcm ycm
+      mkInitialState lnks' = Just $ State.mkState lnks' cms
 
   doSearchAux :: State.State -> Maybe [CPLink.CPLink]
   doSearchAux state = resolve1 state >>= resolve2 >>= loop
@@ -176,16 +172,16 @@ where
   resolve1Aux [lnk] acc state = Just $ State.updateLinks (L.reverse (lnk:acc)) state
   resolve1Aux (lnk1:lnk2:lnks) acc state
     | conflict lnk1 lnk2 = update1 (lnk1:lnk2:lnks) acc state
-    | otherwise          = resolve1Aux (lkn2:lnks) (lnk1:acc) state
+    | otherwise          = resolve1Aux (lnk2:lnks) (lnk1:acc) state
     where
       -- Two links with the same color but reverse x-coordinate order
-      confict = CPLink.monoChromaticOrderConflict
+      conflict = CPLink.monoChromaticOrderConflict
 
   -- Update link lnk2 (which type 1 (i.e. order)  conflict with lnk2).
   update1 :: [CPLink.CPLink] -> [CPLink.CPLink] -> State.State -> Maybe State.State
   update1 []               _   _     = error "We shouldn't be there" -- Werror option
   update1 [_]              _   _     = error "We shouldn't be there" -- Werror option
-  update1 (lnk1:lnk2:lnks) acc state = State.nextX c p thrshld state >>= update1Aux
+  update1 (lnk1:lnk2:lnks) acc state = State.nextX c p thrshld state >>= updateAux1
     where
       -- color
       c = CPLink.color lnk2
@@ -197,11 +193,13 @@ where
       thrshld = Point.xCoord . CPoint.point $ CPLink.trgt lnk1
 
       -- resolve link lnk2
-      updateAux1 (State.PPPState _ p' state') = resolve1Aux (lnk2':lnks) (lnk1:acc) state'
+      updateAux1 (State.PPState (_, p', state')) = resolve1Aux lnks' acc' state'
         where
           srcCP2  = CPLink.src lnk2
           trgtCP2 = CPoint.mkCPoint p' c
           lnk2'   = CPLink.mkCPLinkUnsafe srcCP2 trgtCP2
+          lnks'   = lnk2':lnks
+          acc'    = lnk1:acc
 
   {-|
 

@@ -16,6 +16,9 @@ module Data.Algorithm.PPattern.State
   State(..)
 , mkState
 
+  -- * The @PPState@ type
+, PPState(..)
+
   -- * Querying and modifying
 , nextX
 , nextY
