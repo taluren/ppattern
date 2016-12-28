@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.PPattern.Partition
+Module      : Data.Algorithm.PPattern.Perm.Partition
 Description : Short description
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -10,7 +10,7 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-module Data.Algorithm.PPattern.Partition
+module Data.Algorithm.PPattern.Perm.Partition
 (
 
 )
@@ -18,15 +18,15 @@ where
 
   import qualified Data.Map.Strict as Map
 
-  import qualified Data.Algorithm.PPattern.Permutation as Permutation
-  import qualified Data.Algorithm.PPattern.Point       as Point
+  import qualified Data.Algorithm.PPattern.Perm  as Perm
+  import qualified Data.Algorithm.PPattern.Point as Point
 
 
-  data NTree = NTree { size   :: {-# UNPACK #-} !Int,
+  data NTree = NTree { size   :: {-# UNPACK #-} !Int
                      , perms  :: [Perm.Perm]
                      , nTrees :: [NTree]
                      }
-             | NLeaf { size   :: {-# UNPACK #-} !Int,
+             | NLeaf { size   :: {-# UNPACK #-} !Int
                      , perms  :: [Perm.Perm]
                      }
              deriving (Show)

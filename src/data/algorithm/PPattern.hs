@@ -151,8 +151,18 @@ where
       cms = CMaps.mkCMaps xcm ycm
       mkInitialState lnks' = Just $ State.mkState lnks' cms
 
+  -- doSearchAux :: State.State -> Maybe [CPLink.CPLink]
+  -- doSearchAux state = resolve1 state >>= resolve2 >>= loop
+  --   where
+  --     loop state'
+  --       | lnks /= lnks' = doSearchAux state' -- some conflicts have beed resolved
+  --       | otherwise     = Just lnks'         -- no conflict has been resolved
+  --       where
+  --         lnks  = State.links state
+  --         lnks' = State.links state'
+
   doSearchAux :: State.State -> Maybe [CPLink.CPLink]
-  doSearchAux state = resolve1 state >>= resolve2 >>= loop
+  doSearchAux state = resolveConflict state >>= loop
     where
       loop state'
         | lnks /= lnks' = doSearchAux state' -- some conflicts have beed resolved
@@ -161,48 +171,126 @@ where
           lnks  = State.links state
           lnks' = State.links state'
 
-  {-|
-    Resolve type 1 (i.e., order) conflicts.
-  -}
-  resolve1 :: State.State -> Maybe State.State
-  resolve1 state = resolve1Aux (State.links state) [] state
-
-  resolve1Aux :: [CPLink.CPLink] -> [CPLink.CPLink] -> State.State -> Maybe State.State
-  resolve1Aux []    acc state = Just $ State.updateLinks (L.reverse acc)       state
-  resolve1Aux [lnk] acc state = Just $ State.updateLinks (L.reverse (lnk:acc)) state
-  resolve1Aux (lnk1:lnk2:lnks) acc state
-    | conflict lnk1 lnk2 = update1 (lnk1:lnk2:lnks) acc state
-    | otherwise          = resolve1Aux (lnk2:lnks) (lnk1:acc) state
+  resolveConflict :: State.State -> Maybe State.State
+  resolveConflict state = startResolveConflict lnks2By2 state
     where
-      -- Two links with the same color but reverse x-coordinate order
-      conflict = CPLink.monoChromaticOrderConflict
+      lnks     = links state
+      lnks2By2 = Combi.choose lnks 2
 
-  -- Update link lnk2 (which type 1 (i.e. order)  conflict with lnk2).
-  update1 :: [CPLink.CPLink] -> [CPLink.CPLink] -> State.State -> Maybe State.State
-  update1 []               _   _     = error "We shouldn't be there" -- Werror option
-  update1 [_]              _   _     = error "We shouldn't be there" -- Werror option
-  update1 (lnk1:lnk2:lnks) acc state = State.nextX c p thrshld state >>= updateAux1
+  startResolveConflct :: [(CPLink.CPLink, CPLink.CPLink)] -> State.State -> Maybe State.State
+  startResolveConflct []                   state = Just state
+  startResolveConflct ((lnk1, lnk2):pLnks) state
+    | CPLink.orderConflict lnk1 lnk2 = resolveOrderConflict lnk1 lnk2 state
+    | CPLink.orderConflict lnk2 lnk1 = resolveOrderConflict lnk2 lnk1 state
+    | CPLink.valueConflict lnk1 lnk2 = resolveValueConflictLG lnk1 lnk2 state
+    | CPLink.valueConflict lnk2 lnk1 = resolveValueConflictLG lnk2 lnk1 state
+    | otherwise                      = resolveAux pLnks state
+
+  resolveOrderConflict :: CPLink.CPLink -> CPLink.CPLink -> State.State -> Maybe State.State
+  resolveOrderConflict lnk1 lnk2 state = CMaps.nextX c p thrshld cms >>= endResolveConflict lnk2 state
     where
-      -- color
-      c = CPLink.color lnk2
+      cms     = State.cMaps state                               -- x/y next maps
+      c       = CPLink.color lnk2                               -- color
+      p       = CPoint.point $ CPLink.trgt lnk2                 -- moving point
+      thrshld = Point.xCoord . CPoint.point $ CPLink.trgt lnk1  -- threshold
 
-      -- moving point
-      p  = CPoint.point $ CPLink.trgt lnk2
+  resolveValueConflict :: CPLink.CPLink -> CPLink.CPLink -> State.State -> Maybe State.State
+  resolveValueConflict lnk1 lnk2 state = CMaps.nextY c p thrshld cms >>= endResolveConflict' lnk2 state
+    where
+      cms     = State.cMaps state                               -- x/y next maps
+      c       = CPLink.color lnk2                               -- color
+      p       = CPoint.point $ CPLink.trgt lnk2                 -- moving point
+      thrshld = Point.yCoord . CPoint.point $ CPLink.trgt lnk1  -- threshold
 
-      -- threshold.
-      thrshld = Point.xCoord . CPoint.point $ CPLink.trgt lnk1
+  endResolveConflict :: CPLink.CPLink -> State.State -> CMaps.PPMap -> Maybe State.State
+  endResolveConflict lnk state (CMaps.PPMap (_, p', cms)) = Just newState >>= resolveConflict
+    where
+      c        = CPLink.color lnk
+      lnks     = State.links state
+      srcCP    = CPLink.src lnk
+      trgtCP   = CPoint.mkCPoint p' c
+      newLnk2  = CPLink.mkCPLink srcCP trgtCP
+      newLnks  = L.delete (newLnk:lnks) lnk
+      newState = State.mkState newLnks cms
 
-      -- resolve link lnk2
-      updateAux1 (State.PPState (_, p', state')) = resolve1Aux lnks' acc' state'
-        where
-          srcCP2  = CPLink.src lnk2
-          trgtCP2 = CPoint.mkCPoint p' c
-          lnk2'   = CPLink.mkCPLinkUnsafe srcCP2 trgtCP2
-          lnks'   = lnk2':lnks
-          acc'    = lnk1:acc
-
-  {-|
-
-  -}
-  resolve2 :: State.State -> Maybe State.State
-  resolve2 s = Just s
+  -- {-|
+  --   Resolve type 1 (i.e., order) conflicts.
+  -- -}
+  -- resolve1 :: State.State -> Maybe State.State
+  -- resolve1 state = resolve1Aux (State.links state) [] state
+  --
+  -- resolve1Aux :: [CPLink.CPLink] -> [CPLink.CPLink] -> State.State -> Maybe State.State
+  -- resolve1Aux []    acc state = Just $ State.updateLinks (L.reverse acc)       state
+  -- resolve1Aux [lnk] acc state = Just $ State.updateLinks (L.reverse (lnk:acc)) state
+  -- resolve1Aux (lnk1:lnk2:lnks) acc state
+  --   | conflict lnk1 lnk2 = update1 (lnk1:lnk2:lnks) acc state
+  --   | otherwise          = resolve1Aux (lnk2:lnks) (lnk1:acc) state
+  --   where
+  --     -- Two links with the same color but reverse x-coordinate order
+  --     conflict = CPLink.monoChromaticOrderConflict
+  --
+  -- -- Update link lnk2 (which type 1 (i.e. order)  conflict with lnk2).
+  -- update1 :: [CPLink.CPLink] -> [CPLink.CPLink] -> State.State -> Maybe State.State
+  -- update1 []               _   _     = error "We shouldn't be there" -- Werror option
+  -- update1 [_]              _   _     = error "We shouldn't be there" -- Werror option
+  -- update1 (lnk1:lnk2:lnks) acc state = State.nextX c p thrshld state >>= update1Aux
+  --   where
+  --     -- color
+  --     c = CPLink.color lnk2
+  --
+  --     -- moving point
+  --     p  = CPoint.point $ CPLink.trgt lnk2
+  --
+  --     -- threshold.
+  --     thrshld = Point.xCoord . CPoint.point $ CPLink.trgt lnk1
+  --
+  --     -- resolve link lnk2
+  --     update1Aux (State.PPState (_, p', state')) = resolve1Aux lnks' acc' state'
+  --       where
+  --         srcCP2  = CPLink.src lnk2
+  --         trgtCP2 = CPoint.mkCPoint p' c
+  --         lnk2'   = CPLink.mkCPLinkUnsafe srcCP2 trgtCP2
+  --         lnks'   = lnk2':lnks
+  --         acc'    = lnk1:acc
+  --
+  -- {-|
+  --   Resolve type 2 (i.e., value) conflicts.
+  -- -}
+  -- resolve2 :: State.State -> Maybe State.State
+  -- resolve2 state = resolve2Aux lnksPairs state
+  --   where
+  --     -- pairs of links
+  --     lnks      = State.links state
+  --     lnksPairs = Combi.choose lnks 2
+  --
+  -- resolve2Aux :: [(CPLink.CPLink, CPLink.CPLink)] -> State.State -> Maybe State.State
+  -- resolve2Aux []                      state = Just state
+  -- resolve2Aux ((lnk1,lnk2):lnksPairs) state
+  --   | conflictLG lnk1 lnk2 = update2 lnk2 thrshldLG state
+  --   | conflictGL lnk1 lnk2 = update2 lnk1 thrshldGL state
+  --   | otherwise            = resolve2Aux lnksPairs state
+  --   where
+  --     conflictLG = CPLink.biChromaticValueConflictLG
+  --     thrshldLG  = Point.yCoord . CPoint.point $ CPLink.trgt lnk1
+  --
+  --     conflictGL = CPLink.biChromaticValueConflictGL
+  --     thrshldGL  = Point.yCoord . CPoint.point $ CPLink.trgt lnk2
+  --
+  -- -- Update link lnk2 (which type 1 (i.e. order)  conflict with lnk2).
+  -- update2 :: CPLink -> Perm.T -> State.State -> Maybe State.State
+  -- update2 lnk thrshld state = State.nextX c p thrshld state >>= update2Aux
+  --   where
+  --     -- color
+  --     c = CPLink.color lnk
+  --
+  --     -- moving point
+  --     p  = CPoint.point $ CPLink.trgt lnk
+  --
+  --     -- resolve link lnk2
+  --     update2Aux (State.PPState (_, p', state')) = resolve2Aux lnks' acc' state'
+  --       where
+  --         srcCP2  = CPLink.src lnk2
+  --         trgtCP2 = CPoint.mkCPoint p' c
+  --         lnk2'   = CPLink.mkCPLinkUnsafe srcCP2 trgtCP2
+  --         lnks'   = lnk2':lnks
+  --         acc'    = lnk1:acc

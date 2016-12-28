@@ -27,8 +27,12 @@ module Data.Algorithm.PPattern.CPLink
 , biChromatic
 , orderConflict
 , valueConflict
-, biChromaticValueConflict
 , monoChromaticOrderConflict
+, biChromaticOrderConflict
+, monoChromaticValueConflictLG
+, monoChromaticValueConflictGL
+, biChromaticValueConflictLG
+, biChromaticValueConflictGL
 )
 where
 
@@ -40,6 +44,16 @@ where
   data CPLink = CPLink { src  :: {-# UNPACK #-} !CPoint.CPoint
                        , trgt :: {-# UNPACK #-} !CPoint.CPoint
                        } deriving (Show, Eq)
+
+  instance Ord CPLink where
+    lnk1 < lnk2 = x1 < x2 && x1' < x2'
+      where
+        x1  = Point.xCoord . CPoint.point $ src  lnk1
+        x1' = Point.xCoord . CPoint.point $ trgt lnk1
+
+        x2  = Point.xCoord . CPoint.point $ src  lnk2
+        x2' = Point.xCoord . CPoint.point $ trgt lnk2
+
   {-|
     'mkCPLink' makes a CPLink object from two colored points with the
     the same color.
@@ -79,33 +93,65 @@ where
 
   -}
   orderConflict :: CPLink -> CPLink -> Bool
-  orderConflict l1 l2 = (x1 < x2 && x1' > x2') || (x1 > x2 && x1' < x2')
+  orderConflict lnk1 lnk2 = x1 < x2 && x1' > x2'
     where
-      x1  = Point.xCoord . CPoint.point $ src  l1
-      x1' = Point.xCoord . CPoint.point $ trgt l1
+      x1  = Point.xCoord . CPoint.point $ src  lnk1
+      x1' = Point.xCoord . CPoint.point $ trgt lnk1
 
-      x2  = Point.xCoord . CPoint.point $ src  l2
-      x2' = Point.xCoord . CPoint.point $ trgt l2
+      x2  = Point.xCoord . CPoint.point $ src  lnk2
+      x2' = Point.xCoord . CPoint.point $ trgt lnk2
 
   {-|
   -}
   monoChromaticOrderConflict :: CPLink -> CPLink -> Bool
-  monoChromaticOrderConflict l1 l2 = monoChromatic l1 l2 && orderConflict l1 l2
+  monoChromaticOrderConflict lkn1 lnk2 = monoChromatic lnk1 lnk2 && orderConflict lnk1 lnk2
+
+  {-|
+  -}
+  biChromaticOrderConflict :: CPLink -> CPLink -> Bool
+  biChromaticOrderConflict lkn1 lnk2 = biChromatic lnk1 lnk2 && orderConflict lnk1 lnk2
 
   {-|
 
   -}
-  valueConflict :: CPLink -> CPLink -> Bool
-  valueConflict l1 l2 = (y1 < y2 && y1' > y2') || (y1 > y2 && y1' < y2')
+  valueConflictLG :: CPLink -> CPLink -> Bool
+  valueConflict l1 l2 = x1 < x2 && y1 < y2 && y1' > y2'
     where
+      x1  = Point.xCoord . CPoint.point $ src  lnk1
+      x2' = Point.xCoord . CPoint.point $ trgt lnk2
+
       y1  = Point.yCoord . CPoint.point $ src  l1
       y1' = Point.yCoord . CPoint.point $ trgt l1
 
       y2  = Point.yCoord . CPoint.point $ src  l2
       y2' = Point.yCoord . CPoint.point $ trgt l2
 
-  biChromaticValueConflict :: CPLink -> CPLink -> Bool
-  biChromaticValueConflict l1 l2 = biChromatic l1 l2 && valueConflict l1 l2
+  {-|
+
+  -}
+  valueConflictGL :: CPLink -> CPLink -> Bool
+  valueConflict l1 l2 = x1 < x2 && y1 > y2 && y1' < y2'
+    where
+      x1  = Point.xCoord . CPoint.point $ src  lnk1
+      x2  = Point.xCoord . CPoint.point $ src  lnk2
+
+      y1  = Point.yCoord . CPoint.point $ src  l1
+      y1' = Point.yCoord . CPoint.point $ trgt l1
+
+      y2  = Point.yCoord . CPoint.point $ src  l2
+      y2' = Point.yCoord . CPoint.point $ trgt l2
+
+  monoChromaticValueConflictLG :: CPLink -> CPLink -> Bool
+  monoChromaticValueConflictLG l1 l2 = monoChromatic l1 l2 && valueConflictLG l1 l2
+
+  biChromaticValueConflictGL :: CPLink -> CPLink -> Bool
+  biChromaticValueConflictGL l1 l2 = monoChromatic l1 l2 && valueConflictGL l1 l2
+
+  biChromaticValueConflictLG :: CPLink -> CPLink -> Bool
+  biChromaticValueConflictLG l1 l2 = biChromatic l1 l2 && valueConflictLG l1 l2
+
+  biChromaticValueConflictGL :: CPLink -> CPLink -> Bool
+  biChromaticValueConflictGL l1 l2 = biChromatic l1 l2 && valueConflictGL l1 l2
 
   {-|
 

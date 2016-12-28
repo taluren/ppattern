@@ -17,8 +17,12 @@ module Data.Algorithm.PPattern.CPoint
 , mkCPoint
 , mkCPoint'
   --
+
 , sameC
 , diffC
+
+, colors
+, points
 )
 where
 
@@ -56,3 +60,9 @@ where
   -}
   diffC :: CPoint -> CPoint -> Bool
   diffC p1 p2 = not $ sameC p1 p2
+
+  colors :: [CPoint] -> [Color.Color]
+  colors = L.nub . L.map color
+
+  points :: [CPoint] -> [Point.Point]
+  points = L.map point []

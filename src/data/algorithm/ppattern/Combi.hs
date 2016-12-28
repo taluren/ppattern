@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.PPattern.Combinatorics
+Module      : Data.Algorithm.PPattern.Combi
 Description : Short description
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -10,7 +10,7 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-module Data.Algorithm.PPattern.Combinatorics
+module Data.Algorithm.PPattern.Combi
 (
   choose
 )
