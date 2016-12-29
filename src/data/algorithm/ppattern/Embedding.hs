@@ -15,6 +15,10 @@ module Data.Algorithm.PPattern.Embedding
   -- * The @Embedding@ type
   Embedding
 , empty
+, fromList
+
+  -- * Transforming
+, toList
 
   -- * Querying
 , fun
@@ -23,13 +27,14 @@ module Data.Algorithm.PPattern.Embedding
 , insert
 , update
 , resolveX
+, resolveY
 )
 where
 
   import qualified Data.Map.Strict as Map
 
-  import qualified Data.Algorithm.PPattern.Perm   as Perm
   import qualified Data.Algorithm.PPattern.CPoint as CPoint
+  import qualified Data.Algorithm.PPattern.Next   as Next
 
   type Embedding =  Map.Map CPoint.CPoint CPoint.CPoint
 
@@ -43,14 +48,27 @@ where
 
   -}
   fun :: CPoint.CPoint -> Embedding -> Maybe CPoint.CPoint
-  fun  = Map.lookup
+  fun = Map.lookup
+
+  {-|
+
+  -}
+  fromList :: [(CPoint.CPoint, CPoint.CPoint)] -> Embedding
+  fromList = Map.fromList
+
+
+  {-|
+
+  -}
+  toList :: Embedding -> [(CPoint.CPoint, CPoint.CPoint)] 
+  toList = Map.toList
 
   {-|
     Insert a key/value in the embedding.
   -}
-  insert :: CPoint.CPoint -> CPoint.CPoint -> Embedding -> Maybe Embedding
+  insert :: CPoint.CPoint -> CPoint.CPoint -> Embedding -> Embedding
   insert = Map.insert
-  
+
   {-|
   -}
   update :: CPoint.CPoint -> CPoint.CPoint -> Embedding -> Embedding
@@ -58,23 +76,22 @@ where
 
   {-|
   -}
-  resolveX :: CPoint.CPoint -> Perm.T -> Next.Next -> Next.Next -> Embedding -> Maybe Embedding
-  resolveX cp thrshld nextP nextQ m = fun cp m >>= findJump >>= update
-    where
-      findJump :: Int -> Next -> CPoint.CPoint -> Maybe Int
-      findJump = Next.jumpForThresholdX thrshld nextQ
-
-      update :: CPoint.CPoint -> Next.Next -> Next.Next -> Int -> Maybe Embedding
-      update = resolveXAux cp nextP nextQ m
+  resolveX :: CPoint.CPoint -> Int -> Next.Next -> Embedding -> Maybe Embedding
+  resolveX cp thrshld n e = fun cp e >>= Next.jumpThresholdXQ thrshld n >>= resolveAux cp n e
 
   {-|
   -}
-  resolveAux :: CPoint.CPoint -> Next -> Next -> Embedding -> Int -> Maybe Embedding
-  resolveAux cp1 nextP nextQ m k = fun cp1 m >>= Flippers.flip3 Next.nextK k nextQ >>= aux
+  resolveY :: CPoint.CPoint -> Int -> Next.Next -> Embedding -> Maybe Embedding
+  resolveY cp thrshld n e = fun cp e >>= Next.jumpThresholdYQ thrshld n >>= resolveAux cp n e
+
+  {-|
+  -}
+  resolveAux :: CPoint.CPoint -> Next.Next -> Embedding -> Int -> Maybe Embedding
+  resolveAux cp1 n e k = fun cp1 e >>= Next.nextQK k n >>= aux
     where
       aux :: CPoint.CPoint -> Maybe Embedding
-      aux cp1' = case Next.next cp1 nextP of
+      aux cp1' = case Next.nextP cp1 n of
                    Nothing  -> Just m'
-                   Just cp2 -> resolveAux cp2 nextP nextQ m' k
+                   Just cp2 -> resolveAux cp2 n m' k
         where
-          m' = update cp1 cp1' m
+          m' = update cp1 cp1' e

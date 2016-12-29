@@ -12,26 +12,31 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.CPoint
 (
+  -- * The @CPoint@ type
   CPoint(..)
-  --
 , mkCPoint
 , mkCPoint'
-  --
 
+  -- * comparing
 , sameC
 , diffC
 
+  -- * Querying
 , colors
-, points
+, nbColors
+, xCoord
+, yCoord
 )
 where
+
+  import qualified Data.List as L
 
   import qualified Data.Algorithm.PPattern.Point as Point
   import qualified Data.Algorithm.PPattern.Color as Color
 
   data CPoint = CPoint { point :: {-# UNPACK #-} !Point.Point
                        , color :: {-# UNPACK #-} !Color.Color
-                       } deriving (Show, Eq)
+                       } deriving (Show, Eq, Ord)
 
   {-|
     'mkCPoint' makes a colored point from a point and a color.
@@ -61,8 +66,26 @@ where
   diffC :: CPoint -> CPoint -> Bool
   diffC p1 p2 = not $ sameC p1 p2
 
+  {-|
+    Return the x-coordinate of the colored point.
+  -}
+  xCoord :: CPoint -> Int
+  xCoord = Point.xCoord . point
+
+  {-|
+    Return the y-coordinate of the colored point.
+  -}
+  yCoord :: CPoint -> Int
+  yCoord = Point.yCoord . point
+
+  {-|
+    Return the list of distinct colors that occur in a list of colored points.
+  -}
   colors :: [CPoint] -> [Color.Color]
   colors = L.nub . L.map color
 
-  points :: [CPoint] -> [Point.Point]
-  points = L.map point []
+  {-|
+    Return the number of distincts colors in a list of colored points.
+  -}
+  nbColors :: [CPoint] -> Int
+  nbColors = L.length . colors

@@ -19,8 +19,6 @@ module Data.Algorithm.PPattern.CPLink
 
   -- * Querying
 , color
-, getSrc
-, getTrgt
 
   -- * Querying two @CPLink@
 , monoChromatic
@@ -29,65 +27,53 @@ module Data.Algorithm.PPattern.CPLink
 , valueConflict
 , monoChromaticOrderConflict
 , biChromaticOrderConflict
-, monoChromaticValueConflictLG
-, monoChromaticValueConflictGL
-, biChromaticValueConflictLG
-, biChromaticValueConflictGL
+, monoChromaticValueConflict
+, biChromaticValueConflict
 )
 where
 
-  import qualified Data.Algorithm.PPattern.Perm   as Perm
   import qualified Data.Algorithm.PPattern.Point  as Point
   import qualified Data.Algorithm.PPattern.CPoint as CPoint
   import qualified Data.Algorithm.PPattern.Color  as Color
 
-  data CPLink = CPLink { src  :: {-# UNPACK #-} !CPoint.CPoint
-                       , trgt :: {-# UNPACK #-} !CPoint.CPoint
+  data CPLink = CPLink { cpP :: {-# UNPACK #-} !CPoint.CPoint
+                       , cpQ :: {-# UNPACK #-} !CPoint.CPoint
                        } deriving (Show, Eq)
-
-  instance Ord CPLink where
-    lnk1 < lnk2 = x1 < x2 && x1' < x2'
-      where
-        x1  = Point.xCoord . CPoint.point $ src  lnk1
-        x1' = Point.xCoord . CPoint.point $ trgt lnk1
-
-        x2  = Point.xCoord . CPoint.point $ src  lnk2
-        x2' = Point.xCoord . CPoint.point $ trgt lnk2
 
   {-|
     'mkCPLink' makes a CPLink object from two colored points with the
     the same color.
   -}
   mkCPLink :: CPoint.CPoint -> CPoint.CPoint -> Maybe CPLink
-  mkCPLink srcPoint trgtPoint
-    | CPoint.color srcPoint /= CPoint.color trgtPoint = Nothing
-    | otherwise                                       = Just (mkCPLinkUnsafe srcPoint trgtPoint)
+  mkCPLink cpP' cpQ'
+    | CPoint.color cpP' /= CPoint.color cpQ' = Nothing
+    | otherwise                               = Just (mkCPLinkUnsafe cpP' cpQ')
 
   {-|
     'mkCPLink' makes a CPLink object from two colored points with the
     the same color.
   -}
   mkCPLinkUnsafe :: CPoint.CPoint -> CPoint.CPoint -> CPLink
-  mkCPLinkUnsafe srcPoint trgtPoint = CPLink {src=srcPoint, trgt=trgtPoint}
+  mkCPLinkUnsafe  = CPLink
 
   {-|
     'color' return the color of a CPLink.
   -}
   color :: CPLink -> Color.Color
-  color = CPoint.color . src
+  color = CPoint.color . cpP
 
   {-|
     'sameColor' takes two CPLink objects. It returns True if and only if the
     two links have the same color.
   -}
   monoChromatic :: CPLink -> CPLink -> Bool
-  monoChromatic cpl1 cpl2 = color cpl1 == color cpl2
+  monoChromatic lnk1 lnk2 = color lnk1 == color lnk2
 
   {-|
 
   -}
   biChromatic :: CPLink -> CPLink -> Bool
-  biChromatic cpl1 cpl2 = not $ monoChromatic cpl1 cpl2
+  biChromatic lnk1 lnk2 = not $ monoChromatic lnk1 lnk2
 
   {-|
 
@@ -95,80 +81,37 @@ where
   orderConflict :: CPLink -> CPLink -> Bool
   orderConflict lnk1 lnk2 = x1 < x2 && x1' > x2'
     where
-      x1  = Point.xCoord . CPoint.point $ src  lnk1
-      x1' = Point.xCoord . CPoint.point $ trgt lnk1
+      x1  = Point.xCoord . CPoint.point $ cpP lnk1
+      x1' = Point.xCoord . CPoint.point $ cpQ lnk1
 
-      x2  = Point.xCoord . CPoint.point $ src  lnk2
-      x2' = Point.xCoord . CPoint.point $ trgt lnk2
+      x2  = Point.xCoord . CPoint.point $ cpP lnk2
+      x2' = Point.xCoord . CPoint.point $ cpQ lnk2
 
   {-|
   -}
   monoChromaticOrderConflict :: CPLink -> CPLink -> Bool
-  monoChromaticOrderConflict lkn1 lnk2 = monoChromatic lnk1 lnk2 && orderConflict lnk1 lnk2
+  monoChromaticOrderConflict lnk1 lnk2 = monoChromatic lnk1 lnk2 && orderConflict lnk1 lnk2
 
   {-|
   -}
   biChromaticOrderConflict :: CPLink -> CPLink -> Bool
-  biChromaticOrderConflict lkn1 lnk2 = biChromatic lnk1 lnk2 && orderConflict lnk1 lnk2
+  biChromaticOrderConflict lnk1 lnk2 = biChromatic lnk1 lnk2 && orderConflict lnk1 lnk2
 
   {-|
 
   -}
-  valueConflictLG :: CPLink -> CPLink -> Bool
-  valueConflict l1 l2 = x1 < x2 && y1 < y2 && y1' > y2'
+  valueConflict :: CPLink -> CPLink -> Bool
+  valueConflict lnk1 lnk2 = y1 < y2 && y1' > y2'
     where
-      x1  = Point.xCoord . CPoint.point $ src  lnk1
-      x2' = Point.xCoord . CPoint.point $ trgt lnk2
+      y1  = Point.yCoord . CPoint.point $ cpP lnk1
+      y1' = Point.yCoord . CPoint.point $ cpQ lnk1
 
-      y1  = Point.yCoord . CPoint.point $ src  l1
-      y1' = Point.yCoord . CPoint.point $ trgt l1
+      y2  = Point.yCoord . CPoint.point $ cpP lnk2
+      y2' = Point.yCoord . CPoint.point $ cpQ lnk2
 
-      y2  = Point.yCoord . CPoint.point $ src  l2
-      y2' = Point.yCoord . CPoint.point $ trgt l2
 
-  {-|
+  monoChromaticValueConflict :: CPLink -> CPLink -> Bool
+  monoChromaticValueConflict l1 l2 = monoChromatic l1 l2 && valueConflict l1 l2
 
-  -}
-  valueConflictGL :: CPLink -> CPLink -> Bool
-  valueConflict l1 l2 = x1 < x2 && y1 > y2 && y1' < y2'
-    where
-      x1  = Point.xCoord . CPoint.point $ src  lnk1
-      x2  = Point.xCoord . CPoint.point $ src  lnk2
-
-      y1  = Point.yCoord . CPoint.point $ src  l1
-      y1' = Point.yCoord . CPoint.point $ trgt l1
-
-      y2  = Point.yCoord . CPoint.point $ src  l2
-      y2' = Point.yCoord . CPoint.point $ trgt l2
-
-  monoChromaticValueConflictLG :: CPLink -> CPLink -> Bool
-  monoChromaticValueConflictLG l1 l2 = monoChromatic l1 l2 && valueConflictLG l1 l2
-
-  biChromaticValueConflictGL :: CPLink -> CPLink -> Bool
-  biChromaticValueConflictGL l1 l2 = monoChromatic l1 l2 && valueConflictGL l1 l2
-
-  biChromaticValueConflictLG :: CPLink -> CPLink -> Bool
-  biChromaticValueConflictLG l1 l2 = biChromatic l1 l2 && valueConflictLG l1 l2
-
-  biChromaticValueConflictGL :: CPLink -> CPLink -> Bool
-  biChromaticValueConflictGL l1 l2 = biChromatic l1 l2 && valueConflictGL l1 l2
-
-  {-|
-
-  -}
-  get :: (CPLink -> CPoint.CPoint) -> [CPLink] -> Perm.Perm
-  get f = Perm.fromListUnsafe . fmap g
-    where
-      g = Point.yCoord . CPoint.point . f
-
-  {-|
-
-  -}
-  getSrc :: [CPLink] -> Perm.Perm
-  getSrc = get src
-
-  {-|
-
-  -}
-  getTrgt :: [CPLink] -> Perm.Perm
-  getTrgt = get trgt
+  biChromaticValueConflict :: CPLink -> CPLink -> Bool
+  biChromaticValueConflict l1 l2 = monoChromatic l1 l2 && valueConflict l1 l2

@@ -16,7 +16,7 @@ module Data.Algorithm.PPattern
 , resolve1
 
   -- to be removed from export
-, leftmostCPMapping
+, lmostEmbedding
 )
 where
 
@@ -24,6 +24,7 @@ where
   import qualified Data.IntMap.Strict as IntMap
   import qualified Data.Tuple.HT      as THT
   import qualified Data.Foldable      as Fold
+  import Control.Applicative
   import Data.Maybe
 
   import qualified Data.Algorithm.PPattern.Perm         as Perm
@@ -31,12 +32,10 @@ where
   import qualified Data.Algorithm.PPattern.Point        as Point
   import qualified Data.Algorithm.PPattern.CPoint       as CPoint
   import qualified Data.Algorithm.PPattern.Color        as Color
-  import qualified Data.Algorithm.PPattern.Trgt         as Trgt
-  import qualified Data.Algorithm.PPattern.PMap         as PMap
-  import qualified Data.Algorithm.PPattern.CMaps        as CMaps
   import qualified Data.Algorithm.PPattern.CPLink       as CPLink
-  import qualified Data.Algorithm.PPattern.State        as State
+  import qualified Data.Algorithm.PPattern.Strategy     as Strategy
   import qualified Data.Algorithm.PPattern.Next         as Next
+  import qualified Data.Algorithm.PPattern.Embedding    as Embedding
 
   {-|
     The 'mkCPoints' function takes a permutation and a color mapping given
@@ -49,16 +48,19 @@ where
       t3s = L.zip3 [1..] xs cs
 
   {-|
-    'leftmostCPMapping cp1s cp2s' return the leftmost color friendly mapping
-    from 'cp1s' to 'cp2s'.
+    'lmostEmbedding cp1s cp2s' return the leftmost color friendly embedding
+    from 'cp1s' color points to 'cp2s' color points.
   -}
-  leftmostCPMapping :: [CPoint.CPoint] -> [CPoint.CPoint] -> Maybe [CPLink.CPLink]
-  leftmostCPMapping [] []  = Just []
-  leftmostCPMapping [] _   = Just []
-  leftmostCPMapping _  []  = Nothing
-  leftmostCPMapping (cp1:cp1s) (cp2:cp2s)
-    | c1 == c2   = CPLink.mkCPLink cp1 cp2 >>= \cpl -> fmap (cpl:) (leftmostCPMapping cp1s cp2s)
-    | otherwise = leftmostCPMapping (cp1:cp1s) cp2s
+  lmostEmbedding :: [CPoint.CPoint] -> [CPoint.CPoint] -> Maybe Embedding.Embedding
+  lmostEmbedding cp1s cp2s = Embedding.fromList <$> lmostEmbeddingAux cp1s cp2s
+
+  lmostEmbeddingAux :: [CPoint.CPoint] -> [CPoint.CPoint] -> Maybe [(CPoint.CPoint, CPoint.CPoint)]
+  lmostEmbeddingAux [] []  = Just []
+  lmostEmbeddingAux [] _   = Just []
+  lmostEmbeddingAux _  []  = Nothing
+  lmostEmbeddingAux (cp1:cp1s) (cp2:cp2s)
+    | c1 == c2  = fmap ((cp1, cp2):) (lmostEmbeddingAux cp1s cp2s)
+    | otherwise = lmostEmbeddingAux (cp1:cp1s) cp2s
     where
       c1 = CPoint.color cp1
       c2 = CPoint.color cp2
@@ -86,211 +88,92 @@ where
 
   {-|
     'mkSrc p k' returns all 'k'-coloring of permutation 'p', where each coloring
-    is an increasing subsequence.
+    induces an increasing subsequence.
   -}
-  mkSrc :: Perm.Perm -> Int -> IntPartition.IntPartition -> [[CPoint.CPoint]]
-  mkSrc p k ip = aux pis
+  mkPs :: Perm.Perm -> Int -> IntPartition.IntPartition -> [[CPoint.CPoint]]
+  mkPs p k intPartitionQ = aux (Perm.partitionsIncreasings p k)
     where
-      pis = Perm.partitionsIncreasings p k
-
       -- Add every compatible partition.
-      aux []= []
-      aux (partition:partitions)
-        | IntPartition.compatible ip2 ip = cps:aux partitions
-        | otherwise                      = aux partitions
+      aux [] = []
+      aux (partitionP:partitionsP)
+        | IntPartition.compatible intPartitionP intPartitionQ = cps:aux partitionsP
+        | otherwise                                           = aux partitionsP
         where
-          ip2 = toIntPartition partition
-          cps = mkCPoints p (mapFromPartition partition)
+          intPartitionP = toIntPartition partitionP
+          cps = mkCPoints p (mapFromPartition intPartitionP)
 
   {-|
-    the 'mkTrgt' function is in charge of finding a k-increasing-coloring
-    of a given Perm. It returns the next function for each color in the
-    form of a map.
-  -}
-  mkTrgt :: Perm.Perm -> (Trgt.Trgt, IntPartition.IntPartition)
-  mkTrgt p = (Trgt.mkTrgt cps cms, toIntPartition partition)
-    where
-      partition = Perm.greedyPartitionIncreasings1 p
-      cps       = mkCPoints p (mapFromPartition partition)
 
-      -- Next color point map for x/y-coordinates
-      xcm = Next.mkNextIncreasings cps PMap.X
-      ycm = Next.mkNextIncreasings cps PMap.Y
-      cms = CMaps.mkCMaps xcm ycm
+  -}
+  mkQ :: Perm.Perm -> ([CPoint.CPoint], IntPartition.IntPartition)
+  mkQ q = (cps, toIntPartition partition)
+    where
+      partition = Perm.greedyPartitionIncreasings1 q
+      cps       = mkCPoints q (mapFromPartition partition)
+
   {-|
     The 'search' function takes two permutations 'p' and 'q', and it returns
     (if possible) an order-isomorphic occurrence of 'p' in 'q'.
   -}
-  search :: Perm.Perm -> Perm.Perm -> Maybe [CPLink.CPLink]
-  search p q = searchAux srcs trgt
+  search :: Perm.Perm -> Perm.Perm -> Strategy.Strategy -> Maybe Embedding.Embedding
+  search p q s = searchAux cpssP cpsQ n s
     where
       -- make target structure
-      (trgt, ip) = mkTrgt q
+      (cpsQ, intPartitionQ) = mkQ q
 
       -- make all source structures
-      srcs = mkSrc p (Trgt.nbColors trgt) ip
+      cpssP = mkPs p (CPoint.nbColors cpsQ) intPartitionQ
 
-  searchAux :: [[CPoint.CPoint]] -> Trgt.Trgt -> Maybe [CPLink.CPLink]
-  searchAux []               _    = Nothing
-  searchAux (srcCps:srcCpss) trgt = case doSearch srcCps trgt of
-                                      Nothing   -> searchAux srcCpss trgt
-                                      Just lnks -> Just lnks
+      -- make next function for permutation q
+      n = Next.mkQ' cpsQ
+
+  searchAux :: [[CPoint.CPoint]] -> [CPoint.CPoint] -> Next.Next -> Strategy.Strategy -> Maybe Embedding.Embedding
+  searchAux []           _    n _ = Nothing
+  searchAux (cpsP:cpssP) cpsQ n s = case doSearch cpsP cpsQ n s of
+                                      Nothing -> searchAux cpssP cpsQ n s
+                                      Just e  -> Just e
 
   {-|
     Perform the search for a given coloring of the source Perm.
   -}
-  doSearch :: [CPoint.CPoint] -> Trgt.Trgt -> Maybe [CPLink.CPLink]
-  doSearch cps trgt = lnks >>= mkInitialState >>= doSearchAux
+  doSearch :: [CPoint.CPoint] -> [CPoint.CPoint] -> Next.Next -> Strategy.Strategy -> Maybe Embedding.Embedding
+  doSearch cpsP cpsQ n s = lmostEmbedding cpsP cpsQ >>= doSearchAux n s
+
+  doSearchAux :: Next.Next -> Strategy.Strategy -> Embedding.Embedding -> Maybe Embedding.Embedding
+  doSearchAux n s e = resolveConflict n s e >>= loop
     where
-      -- initial mapping
-      lnks = leftmostCPMapping cps (Trgt.cPoints trgt)
+      loop e'
+        | e /= e'   = doSearchAux n s e'
+        | otherwise = Just e'
 
-      -- make initial state
-      xcm = Trgt.xCMap trgt
-      ycm = Trgt.yCMap trgt
-      cms = CMaps.mkCMaps xcm ycm
-      mkInitialState lnks' = Just $ State.mkState lnks' cms
+  {-|
+  -}
+  resolveConflict :: Next.Next -> Strategy.Strategy -> Embedding.Embedding -> Maybe Embedding.Embedding
+  resolveConflict n s e = resolveConflictAux (s e) n e
 
-  -- doSearchAux :: State.State -> Maybe [CPLink.CPLink]
-  -- doSearchAux state = resolve1 state >>= resolve2 >>= loop
-  --   where
-  --     loop state'
-  --       | lnks /= lnks' = doSearchAux state' -- some conflicts have beed resolved
-  --       | otherwise     = Just lnks'         -- no conflict has been resolved
-  --       where
-  --         lnks  = State.links state
-  --         lnks' = State.links state'
+  {-|
+  -}
+  resolveConflictAux :: [(CPLink.CPLink, CPLink.CPLink)] -> Next.Next -> Strategy.Strategy -> Embedding.Embedding -> Maybe Embedding.Embedding
+  resolveConflictAux []                     n s e = Just e
+  resolveConflictAux ((lnk1, lnk2):lnkLnks) n s e
+    | CPLink.orderConflict lnk1 lnk2 = resolveOrderConflict lnk1 lnk2 n s e
+    | CPLink.orderConflict lnk2 lnk1 = resolveOrderConflict lnk2 lnk1 n s e
+    | CPLink.valueConflict lnk1 lnk2 = resolveValueConflict lnk1 lnk2 n s e
+    | CPLink.valueConflict lnk2 lnk1 = resolveValueConflict lnk2 lnk1 n s e
+    | otherwise                      = resolveConflictAux lnkLnks n s e
 
-  doSearchAux :: State.State -> Maybe [CPLink.CPLink]
-  doSearchAux state = resolveConflict state >>= loop
+  {-|
+  -}
+  resolveOrderConflict :: CPLink.CPLink -> CPLink.CPLink -> Next.Next -> Strategy.Strategy -> Embedding.Embedding -> Maybe Embedding.Embedding
+  resolveOrderConflict lnk1 lnk2 n s e = Embedding.resolveX cp thrshld n e >>= resolveConflict n s
     where
-      loop state'
-        | lnks /= lnks' = doSearchAux state' -- some conflicts have beed resolved
-        | otherwise     = Just lnks'         -- no conflict has been resolved
-        where
-          lnks  = State.links state
-          lnks' = State.links state'
+      cp      = CPLink.cpP lnk2
+      thrshld = CPoint.xCoord $ CPLink.cpQ lnk1
 
-  resolveConflict :: State.State -> Maybe State.State
-  resolveConflict state = startResolveConflict lnks2By2 state
+  {-|
+  -}
+  resolveValueConflict :: CPLink.CPLink -> CPLink.CPLink -> Next.Next -> Embedding.Embedding -> Maybe Embedding.Embedding
+  resolveValueConflict lnk1 lnk2 n s e = Embedding.resolveX cp thrshld n e >>= resolveConflict n s
     where
-      lnks     = links state
-      lnks2By2 = Combi.choose lnks 2
-
-  startResolveConflct :: [(CPLink.CPLink, CPLink.CPLink)] -> State.State -> Maybe State.State
-  startResolveConflct []                   state = Just state
-  startResolveConflct ((lnk1, lnk2):pLnks) state
-    | CPLink.orderConflict lnk1 lnk2 = resolveOrderConflict lnk1 lnk2 state
-    | CPLink.orderConflict lnk2 lnk1 = resolveOrderConflict lnk2 lnk1 state
-    | CPLink.valueConflict lnk1 lnk2 = resolveValueConflictLG lnk1 lnk2 state
-    | CPLink.valueConflict lnk2 lnk1 = resolveValueConflictLG lnk2 lnk1 state
-    | otherwise                      = resolveAux pLnks state
-
-  resolveOrderConflict :: CPLink.CPLink -> CPLink.CPLink -> State.State -> Maybe State.State
-  resolveOrderConflict lnk1 lnk2 state = CMaps.nextX c p thrshld cms >>= endResolveConflict lnk2 state
-    where
-      cms     = State.cMaps state                               -- x/y next maps
-      c       = CPLink.color lnk2                               -- color
-      p       = CPoint.point $ CPLink.trgt lnk2                 -- moving point
-      thrshld = Point.xCoord . CPoint.point $ CPLink.trgt lnk1  -- threshold
-
-  resolveValueConflict :: CPLink.CPLink -> CPLink.CPLink -> State.State -> Maybe State.State
-  resolveValueConflict lnk1 lnk2 state = CMaps.nextY c p thrshld cms >>= endResolveConflict' lnk2 state
-    where
-      cms     = State.cMaps state                               -- x/y next maps
-      c       = CPLink.color lnk2                               -- color
-      p       = CPoint.point $ CPLink.trgt lnk2                 -- moving point
-      thrshld = Point.yCoord . CPoint.point $ CPLink.trgt lnk1  -- threshold
-
-  endResolveConflict :: CPLink.CPLink -> State.State -> CMaps.PPMap -> Maybe State.State
-  endResolveConflict lnk state (CMaps.PPMap (_, p', cms)) = Just newState >>= resolveConflict
-    where
-      c        = CPLink.color lnk
-      lnks     = State.links state
-      srcCP    = CPLink.src lnk
-      trgtCP   = CPoint.mkCPoint p' c
-      newLnk2  = CPLink.mkCPLink srcCP trgtCP
-      newLnks  = L.delete (newLnk:lnks) lnk
-      newState = State.mkState newLnks cms
-
-  -- {-|
-  --   Resolve type 1 (i.e., order) conflicts.
-  -- -}
-  -- resolve1 :: State.State -> Maybe State.State
-  -- resolve1 state = resolve1Aux (State.links state) [] state
-  --
-  -- resolve1Aux :: [CPLink.CPLink] -> [CPLink.CPLink] -> State.State -> Maybe State.State
-  -- resolve1Aux []    acc state = Just $ State.updateLinks (L.reverse acc)       state
-  -- resolve1Aux [lnk] acc state = Just $ State.updateLinks (L.reverse (lnk:acc)) state
-  -- resolve1Aux (lnk1:lnk2:lnks) acc state
-  --   | conflict lnk1 lnk2 = update1 (lnk1:lnk2:lnks) acc state
-  --   | otherwise          = resolve1Aux (lnk2:lnks) (lnk1:acc) state
-  --   where
-  --     -- Two links with the same color but reverse x-coordinate order
-  --     conflict = CPLink.monoChromaticOrderConflict
-  --
-  -- -- Update link lnk2 (which type 1 (i.e. order)  conflict with lnk2).
-  -- update1 :: [CPLink.CPLink] -> [CPLink.CPLink] -> State.State -> Maybe State.State
-  -- update1 []               _   _     = error "We shouldn't be there" -- Werror option
-  -- update1 [_]              _   _     = error "We shouldn't be there" -- Werror option
-  -- update1 (lnk1:lnk2:lnks) acc state = State.nextX c p thrshld state >>= update1Aux
-  --   where
-  --     -- color
-  --     c = CPLink.color lnk2
-  --
-  --     -- moving point
-  --     p  = CPoint.point $ CPLink.trgt lnk2
-  --
-  --     -- threshold.
-  --     thrshld = Point.xCoord . CPoint.point $ CPLink.trgt lnk1
-  --
-  --     -- resolve link lnk2
-  --     update1Aux (State.PPState (_, p', state')) = resolve1Aux lnks' acc' state'
-  --       where
-  --         srcCP2  = CPLink.src lnk2
-  --         trgtCP2 = CPoint.mkCPoint p' c
-  --         lnk2'   = CPLink.mkCPLinkUnsafe srcCP2 trgtCP2
-  --         lnks'   = lnk2':lnks
-  --         acc'    = lnk1:acc
-  --
-  -- {-|
-  --   Resolve type 2 (i.e., value) conflicts.
-  -- -}
-  -- resolve2 :: State.State -> Maybe State.State
-  -- resolve2 state = resolve2Aux lnksPairs state
-  --   where
-  --     -- pairs of links
-  --     lnks      = State.links state
-  --     lnksPairs = Combi.choose lnks 2
-  --
-  -- resolve2Aux :: [(CPLink.CPLink, CPLink.CPLink)] -> State.State -> Maybe State.State
-  -- resolve2Aux []                      state = Just state
-  -- resolve2Aux ((lnk1,lnk2):lnksPairs) state
-  --   | conflictLG lnk1 lnk2 = update2 lnk2 thrshldLG state
-  --   | conflictGL lnk1 lnk2 = update2 lnk1 thrshldGL state
-  --   | otherwise            = resolve2Aux lnksPairs state
-  --   where
-  --     conflictLG = CPLink.biChromaticValueConflictLG
-  --     thrshldLG  = Point.yCoord . CPoint.point $ CPLink.trgt lnk1
-  --
-  --     conflictGL = CPLink.biChromaticValueConflictGL
-  --     thrshldGL  = Point.yCoord . CPoint.point $ CPLink.trgt lnk2
-  --
-  -- -- Update link lnk2 (which type 1 (i.e. order)  conflict with lnk2).
-  -- update2 :: CPLink -> Perm.T -> State.State -> Maybe State.State
-  -- update2 lnk thrshld state = State.nextX c p thrshld state >>= update2Aux
-  --   where
-  --     -- color
-  --     c = CPLink.color lnk
-  --
-  --     -- moving point
-  --     p  = CPoint.point $ CPLink.trgt lnk
-  --
-  --     -- resolve link lnk2
-  --     update2Aux (State.PPState (_, p', state')) = resolve2Aux lnks' acc' state'
-  --       where
-  --         srcCP2  = CPLink.src lnk2
-  --         trgtCP2 = CPoint.mkCPoint p' c
-  --         lnk2'   = CPLink.mkCPLinkUnsafe srcCP2 trgtCP2
-  --         lnks'   = lnk2':lnks
-  --         acc'    = lnk1:acc
+      cp      = CPLink.cpP lnk2
+      thrshld = CPoint.yCoord $ CPLink.cpQ lnk1

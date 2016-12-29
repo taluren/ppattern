@@ -24,8 +24,8 @@ where
   import qualified Data.Foldable   as Fold
   import qualified System.Random   as R
 
-  import qualified Data.Algorithm.PPattern.Tools                   as Tools
-  import qualified Data.Algorithm.PPattern.Combinatorics           as Combinatorics
+  import qualified Data.Algorithm.PPattern.Tools as Tools
+  import qualified Data.Algorithm.PPattern.Combi as Combi
 
   {-|
     'randChoose' takes a list 'xs', an integer 'k' and a generator 'g', and
@@ -34,7 +34,7 @@ where
   randChoose :: R.RandomGen g => [a] -> Int -> g -> ([a], g)
   randChoose xs k g = (xss L.!! (i-1), g')
     where
-      xss = xs `Combinatorics.choose` k
+      xss = xs `Combi.choose` k
       (i, g') = R.randomR (1, L.length xss) g
 
   {-|
