@@ -34,7 +34,7 @@ where
     in the form of a map, and it return a list of CPoint.
   -}
   mkCPoints :: Perm.Perm -> Map.Map T.T Color.Color -> [CPoint.CPoint]
-  mkCPoints (Perm.Perm xs) m = L.map (THT.uncurry3 CPoint.mkCPoint') t3s
+  mkCPoints (Perm.Perm xs) m = L.map (THT.uncurry3 CPoint.mkCPoint) t3s
     where
       cs  = Fold.foldr (\x acc -> fromJust (Map.lookup x m):acc) [] xs
       t3s = L.zip3 [1..] xs cs

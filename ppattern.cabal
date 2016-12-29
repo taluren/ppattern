@@ -34,7 +34,6 @@ library
     Data.Algorithm.PPattern.Types
     Data.Algorithm.PPattern.Random
     Data.Algorithm.PPattern.Tools
-    Data.Algorithm.PPattern.Point
     Data.Algorithm.PPattern.CPoint
     Data.Algorithm.PPattern.Embedding
     Data.Algorithm.PPattern.Strategy

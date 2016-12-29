@@ -32,7 +32,6 @@ module Data.Algorithm.PPattern.CPLink
 )
 where
 
-  import qualified Data.Algorithm.PPattern.Point  as Point
   import qualified Data.Algorithm.PPattern.CPoint as CPoint
   import qualified Data.Algorithm.PPattern.Color  as Color
 
@@ -81,11 +80,11 @@ where
   orderConflict :: CPLink -> CPLink -> Bool
   orderConflict lnk1 lnk2 = x1 < x2 && x1' > x2'
     where
-      x1  = Point.xCoord . CPoint.point $ cpP lnk1
-      x1' = Point.xCoord . CPoint.point $ cpQ lnk1
+      x1  = CPoint.xCoord $ cpP lnk1
+      x1' = CPoint.xCoord $ cpQ lnk1
 
-      x2  = Point.xCoord . CPoint.point $ cpP lnk2
-      x2' = Point.xCoord . CPoint.point $ cpQ lnk2
+      x2  = CPoint.xCoord $ cpP lnk2
+      x2' = CPoint.xCoord $ cpQ lnk2
 
   {-|
   -}
@@ -103,15 +102,20 @@ where
   valueConflict :: CPLink -> CPLink -> Bool
   valueConflict lnk1 lnk2 = y1 < y2 && y1' > y2'
     where
-      y1  = Point.yCoord . CPoint.point $ cpP lnk1
-      y1' = Point.yCoord . CPoint.point $ cpQ lnk1
+      y1  = CPoint.yCoord $ cpP lnk1
+      y1' = CPoint.yCoord $ cpQ lnk1
 
-      y2  = Point.yCoord . CPoint.point $ cpP lnk2
-      y2' = Point.yCoord . CPoint.point $ cpQ lnk2
+      y2  = CPoint.yCoord $ cpP lnk2
+      y2' = CPoint.yCoord $ cpQ lnk2
 
+  {-|
 
+  -}
   monoChromaticValueConflict :: CPLink -> CPLink -> Bool
   monoChromaticValueConflict l1 l2 = monoChromatic l1 l2 && valueConflict l1 l2
 
+  {-|
+
+  -}
   biChromaticValueConflict :: CPLink -> CPLink -> Bool
   biChromaticValueConflict l1 l2 = monoChromatic l1 l2 && valueConflict l1 l2
