@@ -60,7 +60,7 @@ where
   {-|
   -}
   make :: (CPointCPointMap -> Next -> Next) -> [CPoint.CPoint] -> Next -> Next
-  make updateFun cps n = updateFun m n
+  make updateFun cps = updateFun m
     where
       m = T.fst $ Foldable.foldr f (Map.empty, IntMap.empty) cps
 
@@ -132,13 +132,13 @@ where
 
   -}
   nextPK :: Int -> Next -> CPoint.CPoint -> Maybe CPoint.CPoint
-  nextPK k n cp = nextK k (pMap n) cp
+  nextPK k n = nextK k (pMap n)
 
   {-|
 
   -}
   nextQK :: Int -> Next -> CPoint.CPoint -> Maybe CPoint.CPoint
-  nextQK k n cp = nextK k (qMap n) cp
+  nextQK k n = nextK k (qMap n)
 
   {-|
 
