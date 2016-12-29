@@ -16,6 +16,9 @@ module Data.Algorithm.PPattern.IntPartition
 , fromList
 , mkIntPartition
 
+  -- * Querying
+, nbParts
+
   -- * Transforming
 , toList
 
@@ -46,6 +49,12 @@ where
   -}
   mkIntPartition :: [Int] -> IntPartition
   mkIntPartition = fromList
+
+  {-|
+
+  -}
+  nbParts :: IntPartition -> Int
+  nbParts (IntPartition xs) = L.length xs
 
   {-|
 

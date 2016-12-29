@@ -28,27 +28,29 @@ module Data.Algorithm.PPattern.Point
 )
 where
 
+  import qualified Data.Algorithm.PPattern.Types as T
+
   -- | 2D point
-  data Point = Point {-# UNPACK #-} !Int -- ^ x coordinate
-                     {-# UNPACK #-} !Int -- ^ y coordinate
+  data Point = Point {-# UNPACK #-} !T.T -- ^ x coordinate
+                     {-# UNPACK #-} !T.T -- ^ y coordinate
                      deriving (Show, Eq, Ord)
 
   {-|
     'mkPoint' mks a point from two integers 'x' and 'y'.
   -}
-  mkPoint :: Int -> Int -> Point
+  mkPoint :: T.T -> T.T -> Point
   mkPoint = Point
 
   {-|
     'xCoord' returns the x-coordinate of a point.
   -}
-  xCoord :: Point -> Int
+  xCoord :: Point -> T.T
   xCoord (Point x _) = x
 
   {-|
     'yCoord' returns the y-coordinate of a point.
   -}
-  yCoord :: Point -> Int
+  yCoord :: Point -> T.T
   yCoord (Point _ y) = y
 
   {-|

@@ -12,12 +12,11 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.Perm
 (
-  -- * The @T@ type
-  T
-
   -- * The @Perm@ type
-, Perm(..)
+  Perm(..)
+, fromIntList
 , fromList
+, fromIntListUnsafe
 , fromListUnsafe
 , mkEmpty
 , reduce
@@ -28,6 +27,7 @@ module Data.Algorithm.PPattern.Perm
 
   -- * Conversions
 , toList
+, toIntList
 
   -- * Querying
 , size
@@ -59,32 +59,43 @@ module Data.Algorithm.PPattern.Perm
 )
 where
 
-  import qualified Data.List               as L
-  import qualified Data.Tuple              as T
-  import qualified Data.Monoid             as Monoid
-  import qualified Data.Function           as Fun
-  import qualified System.Random           as R
+  import qualified Data.List     as L
+  import qualified Data.Monoid   as Monoid
+  import qualified Data.Function as Fun
+  import qualified System.Random as R
+
   import qualified Data.Algorithm.Patience as Patience
 
+  import qualified Data.Algorithm.PPattern.Types        as T
   import qualified Data.Algorithm.PPattern.Random       as Random
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
 
-  -- | Permutation of integers.
-  type T = Int
-
-  newtype Perm = Perm [T] deriving (Eq, Ord, Show, Read)
+  newtype Perm = Perm [T.T] deriving (Eq, Ord, Show, Read)
 
   {-|
-    'fromList xs' construct a reduced permutation from list xs.
+    'fromIntList xs' construct a reduced permutation from int list xs.
   -}
-  fromList ::  [T] -> Perm
+  fromIntList :: [Int] -> Perm
+  fromIntList = fromList . fmap (\n -> fromIntegral n :: T.T)
+
+  {-|
+    'fromList xs' construct a reduced permutation from T.T list xs.
+  -}
+  fromList ::  [T.T] -> Perm
   fromList = reduce . fromListUnsafe
 
   {-|
-    'fromList xs' constructs a permutationutation from the list xs.
-    Warning: the elements are not reduced.
+    'fromList xs' constructs a permutation from the int list 'xs'.
+    Warning: the elements of 'xs' are not reduced.
   -}
-  fromListUnsafe :: [T] -> Perm
+  fromIntListUnsafe :: [Int] -> Perm
+  fromIntListUnsafe = fromListUnsafe . fmap (\n -> fromIntegral n :: T.T)
+
+  {-|
+    'fromList xs' constructs a permutation from the T.T list 'xs'.
+    Warning: the elements of 'xs' are not reduced.
+  -}
+  fromListUnsafe :: [T.T] -> Perm
   fromListUnsafe = Perm
 
   {-|
@@ -98,26 +109,36 @@ where
     The function returns the empty permutation if 'n' is non-positive.
   -}
   mkIncreasing :: Int -> Perm
-  mkIncreasing n = fromListUnsafe [1..n]
+  mkIncreasing n = fromListUnsafe [1..n']
+    where
+      n' = fromIntegral n :: T.T
 
   {-|
     'mkDecreasing n' contructs the decreasing permutation n n-1 ... 1.
     The function returns the empty permutation if 'n' is non-positive.
   -}
   mkDecreasing :: Int -> Perm
-  mkDecreasing n = fromListUnsafe [n,n-1..1]
+  mkDecreasing n = fromListUnsafe [n',n'-1..1]
+    where
+      n' = fromIntegral n :: T.T
 
   {-|
-    Turn a permutationutation into a list.
+    Turn a permutation into an int list.
   -}
-  toList :: Perm -> [T]
+  toIntList :: Perm -> [Int]
+  toIntList (Perm xs) = fmap (\n -> fromIntegral n :: Int) xs
+
+  {-|
+    Turn a permutation into a T.T. list.
+  -}
+  toList :: Perm -> [T.T]
   toList (Perm xs) = xs
 
   {-|
     Helper function. Index (from 1) the elements of a lits
   -}
-  index :: [a] -> [(T, a)]
-  index = L.zip ([1..] :: [T])
+  index :: [a] -> [(T.T, a)]
+  index = L.zip ([1..] :: [T.T])
 
   {-|
     'reduce p' returns the reduced form of 'p'.
@@ -132,12 +153,12 @@ where
   reduce :: Perm -> Perm
   reduce = fromListUnsafe . getElts . sortByIdx . index . sortByVal . index . toList
     where
-      sortByVal  = L.sortBy (compare `Fun.on` T.snd)
-      sortByIdx  = L.sortBy (compare `Fun.on` (T.fst . T.snd))
-      getElts    = fmap T.fst
+      sortByVal  = L.sortBy (compare `Fun.on` snd)
+      sortByIdx  = L.sortBy (compare `Fun.on` (fst . snd))
+      getElts    = fmap fst
 
   {-|
-    Return the size of a permutationutation.È of the Perm 'p'.
+    Return the size of a permutation.È of the Perm 'p'.
   -}
   size :: Perm -> Int
   size = L.length . toList
@@ -153,11 +174,11 @@ where
     'increasingsByL' xs k' returns the list of all increasing subsequences
     of length 'k' of the list 'xs'.
   -}
-  increasingsByL' :: [Int] ->  Int -> [[Int]]
+  increasingsByL' :: [T.T] ->  Int -> [[T.T]]
   increasingsByL' [] _ = []
   increasingsByL' xs k = increasingsByLAux' xs k k (L.head xs)
 
-  increasingsByLAux' ::  [Int] ->  Int -> Int -> Int -> [[Int]]
+  increasingsByLAux' ::  [T.T] ->  Int -> Int -> T.T -> [[T.T]]
   increasingsByLAux' _      _ 0 _  = [[]]
   increasingsByLAux' []     _ _ _  = []
   increasingsByLAux' (x:xs) k k' x'
@@ -186,7 +207,7 @@ where
       ls         = IntPartition.toList intPartition
       partitions = partitionsIncreasingsByLAux xs ls
 
-  partitionsIncreasingsByLAux :: [T] -> [Int] -> [[[T]]]
+  partitionsIncreasingsByLAux :: [T.T] -> [Int] -> [[[T.T]]]
   partitionsIncreasingsByLAux [] []     = [[]]
   partitionsIncreasingsByLAux [] _      = []
   partitionsIncreasingsByLAux _  []     = []
@@ -251,7 +272,7 @@ where
   greedyIncreasing1 (Perm [])     = mkEmpty
   greedyIncreasing1 (Perm (x:xs)) = fromListUnsafe $ x:greedyIncreasing1Aux x xs
 
-  greedyIncreasing1Aux :: T -> [T] -> [T]
+  greedyIncreasing1Aux :: T.T -> [T.T] -> [T.T]
   greedyIncreasing1Aux _ []      = []
   greedyIncreasing1Aux x (x':xs)
     | x' > x    = x':greedyIncreasing1Aux x' xs
@@ -279,8 +300,8 @@ where
   longestIncreasingSub = post . Patience.longestIncreasing . pre
     where
       is   = [1..] :: [Int]
-      pre  = flip L.zip is . toList
-      post =  fromListUnsafe . L.map T.fst . L.reverse
+      pre  = flip L.zip is . toIntList
+      post =  fromIntListUnsafe . L.map fst . L.reverse
 
   {-|
     'lenLongestIncreasingSub xs' returns the length of the longest increasing
@@ -296,8 +317,8 @@ where
   longestDecreasingSub = post . Patience.longestIncreasing . pre
     where
       is   = [1..] :: [Int]
-      pre  = flip L.zip is . L.reverse . toList
-      post = fromListUnsafe . L.reverse . L.map T.fst . L.reverse
+      pre  = flip L.zip is . L.reverse . toIntList
+      post = fromIntListUnsafe . L.reverse . L.map fst . L.reverse
 
   {-|
     'lenLongestDecreasingSub xs' returns the length of the longest decreasing

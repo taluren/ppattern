@@ -43,12 +43,14 @@ where
   import qualified Data.IntMap.Strict     as IntMap
   import qualified Data.Foldable          as Foldable
 
+  import qualified Data.Algorithm.PPattern.Types  as T
   import qualified Data.Algorithm.PPattern.CPoint as CPoint
+  import qualified Data.Algorithm.PPattern.Color  as Color
 
   type CPointCPointMap = Map.Map CPoint.CPoint CPoint.CPoint
 
-  data Next = Next { pMap :: CPointCPointMap -- ^ next function for permutation p
-                   , qMap :: CPointCPointMap -- ^ next function for permutation q
+  data Next = Next { pMap :: !CPointCPointMap -- ^ next function for permutation p
+                   , qMap :: !CPointCPointMap -- ^ next function for permutation q
                    } deriving (Show)
 
   {-|
@@ -65,18 +67,18 @@ where
       m = T.fst $ Foldable.foldr f (Map.empty, IntMap.empty) cps
 
   f :: CPoint.CPoint -> (CPointCPointMap, IntMap.IntMap CPoint.CPoint) -> (CPointCPointMap, IntMap.IntMap CPoint.CPoint)
-  f cp (m, nextCP) = fAux (IntMap.lookup c nextCP)
+  f cp (m, nextCP) = fAux (IntMap.lookup (Color.toInt c) nextCP)
     where
       c = CPoint.color cp
 
       fAux :: Maybe CPoint.CPoint -> (CPointCPointMap, IntMap.IntMap CPoint.CPoint)
       fAux Nothing = (m, nextCP')
         where
-          nextCP' = IntMap.insert c cp nextCP
+          nextCP' = IntMap.insert (Color.toInt c) cp nextCP
       fAux (Just cp') = (m', nextCP')
         where
           m'      = Map.insert cp cp' m
-          nextCP' = IntMap.update (\_ -> Just cp) c nextCP
+          nextCP' = IntMap.update (\_ -> Just cp) (Color.toInt c) nextCP
 
   {-|
     Each color is required to induce an increasing subsequence.
@@ -155,13 +157,13 @@ where
   {-|
 
   -}
-  jumpThreshold :: (CPoint.CPoint -> Int) -> Int -> CPointCPointMap -> CPoint.CPoint -> Maybe Int
+  jumpThreshold :: (CPoint.CPoint -> T.T) -> T.T -> CPointCPointMap -> CPoint.CPoint -> Maybe Int
   jumpThreshold = jumpThresholdAux 1
 
   {-|
 
   -}
-  jumpThresholdAux :: Int -> (CPoint.CPoint -> Int) -> Int -> CPointCPointMap -> CPoint.CPoint -> Maybe Int
+  jumpThresholdAux :: Int -> (CPoint.CPoint -> T.T) -> T.T -> CPointCPointMap -> CPoint.CPoint -> Maybe Int
   jumpThresholdAux k fun thrshld m cp = Map.lookup cp m >>= aux
     where
       aux cp'
@@ -171,25 +173,25 @@ where
   {-|
 
   -}
-  jumpThresholdXP :: Int -> Next -> CPoint.CPoint -> Maybe Int
+  jumpThresholdXP :: T.T -> Next -> CPoint.CPoint -> Maybe Int
   jumpThresholdXP thrshld n = jumpThreshold CPoint.xCoord thrshld (pMap n)
 
   {-|
 
   -}
-  jumpThresholdYP :: Int -> Next -> CPoint.CPoint -> Maybe Int
+  jumpThresholdYP :: T.T -> Next -> CPoint.CPoint -> Maybe Int
   jumpThresholdYP thrshld n = jumpThreshold CPoint.yCoord thrshld (pMap n)
 
   {-|
 
   -}
-  jumpThresholdXQ :: Int -> Next -> CPoint.CPoint -> Maybe Int
+  jumpThresholdXQ :: T.T -> Next -> CPoint.CPoint -> Maybe Int
   jumpThresholdXQ thrshld n = jumpThreshold CPoint.xCoord thrshld (qMap n)
 
   {-|
 
   -}
-  jumpThresholdYQ :: Int -> Next -> CPoint.CPoint -> Maybe Int
+  jumpThresholdYQ :: T.T -> Next -> CPoint.CPoint -> Maybe Int
   jumpThresholdYQ thrshld n = jumpThreshold CPoint.yCoord thrshld (qMap n)
 
   {-|

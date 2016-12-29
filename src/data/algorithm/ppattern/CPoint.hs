@@ -31,6 +31,7 @@ where
 
   import qualified Data.List as L
 
+  import qualified Data.Algorithm.PPattern.Types as T
   import qualified Data.Algorithm.PPattern.Point as Point
   import qualified Data.Algorithm.PPattern.Color as Color
 
@@ -47,7 +48,7 @@ where
   {-|
     'mkPoint'' makes a colored point from two integer coordinates and a color.
   -}
-  mkCPoint' :: Int -> Int -> Color.Color -> CPoint
+  mkCPoint' :: T.T -> T.T -> Color.Color -> CPoint
   mkCPoint' x y = mkCPoint p
     where
       p = Point.mkPoint x y
@@ -69,13 +70,13 @@ where
   {-|
     Return the x-coordinate of the colored point.
   -}
-  xCoord :: CPoint -> Int
+  xCoord :: CPoint -> T.T
   xCoord = Point.xCoord . point
 
   {-|
     Return the y-coordinate of the colored point.
   -}
-  yCoord :: CPoint -> Int
+  yCoord :: CPoint -> T.T
   yCoord = Point.yCoord . point
 
   {-|

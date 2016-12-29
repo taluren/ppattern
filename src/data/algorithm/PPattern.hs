@@ -13,12 +13,13 @@ commentary with @some markup@.
 module Data.Algorithm.PPattern
 where
 
-  import qualified Data.List          as L
-  import qualified Data.IntMap.Strict as IntMap
-  import qualified Data.Tuple.HT      as THT
-  import qualified Data.Foldable      as Fold
+  import qualified Data.List       as L
+  import qualified Data.Map.Strict as Map
+  import qualified Data.Tuple.HT   as THT
+  import qualified Data.Foldable   as Fold
   import Data.Maybe
 
+  import qualified Data.Algorithm.PPattern.Types        as T
   import qualified Data.Algorithm.PPattern.Perm         as Perm
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
   import qualified Data.Algorithm.PPattern.CPoint       as CPoint
@@ -32,10 +33,10 @@ where
     The 'mkCPoints' function takes a permutation and a color mapping given
     in the form of a map, and it return a list of CPoint.
   -}
-  mkCPoints :: Perm.Perm -> IntMap.IntMap Color.Color -> [CPoint.CPoint]
+  mkCPoints :: Perm.Perm -> Map.Map T.T Color.Color -> [CPoint.CPoint]
   mkCPoints (Perm.Perm xs) m = L.map (THT.uncurry3 CPoint.mkCPoint') t3s
     where
-      cs  = Fold.foldr (\x acc -> fromJust (IntMap.lookup x m):acc) [] xs
+      cs  = Fold.foldr (\x acc -> fromJust (Map.lookup x m):acc) [] xs
       t3s = L.zip3 [1..] xs cs
 
   {-|
@@ -60,8 +61,8 @@ where
     'mapFromPartition' transform an integer partition into a map object that
     associates to each each element a color.
   -}
-  mapFromPartition :: [Perm.Perm] -> IntMap.IntMap Color.Color
-  mapFromPartition = IntMap.fromList . Fold.concatMap f . flip zip [1..] . fmap Perm.toList
+  mapFromPartition :: [Perm.Perm] -> Map.Map T.T Color.Color
+  mapFromPartition = Map.fromList . Fold.concatMap f . flip zip ([1..] :: [Color.Color]) . fmap Perm.toList
     where
       -- use colors 1, 2, ...
       colors = L.repeat
@@ -82,7 +83,9 @@ where
     induces an increasing subsequence.
   -}
   mkPs :: Perm.Perm -> Int -> IntPartition.IntPartition -> [[CPoint.CPoint]]
-  mkPs p k intPartitionQ = aux (Perm.partitionsIncreasings p k)
+  mkPs p k intPartitionQ
+    | k > Perm.size p = mkPs p (k-1) intPartitionQ
+    | otherwise       = aux (Perm.partitionsIncreasings p k)
     where
       -- Add every compatible partition.
       aux [] = []

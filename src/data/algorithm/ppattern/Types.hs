@@ -15,10 +15,11 @@ module Data.Algorithm.PPattern.Types
   Length
 , Index
 , T
--- , PermutationL
--- , IsogramL
 )
+
 where
+
+  import qualified Data.Word as Word
 
   -- |Integer length type
   type Length = Int
@@ -27,4 +28,4 @@ where
   type Index = Int
 
   -- |Integer length type
-  type T = Int
+  type T = Word.Word8
