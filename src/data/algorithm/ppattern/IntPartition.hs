@@ -33,7 +33,7 @@ where
   import qualified Data.List as L
 
   -- | Partition of integer.
-  newtype IntPartition = IntPartition [Int]
+  newtype IntPartition = IntPartition [Int] deriving (Show, Eq, Ord)
 
   {-|
 

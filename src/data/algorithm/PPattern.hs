@@ -11,12 +11,12 @@ commentary with @some markup@.
 -}
 
 module Data.Algorithm.PPattern
-(
-  search
-
-  -- to be removed from export
-, lmostEmbedding
-)
+-- (
+--   search
+--
+--   -- to be removed from export
+-- , lmostEmbedding
+-- )
 where
 
   import qualified Data.List          as L
