@@ -13,7 +13,6 @@ commentary with @some markup@.
 module Data.Algorithm.PPattern
 (
   search
-, resolve1
 
   -- to be removed from export
 , lmostEmbedding
@@ -24,12 +23,10 @@ where
   import qualified Data.IntMap.Strict as IntMap
   import qualified Data.Tuple.HT      as THT
   import qualified Data.Foldable      as Fold
-  import Control.Applicative
   import Data.Maybe
 
   import qualified Data.Algorithm.PPattern.Perm         as Perm
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
-  import qualified Data.Algorithm.PPattern.Point        as Point
   import qualified Data.Algorithm.PPattern.CPoint       as CPoint
   import qualified Data.Algorithm.PPattern.Color        as Color
   import qualified Data.Algorithm.PPattern.CPLink       as CPLink
@@ -44,7 +41,7 @@ where
   mkCPoints :: Perm.Perm -> IntMap.IntMap Color.Color -> [CPoint.CPoint]
   mkCPoints (Perm.Perm xs) m = L.map (THT.uncurry3 CPoint.mkCPoint') t3s
     where
-      cs  = Fold.foldr (\x acc -> (fromJust (IntMap.lookup x m)):acc) [] xs
+      cs  = Fold.foldr (\x acc -> fromJust (IntMap.lookup x m):acc) [] xs
       t3s = L.zip3 [1..] xs cs
 
   {-|
@@ -73,7 +70,7 @@ where
   mapFromPartition = IntMap.fromList . Fold.concatMap f . flip zip [1..] . fmap Perm.toList
     where
       -- use colors 1, 2, ...
-      colors i  = L.repeat i
+      colors = L.repeat
 
       f (xs, i) = L.zip xs $ colors i
 
@@ -87,7 +84,7 @@ where
       ls' = L.sortBy (flip compare) ls
 
   {-|
-    'mkSrc p k' returns all 'k'-coloring of permutation 'p', where each coloring
+    'mkPs p k' returns all 'k'-coloring of permutation 'p', where each coloring
     induces an increasing subsequence.
   -}
   mkPs :: Perm.Perm -> Int -> IntPartition.IntPartition -> [[CPoint.CPoint]]
@@ -100,7 +97,7 @@ where
         | otherwise                                           = aux partitionsP
         where
           intPartitionP = toIntPartition partitionP
-          cps = mkCPoints p (mapFromPartition intPartitionP)
+          cps = mkCPoints p (mapFromPartition partitionP)
 
   {-|
 
@@ -116,7 +113,7 @@ where
     (if possible) an order-isomorphic occurrence of 'p' in 'q'.
   -}
   search :: Perm.Perm -> Perm.Perm -> Strategy.Strategy -> Maybe Embedding.Embedding
-  search p q s = searchAux cpssP cpsQ n s
+  search p q = searchAux cpssP cpsQ n
     where
       -- make target structure
       (cpsQ, intPartitionQ) = mkQ q
@@ -128,7 +125,7 @@ where
       n = Next.mkQ' cpsQ
 
   searchAux :: [[CPoint.CPoint]] -> [CPoint.CPoint] -> Next.Next -> Strategy.Strategy -> Maybe Embedding.Embedding
-  searchAux []           _    n _ = Nothing
+  searchAux []           _    _ _ = Nothing
   searchAux (cpsP:cpssP) cpsQ n s = case doSearch cpsP cpsQ n s of
                                       Nothing -> searchAux cpssP cpsQ n s
                                       Just e  -> Just e
@@ -149,12 +146,12 @@ where
   {-|
   -}
   resolveConflict :: Next.Next -> Strategy.Strategy -> Embedding.Embedding -> Maybe Embedding.Embedding
-  resolveConflict n s e = resolveConflictAux (s e) n e
+  resolveConflict n s e = resolveConflictAux (s e) n s e
 
   {-|
   -}
   resolveConflictAux :: [(CPLink.CPLink, CPLink.CPLink)] -> Next.Next -> Strategy.Strategy -> Embedding.Embedding -> Maybe Embedding.Embedding
-  resolveConflictAux []                     n s e = Just e
+  resolveConflictAux []                     _ _ e = Just e
   resolveConflictAux ((lnk1, lnk2):lnkLnks) n s e
     | CPLink.orderConflict lnk1 lnk2 = resolveOrderConflict lnk1 lnk2 n s e
     | CPLink.orderConflict lnk2 lnk1 = resolveOrderConflict lnk2 lnk1 n s e
@@ -172,7 +169,7 @@ where
 
   {-|
   -}
-  resolveValueConflict :: CPLink.CPLink -> CPLink.CPLink -> Next.Next -> Embedding.Embedding -> Maybe Embedding.Embedding
+  resolveValueConflict :: CPLink.CPLink -> CPLink.CPLink -> Next.Next -> Strategy.Strategy -> Embedding.Embedding -> Maybe Embedding.Embedding
   resolveValueConflict lnk1 lnk2 n s e = Embedding.resolveX cp thrshld n e >>= resolveConflict n s
     where
       cp      = CPLink.cpP lnk2
