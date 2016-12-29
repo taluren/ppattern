@@ -31,8 +31,8 @@ where
   import qualified Data.Algorithm.PPattern.Types as T
 
   -- | 2D point
-  data Point = Point {-# UNPACK #-} !T.T -- ^ x coordinate
-                     {-# UNPACK #-} !T.T -- ^ y coordinate
+  data Point = Point {-# UNPACK #-} !T.T -- x coordinate
+                     {-# UNPACK #-} !T.T -- y coordinate
                      deriving (Show, Eq, Ord)
 
   {-|

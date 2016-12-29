@@ -135,13 +135,13 @@ where
   toList (Perm xs) = xs
 
   {-|
-    Helper function. Index (from 1) the elements of a lits
+    Helper function. Index (from 1) the elements of a list
   -}
   index :: [a] -> [(T.T, a)]
   index = L.zip ([1..] :: [T.T])
 
   {-|
-    'reduce p' returns the reduced form of 'p'.
+    'reduce p' returns the reduced form of the permutation 'p'.
 
     λ: reduce (Perm [])
     Perm []
@@ -160,7 +160,7 @@ where
   {-|
     Return the size of a permutation.È of the Perm 'p'.
   -}
-  size :: Perm -> Int
+  size :: Perm -> T.Length
   size = L.length . toList
 
   {-|
@@ -172,7 +172,7 @@ where
   {-|
     Helper function.
     'increasingsByL' xs k' returns the list of all increasing subsequences
-    of length 'k' of the list 'xs'.
+    of length 'k' of the T.T list 'xs'.
   -}
   increasingsByL' :: [T.T] ->  Int -> [[T.T]]
   increasingsByL' [] _ = []

@@ -17,10 +17,6 @@ module Data.Algorithm.PPattern.CPoint
 , mkCPoint
 , mkCPoint'
 
-  -- * comparing
-, sameC
-, diffC
-
   -- * Querying
 , colors
 , nbColors
@@ -52,20 +48,6 @@ where
   mkCPoint' x y = mkCPoint p
     where
       p = Point.mkPoint x y
-
-  {-|
-    'sameC p1 p2' returns True if the two colored points 'p1' and 'p2' have the
-    same color.
-  -}
-  sameC :: CPoint -> CPoint -> Bool
-  sameC p1 p2 = color p1 == color p2
-
-  {-|
-    'diffC p1 p2' returns True if the two colored points 'p1' and 'p2' have
-    different colors.
-  -}
-  diffC :: CPoint -> CPoint -> Bool
-  diffC p1 p2 = not $ sameC p1 p2
 
   {-|
     Return the x-coordinate of the colored point.
