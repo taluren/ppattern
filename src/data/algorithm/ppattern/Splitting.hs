@@ -12,7 +12,7 @@ commentary with @some markup@.
 
 module Data.Algorithm.PPattern.Splitting
 -- (
-
+--  splits
 -- )
 where
 
@@ -21,28 +21,42 @@ where
   import qualified Data.IntMap.Strict as IntMap
   import qualified Data.Monoid        as Monoid
 
-  import qualified Data.Algorithm.PPattern.Perm as Perm
+  import qualified Data.Algorithm.PPattern.Types        as T
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
-  import qualified Data.Algorithm.PPattern.Types as T
 
   newtype Tree = Tree { children :: IntMap.IntMap Tree }
                  deriving (Show)
 
+  {-|
+    Construct an empty tree.
+  -}
   emptyTree :: Tree
   emptyTree = Tree { children=IntMap.empty }
 
+  {-|
+    Search for a intger key in a tree.
+  -}
   lookupTree :: Int -> Tree -> Maybe Tree
   lookupTree x Tree { children=m } = IntMap.lookup x m
 
+  {-|
+    Insert a list of integers in a tree.
+  -}
   insertTree :: [Int] -> Tree -> Tree
   insertTree []     t                   = t
   insertTree (x:xs) Tree { children=m } = case IntMap.lookup x m of
     Nothing -> Tree { children=IntMap.insert x (path xs)                      m }
     Just t  -> Tree { children=IntMap.update (\_ -> Just (insertTree xs t)) x m }
 
+  {-|
+    Construct a path-tree. Helper function for function 'insertTree'.
+  -}
   path :: [Int] -> Tree
   path = Foldable.foldr (\x t -> Tree { children=IntMap.singleton x t }) emptyTree
 
+  {-|
+    Make a tree from a list of list of integers.
+  -}
   mkTree :: [[Int]] -> Tree
   mkTree = Foldable.foldr insertTree emptyTree
 
@@ -50,10 +64,9 @@ where
     'splits p partitions' takes a permutation 'p' and a list of integer
     partitions 'partitions' of some integers.
   -}
-  splits :: Perm.Perm -> [IntPartition.IntPartition] -> [[Perm.Perm]]
-  splits p partitions = fmap Perm.fromListUnsafe <$> splitAux xs t
+  splits :: [T.T] -> [IntPartition.IntPartition] -> [[[T.T]]]
+  splits xs partitions = splitsAux xs t
     where
-      xs = Perm.toList p
       t  = mkTree (fmap IntPartition.toList partitions)
 
   {-|

@@ -14,7 +14,8 @@ commentary with @some markup@.
 import System.Console.CmdArgs
 import System.Random
 
-import qualified Data.Algorithm.PPattern.Perm as Perm
+import qualified Data.Algorithm.PPattern.Perm        as Perm
+import qualified Data.Algorithm.PPattern.Perm.Random as Perm.Random
 
 data Options = Options { len            :: Int
                        , num            :: Int
@@ -36,7 +37,7 @@ go opts = aux (len opts) (num opts) []
     aux _ 0 acc _ = acc
     aux n m acc g = aux n (m-1) (p:acc) g'
       where
-        (p, g') = Perm.randPerm' n g
+        (p, g') = Perm.Random.randPerm' n g
 
 main :: IO ()
 main = do

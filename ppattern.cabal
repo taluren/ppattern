@@ -29,6 +29,7 @@ library
   hs-source-dirs: src
   exposed-modules:
     Data.Algorithm.PPattern.Perm
+    Data.Algorithm.PPattern.Perm.Random
     Data.Algorithm.PPattern.IntPartition
     Data.Algorithm.PPattern.Combi
     Data.Algorithm.PPattern.Types
