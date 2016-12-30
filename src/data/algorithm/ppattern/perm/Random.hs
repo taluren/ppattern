@@ -19,22 +19,24 @@ module Data.Algorithm.PPattern.Perm.Random
 )
 where
 
-  import qualified System.Random a R
+  import qualified System.Random as Random
+
+  import Data.Algorithm.PPattern.Perm.Internal
 
   {-|
     'randPerm' takes a permutation 'p' and a generator 'g', and
-    returns a random permutation of 'p', together with a new generator.
+    returns a random permutation of 'p', together with a new generatoRandom.
   -}
-  randPerm :: R.RandomGen g => Perm -> g -> (Perm, g)
+  randPerm :: Random.RandomGen g => Perm -> g -> (Perm, g)
   randPerm p g = (fromListUnsafe xs, g')
     where
       (xs, g') = flip Random.randPerm g $ toList p
 
   {-|
     'randPerm'' takes an integer 'n' and a generator 'g', and
-    returns a random permutation of '[1..n]', together with a new generator.
+    returns a random permutation of '[1..n]', together with a new generatoRandom.
   -}
-  randPerm' :: R.RandomGen g => Int -> g -> (Perm, g)
+  randPerm' :: Random.RandomGen g => Int -> g -> (Perm, g)
   randPerm' n g = (p', g')
     where
       p        = mkIncreasing n
@@ -43,9 +45,9 @@ where
   -- {-|
   --   'randKIncreasing' takes two integers 'n' and 'k' and a generator 'g'.
   --   It returns a random permutation of length 'n' that is the union of 'k'
-  --   increasings sequences, together with a new generator.
+  --   increasings sequences, together with a new generatoRandom.
   -- -}
-  randKIncreasing :: R.RandomGen g => Int -> Int -> g -> (Perm, g)
+  randKIncreasing :: Random.RandomGen g => Int -> Int -> g -> (Perm, g)
   randKIncreasing n k g =
     if lenLongestDecreasingSub p > k
       then randKIncreasing n k g'
@@ -56,9 +58,9 @@ where
   {-|
     'randKIncreasings' takes three integers 'n', 'k' and 'm' and a generator 'g'.
     It returns 'm' random permutations of length 'n' (each Perm is the
-    union of 'k' increasings sequences), together with a new generator.
+    union of 'k' increasings sequences), together with a new generatoRandom.
   -}
-  randKIncreasings :: (R.RandomGen g) => Int -> Int -> Int -> g -> ([Perm], g)
+  randKIncreasings :: (Random.RandomGen g) => Int -> Int -> Int -> g -> ([Perm], g)
   randKIncreasings n k = aux []
     where
       aux acc 0 g = (acc, g)
