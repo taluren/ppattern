@@ -52,14 +52,13 @@ where
   fun = Map.lookup
 
   {-|
-
+    Construct an embedding from a list of key/value pairs.
   -}
   fromList :: [(CPoint.CPoint, CPoint.CPoint)] -> Embedding
   fromList = Map.fromList
 
-
   {-|
-
+    Transform an embedding into a list of key/value pairs.
   -}
   toList :: Embedding -> [(CPoint.CPoint, CPoint.CPoint)]
   toList = Map.toList
@@ -71,6 +70,7 @@ where
   insert = Map.insert
 
   {-|
+    Update the embedding function.
   -}
   update :: CPoint.CPoint -> CPoint.CPoint -> Embedding -> Embedding
   update cp cp' = Map.update (\_ -> Just cp') cp
