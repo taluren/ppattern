@@ -56,6 +56,11 @@ Perm(..)
 , randPerm'
 , randKIncreasing
 , randKIncreasings
+
+, splits
+, canonical
+, standard
+, isClassRepresentative
 )
 where
 
@@ -182,6 +187,16 @@ where
   {-|
    Helper function.
   -}
+  standard :: [Perm] -> [Perm]
+  standard = unindex . sortBySize . indexBySize
+   where
+     indexBySize = fmap (\p -> (size p, p))
+     sortBySize  = L.sortBy (compare `Fun.on` fst)
+     unindex     = fmap snd
+
+  {-|
+   Helper function.
+  -}
   canonical :: [Perm] -> [Perm]
   canonical = concatSort . unindex . groupBySize . sortBySize . indexBySize
    where
@@ -195,7 +210,7 @@ where
    Helper function.
   -}
   isClassRepresentative :: [Perm] -> Bool
-  isClassRepresentative ps = ps == canonical ps
+  isClassRepresentative ps = standard ps == canonical ps
 
   {-|
     'splits p partitions' takes a permutation 'p' and a list of integer

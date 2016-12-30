@@ -30,8 +30,7 @@ where
   import qualified Data.Algorithm.PPattern.Embedding    as Embedding
 
   {-|
-    The 'mkCPoints' function takes a permutation and a color mapping given
-    in the form of a map, and it return a list of CPoint.
+    Construct a list of colored points from a permutation and a color mapping.
   -}
   mkCPoints :: Perm.Perm -> Map.Map T.T Color.Color -> [CPoint.CPoint]
   mkCPoints (Perm.Perm xs) m = L.map (THT.uncurry3 CPoint.mkCPoint) t3s
@@ -40,26 +39,25 @@ where
       t3s = L.zip3 [1..] xs cs
 
   {-|
-    'lmostEmbedding cp1s cp2s' return the leftmost color friendly embedding
-    from 'cp1s' color points to 'cp2s' color points.
+    Construct the leftmost color-friendly mapping from two lists of colored
+    points.
   -}
-  lmostEmbedding :: [CPoint.CPoint] -> [CPoint.CPoint] -> Maybe Embedding.Embedding
-  lmostEmbedding cp1s cp2s = Embedding.fromList <$> lmostEmbeddingAux cp1s cp2s
+  leftmostEmbedding :: [CPoint.CPoint] -> [CPoint.CPoint] -> Maybe Embedding.Embedding
+  leftmostEmbedding cp1s cp2s = Embedding.fromList <$> leftmostEmbeddingAux cp1s cp2s
 
-  lmostEmbeddingAux :: [CPoint.CPoint] -> [CPoint.CPoint] -> Maybe [(CPoint.CPoint, CPoint.CPoint)]
-  lmostEmbeddingAux [] []  = Just []
-  lmostEmbeddingAux [] _   = Just []
-  lmostEmbeddingAux _  []  = Nothing
-  lmostEmbeddingAux (cp1:cp1s) (cp2:cp2s)
-    | c1 == c2  = fmap ((cp1, cp2):) (lmostEmbeddingAux cp1s cp2s)
-    | otherwise = lmostEmbeddingAux (cp1:cp1s) cp2s
+  leftmostEmbeddingAux :: [CPoint.CPoint] -> [CPoint.CPoint] -> Maybe [(CPoint.CPoint, CPoint.CPoint)]
+  leftmostEmbeddingAux [] []  = Just []
+  leftmostEmbeddingAux [] _   = Just []
+  leftmostEmbeddingAux _  []  = Nothing
+  leftmostEmbeddingAux (cp1:cp1s) (cp2:cp2s)
+    | c1 == c2  = fmap ((cp1, cp2):) (leftmostEmbeddingAux cp1s cp2s)
+    | otherwise = leftmostEmbeddingAux (cp1:cp1s) cp2s
     where
       c1 = CPoint.color cp1
       c2 = CPoint.color cp2
 
   {-|
-    'mapFromPartition' transform an integer partition into a map object that
-    associates to each each element a color.
+
   -}
   mapFromPartition :: [Perm.Perm] -> Map.Map T.T Color.Color
   mapFromPartition = Map.fromList . Fold.concatMap f . flip zip ([1..] :: [Color.Color]) . fmap Perm.toList
@@ -131,7 +129,7 @@ where
     Perform the search for a given coloring of the source Perm.
   -}
   doSearch :: [CPoint.CPoint] -> [CPoint.CPoint] -> Next.Next -> Strategy.Strategy -> Maybe Embedding.Embedding
-  doSearch cpsP cpsQ n s = lmostEmbedding cpsP cpsQ >>= doSearchAux n s
+  doSearch cpsP cpsQ n s = leftmostEmbedding cpsP cpsQ >>= doSearchAux n s
 
   doSearchAux :: Next.Next -> Strategy.Strategy -> Embedding.Embedding -> Maybe Embedding.Embedding
   doSearchAux n s e = resolveConflict n s e >>= loop
