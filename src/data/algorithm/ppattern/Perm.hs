@@ -11,55 +11,56 @@ commentary with @some markup@.
 -}
 
 module Data.Algorithm.PPattern.Perm
-(
-  -- * The @Perm@ type
-  Perm(..)
-, fromIntList
-, fromList
-, fromIntListUnsafe
-, fromListUnsafe
-, mkEmpty
-, reduce
-
-  -- * Monotonic Perms
-, mkIncreasing
-, mkDecreasing
-
-  -- * Conversions
-, toList
-, toIntList
-
-  -- * Querying
-, size
-
-  ---
-, diff
-
-  -- * Enumerating subsequences
-, increasingsByL
-
-  -- * Partitioning
-, partitionsIncreasings
-, greedyIncreasing1
-, greedyPartitionIncreasings1
-, greedyIncreasing2
-, greedyPartitionIncreasings2
-
-  -- * LCS
-, longestIncreasingSub
-, lenLongestIncreasingSub
-, longestDecreasingSub
-, lenLongestDecreasingSub
-
-  -- * Random
-, randPerm
-, randPerm'
-, randKIncreasing
-, randKIncreasings
-)
+-- (
+--   -- * The @Perm@ type
+--   Perm(..)
+-- , fromIntList
+-- , fromList
+-- , fromIntListUnsafe
+-- , fromListUnsafe
+-- , mkEmpty
+-- , reduce
+--
+--   -- * Monotonic Perms
+-- , mkIncreasing
+-- , mkDecreasing
+--
+--   -- * Conversions
+-- , toList
+-- , toIntList
+--
+--   -- * Querying
+-- , size
+--
+--   ---
+-- , diff
+--
+--   -- * Enumerating subsequences
+-- , increasingsL
+--
+--   -- * Partitioning
+-- , partitionsIncreasings
+-- , greedyIncreasing1
+-- , greedyPartitionIncreasings1
+-- , greedyIncreasing2
+-- , greedyPartitionIncreasings2
+--
+--   -- * LCS
+-- , longestIncreasingSub
+-- , lenLongestIncreasingSub
+-- , longestDecreasingSub
+-- , lenLongestDecreasingSub
+--
+--   -- * Random
+-- , randPerm
+-- , randPerm'
+-- , randKIncreasing
+-- , randKIncreasings
+-- )
 where
 
   import qualified Data.List     as L
+  import qualified Data.Foldable as Foldable
   import qualified Data.Monoid   as Monoid
   import qualified Data.Function as Fun
   import qualified System.Random as R
@@ -171,58 +172,67 @@ where
 
   {-|
     Helper function.
-    'increasingsByL' xs k' returns the list of all increasing subsequences
+    'increasingsL' xs k' returns the list of all increasing subsequences
     of length 'k' of the T.T list 'xs'.
   -}
-  increasingsByL' :: [T.T] ->  Int -> [[T.T]]
-  increasingsByL' [] _ = []
-  increasingsByL' xs k = increasingsByLAux' xs k k (L.head xs)
+  increasingsL' :: [T.T] ->  Int -> [[T.T]]
+  increasingsL' [] _ = []
+  increasingsL' xs k = increasingsLAux' xs k k (L.head xs)
 
-  increasingsByLAux' ::  [T.T] ->  Int -> Int -> T.T -> [[T.T]]
-  increasingsByLAux' _      _ 0 _  = [[]]
-  increasingsByLAux' []     _ _ _  = []
-  increasingsByLAux' (x:xs) k k' x'
-    | k == k' || x > x' = fmap (x:) xss `Monoid.mappend` increasingsByLAux' xs k k' x'
-    | otherwise         = increasingsByLAux' xs k k' x'
+  increasingsLAux' ::  [T.T] ->  Int -> Int -> T.T -> [[T.T]]
+  increasingsLAux' _      _ 0 _  = [[]]
+  increasingsLAux' []     _ _ _  = []
+  increasingsLAux' (x:xs) k k' x'
+    | k == k' || x > x' = fmap (x:) xss `Monoid.mappend` increasingsLAux' xs k k' x'
+    | otherwise         = increasingsLAux' xs k k' x'
     where
-      xss = increasingsByLAux' xs k (k'-1) x
+      xss = increasingsLAux' xs k (k'-1) x
 
   {-|
-    'increasingsByL p k' return the list of all increasing subsequences
+    'increasingsL p k' return the list of all increasing subsequences
     of length 'k' of the permutation 'p'.
   -}
-  increasingsByL :: Perm ->  Int -> [Perm]
-  increasingsByL (Perm xs) k = fmap fromListUnsafe xss
+  increasingsL :: Perm ->  Int -> [Perm]
+  increasingsL (Perm xs) k = fmap fromListUnsafe xss
     where
-      xss = increasingsByL' xs k
+      xss = increasingsL' xs k
+
+  -- {-|
+  --   'partitionsIncreasingsL p ks' returns all partitions of the Permutation
+  --   'p' into /|ks|/ increasing subsequences of length ks = [k1, k2, ..., kp].
+  -- -}
+  -- partitionsIncreasingsL :: Perm -> IntPartition.IntPartition -> [[Perm]]
+  -- partitionsIncreasingsL p intPartition = fmap fromListUnsafe <$> partitions
+  --   where
+  --     xs         = toList p
+  --     ls         = IntPartition.toList intPartition
+  --     partitions = partitionsIncreasingsLAux xs ls
+  --
+  -- partitionsIncreasingsLAux :: [T.T] -> [Int] -> [[[T.T]]]
+  -- partitionsIncreasingsLAux [] []     = [[]]
+  -- partitionsIncreasingsLAux [] _      = []
+  -- partitionsIncreasingsLAux _  []     = []
+  -- partitionsIncreasingsLAux xs (l:ls) = [is:iss |
+  --                                          is  <- increasingsL' xs l,
+  --                                          iss <- partitionsIncreasingsLAux (xs L.\\ is) ls]
 
   {-|
-    'partitionsIncreasingsByL p ks' returns all partitions of the Permutation
-    'p' into /|ks|/ increasing subsequences of length ks = [k1, k2, ..., kp].
+   Helper function.
   -}
-  partitionsIncreasingsByL :: Perm -> IntPartition.IntPartition -> [[Perm]]
-  partitionsIncreasingsByL p intPartition = fmap fromListUnsafe <$> partitions
-    where
-      xs         = toList p
-      ls         = IntPartition.toList intPartition
-      partitions = partitionsIncreasingsByLAux xs ls
-
-  partitionsIncreasingsByLAux :: [T.T] -> [Int] -> [[[T.T]]]
-  partitionsIncreasingsByLAux [] []     = [[]]
-  partitionsIncreasingsByLAux [] _      = []
-  partitionsIncreasingsByLAux _  []     = []
-  partitionsIncreasingsByLAux xs (l:ls) = [is:iss |
-                                           is  <- increasingsByL' xs l,
-                                           iss <- partitionsIncreasingsByLAux (xs L.\\ is) ls]
+  canonical :: [Perm] -> [Perm]
+  canonical = concatSort . unindex . groupBySize . sortBySize . indexBySize
+   where
+     indexBySize = fmap (\p -> (size p, p))
+     sortBySize  = L.sortBy (compare `Fun.on` fst)
+     groupBySize = L.groupBy ((==) `Fun.on` fst)
+     unindex     = fmap (fmap snd)
+     concatSort  = Foldable.concatMap L.sort
 
   {-|
-    Helper function.
+   Helper function.
   -}
-  isClassLeader :: [Perm] -> Bool
-  isClassLeader ps = xss == xss'
-    where
-      xss = [toList p | p <- ps]
-      xss' = L.sort . fmap L.sort $ fmap toList ps
+  isClassRepresentative :: [Perm] -> Bool
+  isClassRepresentative ps = ps == canonical ps
 
   {-|
     'partitionsIncreasings p k' return all partitions of the permutation 'p' into
@@ -231,16 +241,14 @@ where
   partitionsIncreasings :: Perm -> Int -> [[Perm]]
   partitionsIncreasings p k
     | lenLongestDecreasingSub p > k = []
-    | otherwise                     = partitionsIncreasingsAux p k
+    | otherwise                     = partitionsIncreasingsAux p (size p) k
 
 
-  partitionsIncreasingsAux :: Perm -> Int -> [[Perm]]
-  partitionsIncreasingsAux p k = [partition |
-                                  intPartition <- IntPartition.intPartitionsByL n k,
-                                  partition    <- partitionsIncreasingsByL p intPartition,
-                                  isClassLeader partition]
-    where
-      n = size p
+  partitionsIncreasingsAux :: Perm -> T.Length -> Int -> [[Perm]]
+  partitionsIncreasingsAux p n k =
+    [ps | ps <- Splitting.split p (IntPartition.partitionsL n k),
+          isClassRepresentative ps]
+
 
   {-|
     'greedyPartitionIncreasings xs f' return a partition of xs into increasing

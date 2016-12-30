@@ -23,10 +23,10 @@ module Data.Algorithm.PPattern.IntPartition
 , toList
 
   -- * Generating and counting
-, intPartitions
+, partitions
 , nbIntPartitions
-, intPartitionsByL
-, nbIntPartitionsByL
+, partitionsL
+, nbpartitionsL
 
   -- * Comparing
 , compatible
@@ -68,57 +68,57 @@ where
     λ: intPartitions 6
     [[6],[3,3],[4,2],[5,1],[2,2,2],[3,2,1],[4,1,1],[2,2,1,1],[3,1,1,1],[2,1,1,1,1],[1,1,1,1,1,1]]
   -}
-  intPartitions :: Int -> [IntPartition]
-  intPartitions n = L.concat [intPartitionsByL n k | k <- [1..n]]
+  partitions :: Int -> [IntPartition]
+  partitions n = L.concat [partitionsL n k | k <- [1..n]]
 
   {-|
     'nbIntPartitions n' returns the number of ordered partitions of integer 'n'.
   -}
   nbIntPartitions :: Int -> Int
-  nbIntPartitions = L.length . intPartitions
+  nbIntPartitions = L.length . partitions
 
   {-|
-    'intPartitionsByL n k' returns all ordered partitions of integer 'n' into 'k'
+    'partitionsL n k' returns all ordered partitions of integer 'n' into 'k'
     parts.
 
-    λ: intPartitionsByL 6 0
+    λ: partitionsL 6 0
     [[]]
-    λ: intPartitionsByL 6 1
+    λ: partitionsL 6 1
     [[6]]
-    λ: intPartitionsByL 6 2
+    λ: partitionsL 6 2
     [[3,3],[4,2],[5,1]]
-    λ: intPartitionsByL 6 3
+    λ: partitionsL 6 3
     [[2,2,2],[3,2,1],[4,1,1]]
-    λ: intPartitionsByL 6 4
+    λ: partitionsL 6 4
     [[2,2,1,1],[3,1,1,1]]
-    λ: intPartitionsByL 6 5
+    λ: partitionsL 6 5
     [[2,1,1,1,1]]
-    λ: intPartitionsByL 6 6
+    λ: partitionsL 6 6
     [[1,1,1,1,1,1]]
-    λ: intPartitionsByL 6 7
+    λ: partitionsL 6 7
     []
   -}
-  intPartitionsByL :: Int -> Int -> [IntPartition]
-  intPartitionsByL n k = fromList <$> intPartitionsByLAux n k n
+  partitionsL :: Int -> Int -> [IntPartition]
+  partitionsL n k = fromList <$> partitionsLAux n k n
 
-  intPartitionsByLAux :: Int -> Int -> Int -> [[Int]]
-  intPartitionsByLAux _ 0 _ = [[]]
-  intPartitionsByLAux n 1 _ = [[n]]
-  intPartitionsByLAux n k b
+  partitionsLAux :: Int -> Int -> Int -> [[Int]]
+  partitionsLAux _ 0 _ = [[]]
+  partitionsLAux n 1 _ = [[n]]
+  partitionsLAux n k b
     | n < k     = []
     | n == k    = [L.replicate k 1]
-    | otherwise = L.concat [fmap (k':) (intPartitionsByLAux (n-k') (k-1) k') |
+    | otherwise = L.concat [fmap (k':) (partitionsLAux (n-k') (k-1) k') |
                             k' <- [l..h]]
     where
       l = fromIntegral (ceiling ((fromIntegral n / fromIntegral k) :: Double) :: Int)
       h = min (n-k+1) b
 
   {-|
-    'nbIntPartitionsByL n k' returns the number of ordered partitions of integer
+    'nbpartitionsL n k' returns the number of ordered partitions of integer
     'n' into 'k' parts.
   -}
-  nbIntPartitionsByL :: Int -> Int -> Int
-  nbIntPartitionsByL n k = L.length $ intPartitionsByL n k
+  nbpartitionsL :: Int -> Int -> Int
+  nbpartitionsL n k = L.length $ partitionsL n k
 
   {-|
     'compatible ip1 ip2' returns True if and only if 'ip1' is a subpartition of
