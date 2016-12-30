@@ -50,20 +50,26 @@ Perm(..)
 , lenLongestIncreasingSub
 , longestDecreasingSub
 , lenLongestDecreasingSub
+
+  -- * Random
+, randPerm
+, randPerm'
+, randKIncreasing
+, randKIncreasings
 )
 where
 
   import qualified Data.List     as L
   import qualified Data.Foldable as Foldable
   import qualified Data.Function as Fun
-  import qualified System.Random as Random
+  import qualified System.Random as System.Random
 
   import qualified Data.Algorithm.Patience as Patience
 
-  import Data.Algorithm.PPattern.Perm.Internal
   import qualified Data.Algorithm.PPattern.Types        as T
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
   import qualified Data.Algorithm.PPattern.Splitting    as Splitting
+  import qualified Data.Algorithm.PPattern.Random       as Random
 
   newtype Perm = Perm [T.T] deriving (Eq, Ord, Show, Read)
 
@@ -304,7 +310,7 @@ where
     'randPerm' takes a permutation 'p' and a generator 'g', and
     returns a random permutation of 'p', together with a new generatoRandom.
   -}
-  randPerm :: Random.RandomGen g => Perm -> g -> (Perm, g)
+  randPerm :: System.Random.RandomGen g => Perm -> g -> (Perm, g)
   randPerm p g = (fromListUnsafe xs, g')
     where
       (xs, g') = flip Random.randPerm g $ toList p
@@ -313,7 +319,7 @@ where
     'randPerm'' takes an integer 'n' and a generator 'g', and
     returns a random permutation of '[1..n]', together with a new generatoRandom.
   -}
-  randPerm' :: Random.RandomGen g => Int -> g -> (Perm, g)
+  randPerm' :: System.Random.RandomGen g => Int -> g -> (Perm, g)
   randPerm' n g = (p', g')
     where
       p        = mkIncreasing n
@@ -324,7 +330,7 @@ where
   --   It returns a random permutation of length 'n' that is the union of 'k'
   --   increasings sequences, together with a new generatoRandom.
   -- -}
-  randKIncreasing :: Random.RandomGen g => Int -> Int -> g -> (Perm, g)
+  randKIncreasing :: System.Random.RandomGen g => Int -> Int -> g -> (Perm, g)
   randKIncreasing n k g =
     if lenLongestDecreasingSub p > k
       then randKIncreasing n k g'
@@ -337,7 +343,7 @@ where
     It returns 'm' random permutations of length 'n' (each Perm is the
     union of 'k' increasings sequences), together with a new generatoRandom.
   -}
-  randKIncreasings :: (Random.RandomGen g) => Int -> Int -> Int -> g -> ([Perm], g)
+  randKIncreasings :: (System.Random.RandomGen g) => Int -> Int -> Int -> g -> ([Perm], g)
   randKIncreasings n k = aux []
     where
       aux acc 0 g = (acc, g)
