@@ -108,7 +108,7 @@ where
     (if possible) an order-isomorphic occurrence of 'p' in 'q'.
   -}
   search :: Perm.Perm -> Perm.Perm -> Strategy.Strategy -> Maybe Embedding.Embedding
-  search p q = searchAux cpssP cpsQ n
+  search p q = searchAux cpssP cpsQ nQ
     where
       -- make target structure
       (cpsQ, intPartitionQ) = mkQ q
@@ -117,7 +117,7 @@ where
       cpssP = mkPs p (CPoint.nbColors cpsQ) intPartitionQ
 
       -- make next function for permutation q
-      n = Next.mkQ' cpsQ
+      nQ = Next.mkQ' cpsQ
 
   searchAux :: [[CPoint.CPoint]] -> [CPoint.CPoint] -> Next.Next -> Strategy.Strategy -> Maybe Embedding.Embedding
   searchAux []           _    _ _ = Nothing

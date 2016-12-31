@@ -32,6 +32,7 @@ library
     Data.Algorithm.PPattern.IntPartition
     Data.Algorithm.PPattern.Combi
     Data.Algorithm.PPattern.Types
+    Data.Algorithm.PPattern.Color
     Data.Algorithm.PPattern.Random
     Data.Algorithm.PPattern.Tools
     Data.Algorithm.PPattern.CPoint

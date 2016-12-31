@@ -37,8 +37,19 @@ where
   data CPoint = CPoint { xCoord :: {-# UNPACK #-} !T.T
                        , yCoord :: {-# UNPACK #-} !T.T
                        , color  :: {-# UNPACK #-} !Color.Color
-                       } deriving (Show, Eq, Ord)
+                       } deriving (Eq, Ord)
 
+  instance Show CPoint where
+    show CPoint {xCoord=x, yCoord=y, color=c } = "("    ++
+                                                 "x="   ++
+                                                 show x ++
+                                                 ","    ++
+                                                 "y="   ++
+                                                 show y ++
+                                                 ","    ++
+                                                 "c="   ++
+                                                 show c ++
+                                                 ")"
   {-|
     'mkPoint'' makes a colored CPoint from two integer coordinates and a color.
   -}
