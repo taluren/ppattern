@@ -30,15 +30,6 @@ where
   import qualified Data.Algorithm.PPattern.Embedding    as Embedding
 
   {-|
-    Construct a list of colored points from a permutation and a color mapping.
-  -}
-  mkCPoints :: Perm.Perm -> Map.Map T.T Color.Color -> [CPoint.CPoint]
-  mkCPoints (Perm.Perm xs) m = L.map (THT.uncurry3 CPoint.mkCPoint) t3s
-    where
-      cs  = Fold.foldr (\x acc -> fromJust (Map.lookup x m):acc) [] xs
-      t3s = L.zip3 [1..] xs cs
-
-  {-|
     Construct the leftmost color-friendly mapping from two lists of colored
     points.
   -}
@@ -55,6 +46,15 @@ where
     where
       c1 = CPoint.color cp1
       c2 = CPoint.color cp2
+
+  {-|
+    Construct a list of colored points from a permutation and a color mapping.
+  -}
+  mkCPoints :: Perm.Perm -> Map.Map T.T Color.Color -> [CPoint.CPoint]
+  mkCPoints (Perm.Perm xs) m = L.map (THT.uncurry3 CPoint.mkCPoint) t3s
+    where
+      cs  = Fold.foldr (\x acc -> fromJust (Map.lookup x m):acc) [] xs
+      t3s = L.zip3 [1..] xs cs
 
   {-|
 
@@ -102,10 +102,10 @@ where
 
   -}
   mkQ :: Perm.Perm -> ([CPoint.CPoint], IntPartition.IntPartition)
-  mkQ q = (cps, toIntPartition partition)
+  mkQ q = (cpQs, toIntPartition partition)
     where
       partition = Perm.greedyPartitionIncreasings1 q
-      cps       = mkCPoints q (mapFromPartition partition)
+      cpQs       = mkCPoints q (mapFromPartition partition)
 
   {-|
     The 'search' function takes two permutations 'p' and 'q', and it returns
