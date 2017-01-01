@@ -67,8 +67,8 @@ where
   import qualified Data.List     as L
   import qualified Data.Foldable as Foldable
   import qualified Data.Function as Fun
-  import qualified System.Random as System.Random
-
+  import qualified System.Random
+  
   import qualified Data.Algorithm.Patience as Patience
 
   import qualified Data.Algorithm.PPattern.Types        as T

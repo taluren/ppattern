@@ -26,7 +26,7 @@ where
   type Color = Word.Word8
 
   toInt :: Color -> Int
-  toInt c = (fromIntegral c) :: Int
+  toInt c = fromIntegral c :: Int
 
   fromInt :: Int -> Color
-  fromInt c = (fromIntegral c) :: Color
+  fromInt c = fromIntegral c :: Color

@@ -31,8 +31,8 @@ module Data.Algorithm.PPattern.Embedding
 )
 where
 
-  import qualified Data.List as L
-  import qualified Data.Function as Fun
+  import qualified Data.List       as L
+  import qualified Data.Function   as Fun
   import qualified Data.Map.Strict as Map
 
   import qualified Data.Algorithm.PPattern.Types  as T
@@ -56,7 +56,7 @@ where
   empty  = Embedding Map.empty
 
   {-|
-
+    Return the image of a colored point.
   -}
   fun :: CPoint.CPoint -> Embedding -> Maybe CPoint.CPoint
   fun cp e = Map.lookup cp (getMap e)

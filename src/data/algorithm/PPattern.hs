@@ -83,16 +83,20 @@ where
   mkPs :: Perm.Perm -> Int -> IntPartition.IntPartition -> [[CPoint.CPoint]]
   mkPs p k intPartitionQ
     | k > Perm.size p = mkPs p (k-1) intPartitionQ
-    | otherwise       = aux (Perm.partitionsIncreasings p k)
+    | otherwise       = mkPsAux partitionPs p intPartitionQ
     where
-      -- Add every compatible partition.
-      aux [] = []
-      aux (partitionP:partitionsP)
-        | IntPartition.compatible intPartitionP intPartitionQ = cps:aux partitionsP
-        | otherwise                                           = aux partitionsP
-        where
-          intPartitionP = toIntPartition partitionP
-          cps = mkCPoints p (mapFromPartition partitionP)
+      partitionPs = [partitionP' | k' <- [k,k-1..1],
+                                   partitionP  <- Perm.partitionsIncreasings p k',
+                                   partitionP' <- L.permutations partitionP]
+
+  mkPsAux :: [[Perm.Perm]] -> Perm.Perm -> IntPartition.IntPartition -> [[CPoint.CPoint]]
+  mkPsAux []                       _ _          = []
+  mkPsAux (partitionP:partitionPs) p intPartitionQ
+    | IntPartition.compatible intPartitionP intPartitionQ = cpPs:mkPsAux partitionPs p intPartitionQ
+    | otherwise                                           = mkPsAux partitionPs p intPartitionQ
+    where
+      intPartitionP = toIntPartition partitionP
+      cpPs = mkCPoints p (mapFromPartition partitionP)
 
   {-|
 
@@ -108,35 +112,35 @@ where
     (if possible) an order-isomorphic occurrence of 'p' in 'q'.
   -}
   search :: Perm.Perm -> Perm.Perm -> Strategy.Strategy -> Maybe Embedding.Embedding
-  search p q = searchAux cpssP cpsQ nQ
+  search p q = searchAux cpPss cpQs nQ
     where
       -- make target structure
-      (cpsQ, intPartitionQ) = mkQ q
+      (cpQs, intPartitionQ) = mkQ q
 
       -- make all source structures
-      cpssP = mkPs p (CPoint.nbColors cpsQ) intPartitionQ
+      cpPss = mkPs p (CPoint.nbColors cpQs) intPartitionQ
 
       -- make next function for permutation q
-      nQ = Next.mkQ' cpsQ
+      nQ = Next.mkQ' cpQs
 
   searchAux :: [[CPoint.CPoint]] -> [CPoint.CPoint] -> Next.Next -> Strategy.Strategy -> Maybe Embedding.Embedding
   searchAux []           _    _ _ = Nothing
-  searchAux (cpsP:cpssP) cpsQ n s = case doSearch cpsP cpsQ n s of
-                                      Nothing -> searchAux cpssP cpsQ n s
+  searchAux (cpPs:cpPss) cpQs n s = case doSearch cpPs cpQs n s of
+                                      Nothing -> searchAux cpPss cpQs n s
                                       Just e  -> Just e
 
   {-|
     Perform the search for a given coloring of the source Perm.
   -}
   doSearch :: [CPoint.CPoint] -> [CPoint.CPoint] -> Next.Next -> Strategy.Strategy -> Maybe Embedding.Embedding
-  doSearch cpsP cpsQ n s = leftmostEmbedding cpsP cpsQ >>= doSearchAux n s
+  doSearch cpPs cpQs n s = leftmostEmbedding cpPs cpQs >>= doSearchAux n s
 
   doSearchAux :: Next.Next -> Strategy.Strategy -> Embedding.Embedding -> Maybe Embedding.Embedding
   doSearchAux n s e = resolveConflict n s e >>= loop
     where
       loop e'
-        | e /= e'   = doSearchAux n s e'
-        | otherwise = Just e'
+        | e == e'   = Just e'
+        | otherwise = doSearchAux n s e'
 
   {-|
   -}
@@ -165,7 +169,7 @@ where
   {-|
   -}
   resolveValueConflict :: CPLink.CPLink -> CPLink.CPLink -> Next.Next -> Strategy.Strategy -> Embedding.Embedding -> Maybe Embedding.Embedding
-  resolveValueConflict lnk1 lnk2 n s e = Embedding.resolveX cp thrshld n e >>= resolveConflict n s
+  resolveValueConflict lnk1 lnk2 n s e = Embedding.resolveY cp thrshld n e >>= resolveConflict n s
     where
       cp      = CPLink.cpP lnk2
       thrshld = CPoint.yCoord $ CPLink.cpQ lnk1
