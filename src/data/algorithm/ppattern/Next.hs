@@ -127,7 +127,7 @@ where
   -}
   nextK :: Int -> CPointCPointMap -> CPoint.CPoint -> Maybe CPoint.CPoint
   nextK k m cp
-    | k > 1     = next cp m >>= nextK (k-1) m
+    | k > 0     = next cp m >>= nextK (k-1) m
     | otherwise = Just cp
 
   {-|
