@@ -15,6 +15,9 @@ module Data.Algorithm.PPattern.Color
   -- * The @Color@ type
   Color
 
+  -- * Enumerating
+, colors
+
   -- * Transforming
 , toInt
 , fromInt
@@ -24,6 +27,9 @@ where
   import qualified Data.Word as Word
 
   type Color = Word.Word8
+
+  colors :: Int -> [Color]
+  colors n = fmap fromInt [1..n]
 
   toInt :: Color -> Int
   toInt c = fromIntegral c :: Int

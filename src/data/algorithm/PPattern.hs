@@ -28,6 +28,7 @@ where
   import qualified Data.Algorithm.PPattern.Strategy     as Strategy
   import qualified Data.Algorithm.PPattern.Next         as Next
   import qualified Data.Algorithm.PPattern.Embedding    as Embedding
+  import qualified Data.Algorithm.PPattern.Combi        as Combi
 
   {-|
     Construct the leftmost color-friendly mapping from two lists of colored
@@ -59,19 +60,16 @@ where
   {-|
 
   -}
-  mapFromPartition :: [Perm.Perm] -> Map.Map T.T Color.Color
-  mapFromPartition = Map.fromList . Fold.concatMap f . flip zip ([1..] :: [Color.Color]) . fmap Perm.toList
+  mapFromPartition :: [Perm.Perm] -> [Color.Color] -> Map.Map T.T Color.Color
+  mapFromPartition ps cs = Map.fromList . Fold.concatMap f . L.zip cs $ fmap Perm.toList ps
     where
-      -- use colors 1, 2, ...
-      colors = L.repeat
-
-      f (xs, i) = L.zip xs $ colors i
+      f (i, xs) = L.zip xs (L.repeat i)
 
   {-|
-    'toIntPartition ps' returns the lengths of all partition.
+    'partitionToIntPartition ps' returns the lengths of all partition.
   -}
-  toIntPartition :: [Perm.Perm] -> IntPartition.IntPartition
-  toIntPartition ps = IntPartition.mkIntPartition ls'
+  partitionToIntPartition :: [Perm.Perm] -> IntPartition.IntPartition
+  partitionToIntPartition ps = IntPartition.mkIntPartition ls'
     where
       ls  = fmap Perm.size ps
       ls' = L.sortBy (flip compare) ls
@@ -83,29 +81,32 @@ where
   mkPs :: Perm.Perm -> Int -> IntPartition.IntPartition -> [[CPoint.CPoint]]
   mkPs p k intPartitionQ
     | k > Perm.size p = mkPs p (k-1) intPartitionQ
-    | otherwise       = mkPsAux partitionPs p intPartitionQ
+    | otherwise       = mkPsAux partitionPs p k intPartitionQ
     where
-      partitionPs = [partitionP' | k' <- [k,k-1..1],
-                                   partitionP  <- Perm.partitionsIncreasings p k',
-                                   partitionP' <- L.permutations partitionP]
+      partitionPs = [permutedPartitionP | k' <- [k,k-1..1],
+                                          partitionP  <- Perm.partitionsIncreasings p k',
+                                          permutedPartitionP <- L.permutations partitionP]
 
-  mkPsAux :: [[Perm.Perm]] -> Perm.Perm -> IntPartition.IntPartition -> [[CPoint.CPoint]]
-  mkPsAux []                       _ _          = []
-  mkPsAux (partitionP:partitionPs) p intPartitionQ
-    | IntPartition.compatible intPartitionP intPartitionQ = cpPs:mkPsAux partitionPs p intPartitionQ
-    | otherwise                                           = mkPsAux partitionPs p intPartitionQ
+  mkPsAux :: [[Perm.Perm]] -> Perm.Perm -> Int -> IntPartition.IntPartition -> [[CPoint.CPoint]]
+  mkPsAux []                       _ _ _             = []
+  mkPsAux (partitionP:partitionPs) p k intPartitionQ
+    | compatible = cpPss ++ mkPsAux partitionPs p k intPartitionQ
+    | otherwise   = mkPsAux partitionPs p k intPartitionQ
     where
-      intPartitionP = toIntPartition partitionP
-      cpPs = mkCPoints p (mapFromPartition partitionP)
+      compatible = IntPartition.compatible intPartitionP intPartitionQ
+      intPartitionP = partitionToIntPartition partitionP
+      cpPss = [mkCPoints p (mapFromPartition partitionP cs) |
+               cs <- (Color.colors k) `Combi.choose` (L.length partitionP)]
 
   {-|
 
   -}
   mkQ :: Perm.Perm -> ([CPoint.CPoint], IntPartition.IntPartition)
-  mkQ q = (cpQs, toIntPartition partition)
+  mkQ q = (cpQs, partitionToIntPartition partitionQ)
     where
-      partition = Perm.greedyPartitionIncreasings1 q
-      cpQs       = mkCPoints q (mapFromPartition partition)
+      partitionQ = Perm.greedyPartitionIncreasings1 q
+      cs         = Color.colors (Perm.size q)
+      cpQs       = mkCPoints q (mapFromPartition partitionQ cs)
 
   {-|
     The 'search' function takes two permutations 'p' and 'q', and it returns
@@ -125,7 +126,7 @@ where
 
   searchAux :: [[CPoint.CPoint]] -> [CPoint.CPoint] -> Next.Next -> Strategy.Strategy -> Maybe Embedding.Embedding
   searchAux []           _    _ _ = Nothing
-  searchAux (cpPs:cpPss) cpQs n s = case doSearch cpPs cpQs n s of
+  searchAux (cpPs:cpPss) cpQs n s = case doSearch cpPs cpQs (Next.mkP cpPs n) s of
                                       Nothing -> searchAux cpPss cpQs n s
                                       Just e  -> Just e
 
@@ -161,15 +162,17 @@ where
   {-|
   -}
   resolveOrderConflict :: CPLink.CPLink -> CPLink.CPLink -> Next.Next -> Strategy.Strategy -> Embedding.Embedding -> Maybe Embedding.Embedding
-  resolveOrderConflict lnk1 lnk2 n s e = Embedding.resolveX cp thrshld n e >>= resolveConflict n s
+  resolveOrderConflict lnk1 lnk2 n s e = Embedding.resolveX cpP2 thrshld n e >>= resolveConflict n s
     where
-      cp      = CPLink.cpP lnk2
-      thrshld = CPoint.xCoord $ CPLink.cpQ lnk1
+      cpP2    = CPLink.cpP lnk2
+      cpQ1    = CPLink.cpQ lnk1
+      thrshld = CPoint.xCoord cpQ1
 
   {-|
   -}
   resolveValueConflict :: CPLink.CPLink -> CPLink.CPLink -> Next.Next -> Strategy.Strategy -> Embedding.Embedding -> Maybe Embedding.Embedding
-  resolveValueConflict lnk1 lnk2 n s e = Embedding.resolveY cp thrshld n e >>= resolveConflict n s
+  resolveValueConflict lnk1 lnk2 n s e = Embedding.resolveY cpP2 thrshld n e >>= resolveConflict n s
     where
-      cp      = CPLink.cpP lnk2
-      thrshld = CPoint.yCoord $ CPLink.cpQ lnk1
+      cpP2    = CPLink.cpP lnk2
+      cpQ1    = CPLink.cpQ lnk1
+      thrshld = CPoint.yCoord cpQ1

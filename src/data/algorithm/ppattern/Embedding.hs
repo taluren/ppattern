@@ -88,12 +88,12 @@ where
   {-|
   -}
   resolveX :: CPoint.CPoint -> T.T -> Next.Next -> Embedding -> Maybe Embedding
-  resolveX cp thrshld n e = fun cp e >>= Next.jumpThresholdXQ thrshld n >>= resolveAux cp n e
+  resolveX cp thrshld n e = fun cp e >>= Next.jmpThresholdXQ thrshld n >>= resolveAux cp n e
 
   {-|
   -}
   resolveY :: CPoint.CPoint -> T.T -> Next.Next -> Embedding -> Maybe Embedding
-  resolveY cp thrshld n e = fun cp e >>= Next.jumpThresholdYQ thrshld n >>= resolveAux cp n e
+  resolveY cp thrshld n e = fun cp e >>= Next.jmpThresholdYQ thrshld n >>= resolveAux cp n e
 
   {-|
   -}
@@ -101,8 +101,8 @@ where
   resolveAux cp1 n e k = fun cp1 e >>= Next.nextQK k n >>= aux
     where
       aux :: CPoint.CPoint -> Maybe Embedding
-      aux cp1' = case Next.nextP cp1 n of
-                   Nothing  -> Just m'
-                   Just cp2 -> resolveAux cp2 n m' k
+      aux cp2 = case Next.nextP cp1 n of
+                   Nothing   -> Just e'
+                   Just cp1' -> resolveAux cp1' n e' k
         where
-          m' = update cp1 cp1' e
+          e' = update cp1 cp2 e

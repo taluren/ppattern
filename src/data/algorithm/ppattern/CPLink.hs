@@ -21,14 +21,8 @@ module Data.Algorithm.PPattern.CPLink
 , color
 
   -- * Querying two @CPLink@
-, monoChromatic
-, biChromatic
 , orderConflict
 , valueConflict
-, monoChromaticOrderConflict
-, biChromaticOrderConflict
-, monoChromaticValueConflict
-, biChromaticValueConflict
 )
 where
 
@@ -62,19 +56,6 @@ where
   color = CPoint.color . cpP
 
   {-|
-    'sameColor' takes two CPLink objects. It returns True if and only if the
-    two links have the same color.
-  -}
-  monoChromatic :: CPLink -> CPLink -> Bool
-  monoChromatic lnk1 lnk2 = color lnk1 == color lnk2
-
-  {-|
-
-  -}
-  biChromatic :: CPLink -> CPLink -> Bool
-  biChromatic lnk1 lnk2 = not $ monoChromatic lnk1 lnk2
-
-  {-|
 
   -}
   orderConflict :: CPLink -> CPLink -> Bool
@@ -87,16 +68,6 @@ where
       x2' = CPoint.xCoord $ cpQ lnk2
 
   {-|
-  -}
-  monoChromaticOrderConflict :: CPLink -> CPLink -> Bool
-  monoChromaticOrderConflict lnk1 lnk2 = monoChromatic lnk1 lnk2 && orderConflict lnk1 lnk2
-
-  {-|
-  -}
-  biChromaticOrderConflict :: CPLink -> CPLink -> Bool
-  biChromaticOrderConflict lnk1 lnk2 = biChromatic lnk1 lnk2 && orderConflict lnk1 lnk2
-
-  {-|
 
   -}
   valueConflict :: CPLink -> CPLink -> Bool
@@ -107,15 +78,3 @@ where
 
       y2  = CPoint.yCoord $ cpP lnk2
       y2' = CPoint.yCoord $ cpQ lnk2
-
-  {-|
-
-  -}
-  monoChromaticValueConflict :: CPLink -> CPLink -> Bool
-  monoChromaticValueConflict l1 l2 = monoChromatic l1 l2 && valueConflict l1 l2
-
-  {-|
-
-  -}
-  biChromaticValueConflict :: CPLink -> CPLink -> Bool
-  biChromaticValueConflict l1 l2 = monoChromatic l1 l2 && valueConflict l1 l2
