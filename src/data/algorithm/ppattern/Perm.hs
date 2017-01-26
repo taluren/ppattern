@@ -40,17 +40,16 @@ Perm(..)
 
   -- * Partitioning
 , partitionsIncreasings
-, optPartitionIncreassings
 , greedyIncreasing1
 , greedyPartitionIncreasings1
 , greedyIncreasing2
 , greedyPartitionIncreasings2
 
   -- * LCS
-, longestIncreasingSub
-, lenLongestIncreasingSub
-, longestDecreasingSub
-, lenLongestDecreasingSub
+, longestIncreasing
+, lenlongestIncreasing
+, longestDecreasing
+, lenlongestDecreasing
 
   -- * Random
 , randPerm
@@ -65,9 +64,10 @@ Perm(..)
 )
 where
 
-  import qualified Data.List     as L
-  import qualified Data.Foldable as Foldable
-  import qualified Data.Function as Fun
+  import qualified Data.List          as L
+  import qualified Data.Foldable      as Foldable
+  import qualified Data.Function      as Fun
+  import qualified Data.IntMap.Strict as IntMap
   import qualified System.Random
 
   import qualified Data.Algorithm.Patience as Patience
@@ -76,6 +76,8 @@ where
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
   import qualified Data.Algorithm.PPattern.Splitting    as Splitting
   import qualified Data.Algorithm.PPattern.Random       as Random
+  import qualified Data.Algorithm.PPattern.CPoint       as CPoint
+  import qualified Data.Algorithm.PPattern.Color        as Color
 
   newtype Perm = Perm [T.T] deriving (Eq, Ord, Show, Read)
 
@@ -222,29 +224,61 @@ where
     where
       xs = toList p
 
+  -- {-|
+  --   'partitionsIncreasings p k' returns all partitions of the permutation 'p' into
+  --   'k' increasing subsequences.
+  -- -}
+  -- partitionsIncreasings :: Perm -> Int -> [[Perm]]
+  -- partitionsIncreasings p k
+  --   | lenlongestDecreasing p > k = []
+  --   | otherwise                     = partitionsIncreasingsAux p (size p) k
+
   {-|
     'partitionsIncreasings p k' returns all partitions of the permutation 'p' into
     'k' increasing subsequences.
   -}
-  partitionsIncreasings :: Perm -> Int -> [[Perm]]
+  partitionsIncreasings :: Perm -> Int -> [[CPoint.CPoint]]
   partitionsIncreasings p k
-    | lenLongestDecreasingSub p > k = []
-    | otherwise                     = partitionsIncreasingsAux p (size p) k
-
-
-  partitionsIncreasingsAux :: Perm -> T.Length -> Int -> [[Perm]]
-  partitionsIncreasingsAux p n k =
-    [ps | ps <- splits p (IntPartition.partitionsL n k),
-          isClassRepresentative ps]
-
-  {-|
-    'optPartitionIncreassings p' returns a minimum cardinality partition of 'p'
-    into increasing subsequences.
-  -}
-  optPartitionIncreassings :: Perm -> [Perm]
-  optPartitionIncreassings p = L.head $ partitionsIncreasings p (k-1)
+    | k' > k    = []
+    | otherwise = partitionsIncreasingsAux cps cs m m' indexedDecreassing
     where
-      k = lenLongestDecreasingSub p
+      indexedDecreassing = indexedLongestDecreasing p
+
+      cps = mkCPS (index (toList p)) indexedDecreasing 1
+
+      mkCPS []           _           _  = []
+      mkCPS ((i, x):ixs) ((j,y):jys) k
+        | x == y    = ((i, x), k) : mkCPS ixs             (k+1)
+        | otherwise = ((i, x), 0) : mkCPS ixs ((j,y):jys) k
+
+      cs = Color.colors (L.length indexedDecreassing)
+      m  = IntMap.empty
+      m' = IntMap.fromList $ L.zip [1..] indexedDecreassing
+
+
+  partitionsIncreasingsAux :: [(Int, T.T, Color.Color)] -> [Color.Color] -> IntMap.IntMap T.T -> IntMap.IntMap T.T -> [[CPoint.CPoint]]
+  partitionsIncreasingsAux []  _  _ _  = []
+  partitionsIncreasingsAux (((i,x),c):ixcs) cs m m'
+    | c > 0 =
+      fmap (CPoint.mkCPoint i x c:) (partitionsIncreasingsAux ixcs cs (updatePrevMap i x c m) m')
+    | otherwise =
+      [fmap (CPoint.mkCPoint i x c:) (partitionsIncreasingsAux ixcs cs m2 m2') |
+        c   <- cs,
+        m2  <- updatePrevMap i x c m,
+        m2' <- updateNextMap i x c m']
+
+  updatePrevMap i x c m = case IntMap.lookup c m of
+                            Nothing       -> Just (IntMap.insert c x m)
+                            Just x'
+                              | x' < x    -> Just (IntMap.update (\_ -> x) c m)
+                              | otherwise -> Nothing
+
+  updateNextMap i x c m = case IntMap.lookup c m of
+                            Nothing        -> Just m
+                            Just x'
+                              | x < x'    -> Just m
+                              | x == x'   -> Just (IntMap.delete c m)
+                              | otherwise -> Nothing
 
   {-|
     'greedyPartitionIncreasings xs f' return a partition of xs into increasing
@@ -295,41 +329,53 @@ where
     subsequence of 'xs'.
   -}
   greedyIncreasing2 :: Perm -> Perm
-  greedyIncreasing2 = longestIncreasingSub
+  greedyIncreasing2 = longestIncreasing
 
   {-|
-    'longestIncreasingSub xs' returns a longest increasing subsequences in 'xs'.
+    'longestIncreasing xs' returns a longest increasing subsequences in 'xs'.
   -}
-  longestIncreasingSub :: Perm -> Perm
-  longestIncreasingSub = post . Patience.longestIncreasing . pre
+  longestIncreasing :: Perm -> Perm
+  longestIncreasing = fromIntListUnsafe . L.map fst . indexedLongestIncreasing
+
+  {-|
+    'indexedLongestIncreasing xs' returns a longest increasing subsequences in 'xs'.
+  -}
+  indexedLongestIncreasing :: Perm -> [(Int, T.T)]
+  indexedLongestIncreasing = post . Patience.longestIncreasing . pre
     where
       is   = [1..] :: [Int]
       pre  = flip L.zip is . toIntList
-      post =  fromIntListUnsafe . L.map fst . L.reverse
+      post =  L.reverse
 
   {-|
-    'lenLongestIncreasingSub xs' returns the length of the longest increasing
+    'lenlongestIncreasing xs' returns the length of the longest increasing
     subsequences in 'xs'.
   -}
-  lenLongestIncreasingSub:: Perm -> Int
-  lenLongestIncreasingSub = size . longestIncreasingSub
+  lenlongestIncreasing:: Perm -> Int
+  lenlongestIncreasing = L.length . indexedLongestIncreasing
 
   {-|
-    'longestDecreasingSub xs' returns a longest decreasing subsequences in 'xs'.
+    'longestDecreasing xs' returns a longest decreasing subsequences in 'xs'.
   -}
-  longestDecreasingSub :: Perm -> Perm
-  longestDecreasingSub = post . Patience.longestIncreasing . pre
+  longestDecreasing :: Perm -> Perm
+  longestDecreasing = fromIntListUnsafe . L.reverse . L.map fst . indexedLongestDecreasing
+
+  {-|
+    'longestDecreasing xs' returns a longest decreasing subsequences in 'xs'.
+  -}
+  indexedLongestDecreasing :: Perm -> [(Int, T.T)]
+  indexedLongestDecreasing = post . Patience.longestIncreasing . pre
     where
       is   = [1..] :: [Int]
       pre  = flip L.zip is . L.reverse . toIntList
-      post = fromIntListUnsafe . L.reverse . L.map fst . L.reverse
+      post = L.reverse
 
   {-|
-    'lenLongestDecreasingSub xs' returns the length of the longest decreasing
+    'lenlongestDecreasing xs' returns the length of the longest decreasing
     subsequences in 'xs'.
   -}
-  lenLongestDecreasingSub :: Perm -> Int
-  lenLongestDecreasingSub = size . longestDecreasingSub
+  lenlongestDecreasing :: Perm -> Int
+  lenlongestDecreasing = L.length . indexedLongestDecreasing
 
   {-|
     'randPerm' takes a permutation 'p' and a generator 'g', and
@@ -357,7 +403,7 @@ where
   -- -}
   randKIncreasing :: System.Random.RandomGen g => Int -> Int -> g -> (Perm, g)
   randKIncreasing n k g =
-    if lenLongestDecreasingSub p > k
+    if lenlongestDecreasing p > k
       then randKIncreasing n k g'
       else (p, g')
     where
