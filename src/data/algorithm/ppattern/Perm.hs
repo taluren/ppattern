@@ -40,6 +40,7 @@ Perm(..)
 
   -- * Partitioning
 , partitionsIncreasings
+, optPartitionIncreassings
 , greedyIncreasing1
 , greedyPartitionIncreasings1
 , greedyIncreasing2
@@ -68,7 +69,7 @@ where
   import qualified Data.Foldable as Foldable
   import qualified Data.Function as Fun
   import qualified System.Random
-  
+
   import qualified Data.Algorithm.Patience as Patience
 
   import qualified Data.Algorithm.PPattern.Types        as T
@@ -222,7 +223,7 @@ where
       xs = toList p
 
   {-|
-    'partitionsIncreasings p k' return all partitions of the permutation 'p' into
+    'partitionsIncreasings p k' returns all partitions of the permutation 'p' into
     'k' increasing subsequences.
   -}
   partitionsIncreasings :: Perm -> Int -> [[Perm]]
@@ -235,6 +236,15 @@ where
   partitionsIncreasingsAux p n k =
     [ps | ps <- splits p (IntPartition.partitionsL n k),
           isClassRepresentative ps]
+
+  {-|
+    'optPartitionIncreassings p' returns a minimum cardinality partition of 'p'
+    into increasing subsequences.
+  -}
+  optPartitionIncreassings :: Perm -> [Perm]
+  optPartitionIncreassings p = L.head $ partitionsIncreasings p (k-1)
+    where
+      k = lenLongestDecreasingSub p
 
   {-|
     'greedyPartitionIncreasings xs f' return a partition of xs into increasing

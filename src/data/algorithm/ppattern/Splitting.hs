@@ -80,7 +80,7 @@ where
                               increasings <- splitsAux (xs L.\\ increasing) t]
 
   {-|
-    'increasingsL' xs k' returns the list of all increasing subsequences
+    'increasingsL xs k' returns the list of all increasing subsequences
     of length 'k' of the T.T list 'xs'.
   -}
   increasingsL :: [T.T] ->  Int -> [[T.T]]

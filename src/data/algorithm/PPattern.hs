@@ -140,7 +140,7 @@ where
   doSearchAux n s e = resolveConflict n s e >>= loop
     where
       loop e'
-        | e == e'   = Just e'
+        | e == e'   = Just e
         | otherwise = doSearchAux n s e'
 
   {-|

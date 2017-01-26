@@ -60,6 +60,7 @@ where
   empty = Next { pMap=Map.empty, qMap=Map.empty }
 
   {-|
+    Make either the P next function or the Q next function.
   -}
   mk :: (CPointCPointMap -> Next -> Next) -> [CPoint.CPoint] -> Next -> Next
   mk updateFun cps = updateFun m
