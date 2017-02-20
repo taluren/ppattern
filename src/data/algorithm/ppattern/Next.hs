@@ -45,7 +45,6 @@ where
 
   import qualified Data.Algorithm.PPattern.Types  as T
   import qualified Data.Algorithm.PPattern.CPoint as CPoint
-  import qualified Data.Algorithm.PPattern.Color  as Color
 
   type CPointCPointMap = Map.Map CPoint.CPoint CPoint.CPoint
 
@@ -68,18 +67,18 @@ where
       m = T.fst $ Foldable.foldr f (Map.empty, IntMap.empty) cps
 
   f :: CPoint.CPoint -> (CPointCPointMap, IntMap.IntMap CPoint.CPoint) -> (CPointCPointMap, IntMap.IntMap CPoint.CPoint)
-  f cp (m, nextCP) = fAux (IntMap.lookup (Color.toInt c) nextCP)
+  f cp (m, nextCP) = fAux (IntMap.lookup c nextCP)
     where
       c = CPoint.color cp
 
       fAux :: Maybe CPoint.CPoint -> (CPointCPointMap, IntMap.IntMap CPoint.CPoint)
       fAux Nothing = (m, nextCP')
         where
-          nextCP' = IntMap.insert (Color.toInt c) cp nextCP
+          nextCP' = IntMap.insert c cp nextCP
       fAux (Just cp') = (m', nextCP')
         where
           m'      = Map.insert cp cp' m
-          nextCP' = IntMap.update (\_ -> Just cp) (Color.toInt c) nextCP
+          nextCP' = IntMap.update (\_ -> Just cp) c nextCP
 
   {-|
     Each color is required to induce an increasing subsequence.

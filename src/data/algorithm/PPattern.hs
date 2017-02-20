@@ -28,7 +28,7 @@ where
   import qualified Data.Algorithm.PPattern.Strategy     as Strategy
   import qualified Data.Algorithm.PPattern.Next         as Next
   import qualified Data.Algorithm.PPattern.Embedding    as Embedding
-  import qualified Data.Algorithm.PPattern.Combi        as Combi
+  -- import qualified Data.Algorithm.PPattern.Combi        as Combi
 
   {-|
     Construct the leftmost color-friendly mapping from two lists of colored
@@ -74,38 +74,61 @@ where
       ls  = fmap Perm.size ps
       ls' = L.sortBy (flip compare) ls
 
+  -- {-|
+  --   'mkPs p k' returns all 'k'-coloring of permutation 'p', where each coloring
+  --   induces an increasing subsequence.
+  -- -}
+  -- mkPs :: Perm.Perm -> Int -> IntPartition.IntPartition -> [[CPoint.CPoint]]
+  -- mkPs p k intPartitionQ
+  --   | k > Perm.size p = mkPs p (k-1) intPartitionQ
+  --   | otherwise       = mkPsAux partitionPs p k intPartitionQ
+  --   where
+  --     partitionPs = [permutedPartitionP | k' <- [k,k-1..1],
+  --                                         partitionP  <- Perm.partitionsIncreasings p k',
+  --                                         permutedPartitionP <- L.permutations partitionP]
+
+  -- mkPsAux :: [[Perm.Perm]] -> Perm.Perm -> Int -> IntPartition.IntPartition -> [[CPoint.CPoint]]
+  -- mkPsAux []                       _ _ _             = []
+  -- mkPsAux (partitionP:partitionPs) p k intPartitionQ
+  --   | compatible = cpPss ++ mkPsAux partitionPs p k intPartitionQ
+  --   | otherwise   = mkPsAux partitionPs p k intPartitionQ
+  --   where
+  --     compatible = IntPartition.compatible intPartitionP intPartitionQ
+  --     intPartitionP = partitionToIntPartition partitionP
+  --     cpPss = [mkCPoints p (mapFromPartition partitionP cs) |
+  --              cs <- [1..k] `Combi.choose` (L.length partitionP)]
+
   {-|
     'mkPs p k' returns all 'k'-coloring of permutation 'p', where each coloring
     induces an increasing subsequence.
   -}
-  mkPs :: Perm.Perm -> Int -> IntPartition.IntPartition -> [[CPoint.CPoint]]
-  mkPs p k intPartitionQ
-    | k > Perm.size p = mkPs p (k-1) intPartitionQ
-    | otherwise       = mkPsAux partitionPs p k intPartitionQ
-    where
-      partitionPs = [permutedPartitionP | k' <- [k,k-1..1],
-                                          partitionP  <- Perm.partitionsIncreasings p k',
-                                          permutedPartitionP <- L.permutations partitionP]
+  mkPs :: Perm.Perm -> Int -> [[CPoint.CPoint]]
+  mkPs p k
+    | k > Perm.size p = mkPs p (k-1)
+    | otherwise       = Perm.partitionsIncreasings p k ++ mkPs p (k-1)
 
-  mkPsAux :: [[Perm.Perm]] -> Perm.Perm -> Int -> IntPartition.IntPartition -> [[CPoint.CPoint]]
-  mkPsAux []                       _ _ _             = []
-  mkPsAux (partitionP:partitionPs) p k intPartitionQ
-    | compatible = cpPss ++ mkPsAux partitionPs p k intPartitionQ
-    | otherwise   = mkPsAux partitionPs p k intPartitionQ
-    where
-      compatible = IntPartition.compatible intPartitionP intPartitionQ
-      intPartitionP = partitionToIntPartition partitionP
-      cpPss = [mkCPoints p (mapFromPartition partitionP cs) |
-               cs <- (Color.colors k) `Combi.choose` (L.length partitionP)]
+
+
+ -- {-|
+ --
+ -- -}
+ -- mkQ :: Perm.Perm -> ([CPoint.CPoint], IntPartition.IntPartition)
+ -- mkQ q = (cpQs, partitionToIntPartition partitionQ)
+ --   where
+ --     partitionQ = Perm.greedyPartitionIncreasings1 q
+ --     qLength    = Perm.size q
+ --     cs         = [1..qLength]
+ --     cpQs       = mkCPoints q (mapFromPartition partitionQ cs)
 
   {-|
 
   -}
-  mkQ :: Perm.Perm -> ([CPoint.CPoint], IntPartition.IntPartition)
-  mkQ q = (cpQs, partitionToIntPartition partitionQ)
+  mkQ :: Perm.Perm -> [CPoint.CPoint]
+  mkQ q = cpQs
     where
       partitionQ = Perm.greedyPartitionIncreasings1 q
-      cs         = Color.colors (Perm.size q)
+      qLength    = Perm.size q
+      cs         = [1..qLength]
       cpQs       = mkCPoints q (mapFromPartition partitionQ cs)
 
   {-|
@@ -116,10 +139,10 @@ where
   search p q = searchAux cpPss cpQs nQ
     where
       -- make target structure
-      (cpQs, intPartitionQ) = mkQ q
+      cpQs = mkQ q
 
       -- make all source structures
-      cpPss = mkPs p (CPoint.nbColors cpQs) intPartitionQ
+      cpPss = mkPs p (CPoint.nbColors cpQs)
 
       -- make next function for permutation q
       nQ = Next.mkQ' cpQs

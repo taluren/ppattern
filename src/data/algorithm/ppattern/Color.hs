@@ -15,24 +15,28 @@ module Data.Algorithm.PPattern.Color
   -- * The @Color@ type
   Color
 
-  -- * Enumerating
-, colors
-
-  -- * Transforming
-, toInt
-, fromInt
+--   -- * Enumerating
+-- , colors
+--
+--   -- * Transforming
+-- , toInt
+-- , fromInt
 )
 where
 
-  import qualified Data.Word as Word
+  --import qualified Data.Word as Word
 
-  type Color = Word.Word8
+  -- |The 'Color' type encapsulates a color.
+   type Color = Int
 
-  colors :: Int -> [Color]
-  colors n = fmap fromInt [1..n]
+  -- -- |'colors n' return a list of 'n' distinct colors.
+  -- colors :: Int -> [Color]
+  -- colors n = fmap fromInt [1..n]
 
-  toInt :: Color -> Int
-  toInt c = fromIntegral c :: Int
-
-  fromInt :: Int -> Color
-  fromInt c = fromIntegral c :: Color
+  -- -- |Transform a 'Color' into an int.
+  -- toInt :: Color -> Int
+  -- toInt c = fromIntegral c :: Int
+  --
+  -- -- |Tranform an int into a 'Color'.
+  -- fromInt :: Int -> Color
+  -- fromInt c = fromIntegral c :: Color

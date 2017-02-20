@@ -22,7 +22,6 @@ main = defaultMain [
   bgroup "ppattern"
     [ bench "Perm.greedyIncreasing1" $ whnf Perm.greedyIncreasing1 p
     , bench "Perm.greedyIncreasing2" $ whnf Perm.greedyIncreasing2 p
-    , bench "Perm.optPartitionIncreassings" $ whnf Perm.optPartitionIncreassings p
     ]
   ]
     where
