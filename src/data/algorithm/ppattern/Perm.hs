@@ -78,6 +78,7 @@ where
   import qualified Data.Algorithm.PPattern.Random       as Random
   import qualified Data.Algorithm.PPattern.CPoint       as CPoint
   import qualified Data.Algorithm.PPattern.Color        as Color
+  import qualified Data.Algorithm.PPattern.Combi      as Combi
 
   {-| The 'Perm' type encapsulates an optional value.
       A permutation is a list of 'T.T'.
@@ -249,7 +250,6 @@ where
     | x == y    = (i, x, c) : mkCPoints ixs ys  refColors
     | otherwise = (i, x, 0) : mkCPoints ixs ys' refColors'
 
-
   {-|
     'partitionsIncreasings p k' returns all partitions of the permutation 'p' into
     'k' increasing subsequences.
@@ -258,10 +258,11 @@ where
   partitionsIncreasings p k
     | l > k     = []
     | otherwise = Foldable.concat [partitionsIncreasingsAux cps cs prevMap nextMap
-                                  | refColors <- L.permutations [1..k]
-                                  , let cps = mkCPoints indexed decreasing refColors
-                                  , let prevMap = IntMap.empty
-                                  , let nextMap = IntMap.fromList $ L.zip [1..] decreasing]
+                                    | refColors     <- [1..k] `Combi.choose` l
+                                    , permRefColors <- L.permutations refColors
+                                    , let cps     = mkCPoints indexed decreasing permRefColors
+                                    , let prevMap = IntMap.empty
+                                    , let nextMap = IntMap.fromList $ L.zip permRefColors decreasing]
     where
       -- A longest decreasing subsequence of p.
       decreasing = longestDecreasing p
