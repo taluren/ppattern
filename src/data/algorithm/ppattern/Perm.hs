@@ -237,6 +237,19 @@ where
   --   | longestDecreasingLength p > k = []
   --   | otherwise                     = partitionsIncreasingsAux p (size p) k
 
+
+  -- Make an initial list of colored points. Each element from the longest
+  -- decreasing subsequence is given a distinct colors. All other elements
+  -- are given the 'not determined yet' color 0.
+  mkCPoints :: [(Int, T.T)] -> [T.T] -> [Color.Color] -> [(Int, T.T, Color.Color)]
+  mkCPoints []             _            _         = []
+  mkCPoints ((i, x) : ixs) []           refColors = (i, x, 0) : mkCPoints ixs [] refColors
+  mkCPoints ((_, _) : _)   _            []        = error "We shouldn't be there"
+  mkCPoints ((i, x) : ixs) ys'@(y : ys) refColors'@(c : refColors)
+    | x == y    = (i, x, c) : mkCPoints ixs ys  refColors
+    | otherwise = (i, x, 0) : mkCPoints ixs ys' refColors'
+
+
   {-|
     'partitionsIncreasings p k' returns all partitions of the permutation 'p' into
     'k' increasing subsequences.
@@ -244,7 +257,11 @@ where
   partitionsIncreasings :: Perm -> Int -> [[CPoint.CPoint]]
   partitionsIncreasings p k
     | l > k     = []
-    | otherwise = partitionsIncreasingsAux cps cs prevMap nextMap
+    | otherwise = Foldable.concat [partitionsIncreasingsAux cps cs prevMap nextMap
+                                  | refColors <- L.permutations [1..k]
+                                  , let cps = mkCPoints indexed decreasing refColors
+                                  , let prevMap = IntMap.empty
+                                  , let nextMap = IntMap.fromList $ L.zip [1..] decreasing]
     where
       -- A longest decreasing subsequence of p.
       decreasing = longestDecreasing p
@@ -253,32 +270,20 @@ where
       l = L.length decreasing
 
       -- The list of available colors.
-      cs = [1..l]
+      cs = [1..k]
 
       -- Index permutation p.
       indexed = index p
-
-      -- Make an initial list of colored points. Each element from the longest
-      -- decreasing subsequence is given a distinct colors. All other elements
-      -- are given the 'not determined yet' color 0.
-      cps = mkCPoints indexed decreasing 1
-      mkCPoints []             _            _ = []
-      mkCPoints ((i, x) : ixs) []           c = (i, x, 0) : mkCPoints ixs [] c
-      mkCPoints ((i, x) : ixs) ys'@(y : ys) c
-        | x == y    = (i, x, c) : mkCPoints ixs ys  (c+1)
-        | otherwise = (i, x, 0) : mkCPoints ixs ys' c
-
-      -- Previous map constraints
-      prevMap = IntMap.empty
-
-      -- Next map constraints
-      nextMap = IntMap.fromList $ L.zip [1..] decreasing
 
   partitionsIncreasingsAux :: [(Int, T.T, Color.Color)] -> [Color.Color] -> IntMap.IntMap T.T -> IntMap.IntMap T.T -> [[CPoint.CPoint]]
   partitionsIncreasingsAux []                 _  _       _       = [[]]
   partitionsIncreasingsAux ((i, x, 0) : ixcs) cs prevMap nextMap = partitionsIncreasingsAux'  (i, x)    ixcs cs prevMap nextMap
   partitionsIncreasingsAux ((i, x, c) : ixcs) cs prevMap nextMap = partitionsIncreasingsAux'' (i, x, c) ixcs cs prevMap nextMap
 
+  {-|
+    partitionsIncreasingsAux for color-0 points (those point that are not part of
+    the selected longest decreasing subsequence).
+  -}
   partitionsIncreasingsAux' :: (T.T, T.T)-> [(Int, T.T, Color.Color)] -> [Color.Color] -> IntMap.IntMap T.T -> IntMap.IntMap T.T -> [[CPoint.CPoint]]
   partitionsIncreasingsAux' (i, x) ixcs cs prevMap nextMap = Foldable.concat cpsss
     where
@@ -290,6 +295,10 @@ where
                                 , let nextMap' = updateNextMap x c nextMap
                                 , let cpss     = partitionsIncreasingsAux ixcs cs prevMap' nextMap']
 
+  {-|
+    partitionsIncreasingsAux for colored points (those point that are part of
+    the selected longest decreasing subsequence).
+  -}
   partitionsIncreasingsAux'' :: (T.T, T.T, IntMap.Key) -> [(Int, T.T, Color.Color)] -> [Color.Color] -> IntMap.IntMap T.T -> IntMap.IntMap T.T  -> [[CPoint.CPoint]]
   partitionsIncreasingsAux'' (i, x, c) ixcs cs prevMap nextMap = fmap (cp :) cpss
     where
@@ -299,8 +308,12 @@ where
       -- This color point in now a left constraint
       prevMap' = updatePrevMap x c prevMap
 
+      -- This color point in now a left constraint
+      nextMap' = updateNextMap x c nextMap
+
       -- recursively compute the remaining colored points
-      cpss = partitionsIncreasingsAux ixcs cs prevMap' nextMap
+      cpss = partitionsIncreasingsAux ixcs cs prevMap' nextMap'
+
 
   agreeWithPrevElement :: Color.Color -> IntMap.Key -> IntMap.IntMap T.T -> Bool
   agreeWithPrevElement x c m = case IntMap.lookup c m of
@@ -396,7 +409,7 @@ where
     'longestDecreasing xs' returns a longest decreasing subsequences in 'xs'.
   -}
   longestDecreasing :: Perm -> [T.T]
-  longestDecreasing p = L.reverse . fmap T.fst $ Patience.longestIncreasing xs
+  longestDecreasing p = fmap T.fst $ Patience.longestIncreasing xs
     where
       ints = [1..] :: [Int]
       xs   = flip L.zip ints . L.reverse $ toIntList p
