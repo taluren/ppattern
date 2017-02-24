@@ -14,7 +14,7 @@ commentary with @some markup@.
 import System.Console.CmdArgs
 import System.Random
 
-import qualified Data.Algorithm.PPattern.Perm        as Perm
+import qualified Data.Algorithm.PPattern.Perm as Perm
 
 data Options = Options { len            :: Int
                        , num            :: Int
@@ -27,7 +27,7 @@ options = Options { len            = def  &= help "The length of each permutatio
                   , outputFilename = def &= help "The output filename"
                   }
                   &= verbosity
-                  &= summary "ppattern-rand v0.1.0.0, (C) Stéphane Vialette 2016"
+                  &= summary "ppattern-rand v0.1.0.0, (C) Stéphane Vialette 2017"
                   &= program "ppattern-rand"
 
 go :: RandomGen g => Options -> g -> [Perm.Perm]
