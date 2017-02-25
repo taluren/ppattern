@@ -36,15 +36,11 @@ Perm(..)
 , diff
 
   -- * Enumerating subsequences
-, increasingsL
+-- , increasingsL
 
   -- * Partitioning
 , increasingPartition
 , increasingPartitions
-, greedyIncreasing1
-, greedyPartitionIncreasings1
-, greedyIncreasing2
-, greedyPartitionIncreasings2
 
   -- * LCS
 , longestIncreasing
@@ -75,7 +71,7 @@ where
   import qualified Data.Algorithm.Patience as Patience
 
   import qualified Data.Algorithm.PPattern.Types        as T
-  import qualified Data.Algorithm.PPattern.Splitting    as Splitting
+  -- import qualified Data.Algorithm.PPattern.Splitting    as Splitting
   import qualified Data.Algorithm.PPattern.Random       as Random
   import qualified Data.Algorithm.PPattern.CPoint       as CPoint
   import qualified Data.Algorithm.PPattern.Color        as Color
@@ -184,28 +180,15 @@ where
   diff :: Perm -> Perm -> Perm
   diff (Perm xs) (Perm ys) = fromListUnsafe (xs L.\\ ys)
 
-  {-|
-    'increasingsL p k' return the list of all increasing subsequences
-    of length 'k' of the permutation 'p'.
-  -}
-  increasingsL :: Perm ->  Int -> [Perm]
-  increasingsL (Perm xs) k = fmap fromListUnsafe xss
-    where
-      xss = Splitting.increasingsL xs k
+  -- {-|
+  --   'increasingsL p k' return the list of all increasing subsequences
+  --   of length 'k' of the permutation 'p'.
+  -- -}
+  -- increasingsL :: Perm ->  Int -> [Perm]
+  -- increasingsL (Perm xs) k = fmap fromListUnsafe xss
+  --   where
+  --     xss = Splitting.increasingsL xs k
 
-  {-|
-    'increasingPartition p' returns a partition of the permutation 'p' into
-    'l' increasing subsequences, wjere 'l' is the length of a longest increasing
-    subsequence of 'p'.
-  -}
-  increasingPartition :: Perm -> [CPoint.CPoint]
-  increasingPartition p = L.head $ increasingPartitions p l
-    where
-      -- A longest decreasing subsequence of p.
-      decreasing = longestDecreasing p
-
-      -- The length oa longest decreasing subsequence of p.
-      l = L.length decreasing
 
   -- Make an initial list of colored points. Each element from the longest
   -- decreasing subsequence is given a distinct colors. All other elements
@@ -219,6 +202,77 @@ where
     | otherwise = (i, x, 0) : mkCPoints ixs ys' refColors'
 
   {-|
+    'increasingPartition p' returns a partition of the permutation 'p' into
+    'l' increasing subsequences, wjere 'l' is the length of a longest increasing
+    subsequence of 'p'.
+  -}
+  increasingPartition :: Perm -> [CPoint.CPoint]
+  increasingPartition p = increasingPartitionAux cps cs prevMap nextMap
+    where
+      -- Index permutation p.
+      indexed = index p
+
+      -- A longest decreasing subsequence of p.
+      decreasing = longestDecreasing p
+
+      -- The length oa longest decreasing subsequence of p.
+      l = L.length decreasing
+
+      -- colours
+      cs = [1..l]
+
+      -- p as a list of coloured points (the lements of the decreasing
+      -- subsequence get distinct colours)
+      cps = mkCPoints indexed decreasing cs
+
+      -- maps
+      prevMap = IntMap.empty
+      nextMap = IntMap.fromList $ L.zip [1..l] decreasing
+
+  increasingPartitionAux :: [(Int, T.T, Color.Color)] -> [Color.Color] -> IntMap.IntMap T.T -> IntMap.IntMap T.T -> [CPoint.CPoint]
+  increasingPartitionAux []                 _  _       _       = []
+  increasingPartitionAux ((i, x, 0) : ixcs) cs prevMap nextMap = increasingPartitionAux1  (i, x)    ixcs cs prevMap nextMap
+  increasingPartitionAux ((i, x, c) : ixcs) cs prevMap nextMap = increasingPartitionAux2 (i, x, c) ixcs cs prevMap nextMap
+
+  -- increasingPartitionAux for 0-coloured points
+  -- Find any compatible colour.
+  increasingPartitionAux1 :: (T.T, T.T)-> [(Int, T.T, Color.Color)] -> [Color.Color] -> IntMap.IntMap T.T -> IntMap.IntMap T.T -> [CPoint.CPoint]
+  increasingPartitionAux1 is ixcs cs = increasingPartitionAux1' is ixcs cs cs
+
+  -- increasingPartitionAux for 0-coloured points
+  -- Find any compatible colour.
+  increasingPartitionAux1' :: (T.T, T.T)-> [(Int, T.T, Color.Color)] -> [Color.Color] -> [Color.Color] -> IntMap.IntMap T.T -> IntMap.IntMap T.T -> [CPoint.CPoint]
+  increasingPartitionAux1' _      _    []       _   _       _      = error "We shouldn't be there"
+  increasingPartitionAux1' (i, x) ixcs (c : cs) cs' prevMap nextMap
+    | prevTest && nextTest = cp : increasingPartitionAux ixcs cs' prevMap' nextMap'
+    | otherwise            = increasingPartitionAux1' (i, x) ixcs cs cs' prevMap nextMap
+    where
+      prevTest = agreeWithPrevElement x c prevMap
+      nextTest = agreeWithNextElement x c nextMap
+      cp       = CPoint.mkCPoint i x c
+      prevMap' = updatePrevMap x c prevMap
+      nextMap' = updateNextMap x c nextMap
+
+  {-|
+    increasingPartitionsAux for colored points (those point that are part of
+    the selected longest decreasing subsequence).
+  -}
+  increasingPartitionAux2 :: (T.T, T.T, IntMap.Key) -> [(Int, T.T, Color.Color)] -> [Color.Color] -> IntMap.IntMap T.T -> IntMap.IntMap T.T  -> [CPoint.CPoint]
+  increasingPartitionAux2 (i, x, c) ixcs cs prevMap nextMap = cp : cps
+    where
+      -- Nex color point
+      cp  = CPoint.mkCPoint i x c
+
+      -- This color point in now a left constraint
+      prevMap' = updatePrevMap x c prevMap
+
+      -- This color point in now a left constraint
+      nextMap' = updateNextMap x c nextMap
+
+      -- recursively compute the remaining colored points
+      cps = increasingPartitionAux ixcs cs prevMap' nextMap'
+
+  {-|
     'increasingPartitions p k' returns all partitions of the permutation 'p' into
     'k' increasing subsequences.
   -}
@@ -226,11 +280,11 @@ where
   increasingPartitions p k
     | l > k     = []
     | otherwise = Foldable.concat [increasingPartitionsAux cps cs prevMap nextMap
-                                    | refColors     <- [1..k] `Combi.choose` l
-                                    , permRefColors <- L.permutations refColors
-                                    , let cps     = mkCPoints indexed decreasing permRefColors
-                                    , let prevMap = IntMap.empty
-                                    , let nextMap = IntMap.fromList $ L.zip permRefColors decreasing]
+                                  | refColors     <- [1..k] `Combi.choose` l
+                                  , permRefColors <- L.permutations refColors
+                                  , let cps     = mkCPoints indexed decreasing permRefColors
+                                  , let prevMap = IntMap.empty
+                                  , let nextMap = IntMap.fromList $ L.zip permRefColors decreasing]
     where
       -- A longest decreasing subsequence of p.
       decreasing = longestDecreasing p
@@ -246,15 +300,15 @@ where
 
   increasingPartitionsAux :: [(Int, T.T, Color.Color)] -> [Color.Color] -> IntMap.IntMap T.T -> IntMap.IntMap T.T -> [[CPoint.CPoint]]
   increasingPartitionsAux []                 _  _       _       = [[]]
-  increasingPartitionsAux ((i, x, 0) : ixcs) cs prevMap nextMap = increasingPartitionsAux'  (i, x)    ixcs cs prevMap nextMap
-  increasingPartitionsAux ((i, x, c) : ixcs) cs prevMap nextMap = increasingPartitionsAux'' (i, x, c) ixcs cs prevMap nextMap
+  increasingPartitionsAux ((i, x, 0) : ixcs) cs prevMap nextMap = increasingPartitionsAux1  (i, x)    ixcs cs prevMap nextMap
+  increasingPartitionsAux ((i, x, c) : ixcs) cs prevMap nextMap = increasingPartitionsAux2 (i, x, c) ixcs cs prevMap nextMap
 
   {-|
     increasingPartitionsAux for color-0 points (those point that are not part of
     the selected longest decreasing subsequence).
   -}
-  increasingPartitionsAux' :: (T.T, T.T)-> [(Int, T.T, Color.Color)] -> [Color.Color] -> IntMap.IntMap T.T -> IntMap.IntMap T.T -> [[CPoint.CPoint]]
-  increasingPartitionsAux' (i, x) ixcs cs prevMap nextMap = Foldable.concat cpsss
+  increasingPartitionsAux1 :: (T.T, T.T)-> [(Int, T.T, Color.Color)] -> [Color.Color] -> IntMap.IntMap T.T -> IntMap.IntMap T.T -> [[CPoint.CPoint]]
+  increasingPartitionsAux1 (i, x) ixcs cs prevMap nextMap = Foldable.concat cpsss
     where
       cpsss = [fmap (cp :) cpss | c <- cs
                                 , agreeWithPrevElement x c prevMap
@@ -268,8 +322,8 @@ where
     increasingPartitionsAux for colored points (those point that are part of
     the selected longest decreasing subsequence).
   -}
-  increasingPartitionsAux'' :: (T.T, T.T, IntMap.Key) -> [(Int, T.T, Color.Color)] -> [Color.Color] -> IntMap.IntMap T.T -> IntMap.IntMap T.T  -> [[CPoint.CPoint]]
-  increasingPartitionsAux'' (i, x, c) ixcs cs prevMap nextMap = fmap (cp :) cpss
+  increasingPartitionsAux2 :: (T.T, T.T, IntMap.Key) -> [(Int, T.T, Color.Color)] -> [Color.Color] -> IntMap.IntMap T.T -> IntMap.IntMap T.T  -> [[CPoint.CPoint]]
+  increasingPartitionsAux2 (i, x, c) ixcs cs prevMap nextMap = fmap (cp :) cpss
     where
       -- Nex color point
       cp  = CPoint.mkCPoint i x c
@@ -306,57 +360,6 @@ where
                             | x < x'    -> m
                             | x == x'   -> IntMap.delete c m
                             | otherwise -> error "We shouldn't be there 2" -- make ghc -Werror happy
-
-  {-|
-    'greedyPartitionIncreasings xs f' return a partition of xs into increasing
-    subsequences by repeatedly calling function 'f' on the remaining subsequence.
-  -}
-  greedyPartitionIncreasings :: (Perm -> Perm) -> Perm -> [Perm]
-  greedyPartitionIncreasings f = g . aux []
-    where
-      g = L.sortBy (flip compare `Fun.on` size)
-
-      aux acc (Perm []) = acc
-      aux acc p                = aux (q1 : acc) q2
-        where
-          q1  = f p
-          q2 = diff p q1
-
-  {-|
-    'greedyPartitionIncreasings1' takes a list 'xs'. It greedily computes a partition
-    of 'xs' into increasing subsequences.
-  -}
-  greedyPartitionIncreasings1 :: Perm -> [Perm]
-  greedyPartitionIncreasings1 = greedyPartitionIncreasings greedyIncreasing1
-
-  {-|
-    'greedyIncreasing1' takes a list 'xs'. It greedily computes an increasing
-    subsequence of 'xs'.
-  -}
-  greedyIncreasing1 :: Perm -> Perm
-  greedyIncreasing1 (Perm [])     = mkEmpty
-  greedyIncreasing1 (Perm (x:xs)) = fromListUnsafe $ x:greedyIncreasing1Aux x xs
-
-  greedyIncreasing1Aux :: T.T -> [T.T] -> [T.T]
-  greedyIncreasing1Aux _ []      = []
-  greedyIncreasing1Aux x (x':xs)
-    | x' > x    = x':greedyIncreasing1Aux x' xs
-    | otherwise =    greedyIncreasing1Aux x  xs
-
-  {-|
-    'greedyPartitionIncreasings1' takes a list 'xs'. It greedily computes a partition
-    of 'xs' into increasing subsequences.
-  -}
-  greedyPartitionIncreasings2 :: Perm -> [Perm]
-  greedyPartitionIncreasings2 = greedyPartitionIncreasings greedyIncreasing2
-
-
-  {-|
-    'greedyIncreasing1' takes a list 'xs'. It greedily computes an increasing
-    subsequence of 'xs'.
-  -}
-  greedyIncreasing2 :: Perm -> Perm
-  greedyIncreasing2 = fromList . longestIncreasing
 
   {-|
     'longestIncreasing xs' returns a longest increasing subsequences in 'xs'.

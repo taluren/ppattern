@@ -46,7 +46,7 @@ library
 executable ppattern-search
   main-is:     PPatternSearch.hs
   --  -with-rtsopts=-N
-  ghc-options: -Wall -Werror -threaded -funfolding-use-threshold=16 -O2 -optc-O3 -rtsopts  -prof -auto-all -caf-all
+  ghc-options: -Wall -Werror -threaded -funfolding-use-threshold=16 -O2
   build-depends:
     base >= 4.8,
     containers >=0.5 && <0.6,
@@ -77,20 +77,6 @@ executable ppattern-rand
 executable ppattern-rand-k-increasings
   main-is:      PPatternRandKIncreasings.hs
   ghc-options: -Wall -Werror -threaded -funfolding-use-threshold=16 -O2 -optc-O3 -rtsopts
-  build-depends:
-    base >= 4.8,
-    containers >=0.5 && <0.6,
-    random >=1.1,
-    random-shuffle >=0.0,
-    patience >=0.1,
-    utility-ht >= 0.0.12,
-    cmdargs >= 0.10.4
-  hs-source-dirs:      src
-  default-language:    Haskell2010
-
-executable ppattern-partition
-  main-is:       PPatternPartition.hs
-  ghc-options: -Wall -Werror -threaded -funfolding-use-threshold=16 -O2 -optc-O3 -rtsopts -prof -auto-all -caf-all
   build-depends:
     base >= 4.8,
     containers >=0.5 && <0.6,
