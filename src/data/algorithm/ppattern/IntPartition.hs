@@ -28,12 +28,14 @@ module Data.Algorithm.PPattern.IntPartition
 , partitionsL
 , nbpartitionsL
 
-  -- * Comparing
-, compatible
+  -- * Random
+, randIntPartition
 )
 where
 
-  import qualified Data.List as L
+  import qualified System.Random
+  import qualified Data.List     as L
+  import qualified Data.Tuple    as T
 
   -- | Partition of integer.
   newtype IntPartition = IntPartition [Int] deriving (Show, Eq, Ord)
@@ -49,6 +51,9 @@ where
   -}
   mkIntPartition :: [Int] -> IntPartition
   mkIntPartition = fromList
+
+  empty :: IntPartition
+  empty = fromList []
 
   {-|
 
@@ -121,15 +126,23 @@ where
   nbpartitionsL n k = L.length $ partitionsL n k
 
   {-|
-    'compatible ip1 ip2' returns True if and only if 'ip1' is a subpartition of
-    'ip2'. Both 'ip1' and 'ip2' need to be reverse sorted
+    'randIntPartition' takes two integers 'n' and 'k', and a generator 'g'.
+    It returns a random 'k'-partition of '[1..n]', together with a new generator.
   -}
-  compatible :: IntPartition -> IntPartition -> Bool
-  compatible ip1 ip2 = aux (toList ip1) (toList ip2)
+  randIntPartition :: (System.Random.RandomGen g) => Int -> Int -> g -> (IntPartition, g)
+  randIntPartition n k g
+    | k > n     = (empty, g)
+    | otherwise = (fromList xs, g')
     where
-      aux [] []     = True
-      aux _  []     = False
-      aux [] _      = True
-      aux (x1:x1s) (x2:x2s)
-        | x1 <= x2  = aux  x1s     x2s
-        | otherwise = aux (x1:x1s) x2s
+      (xs, g') = randIntPartitionAux n k g
+
+  -- randIntPartition auxiliary function
+  randIntPartitionAux :: (System.Random.RandomGen g) => Int -> Int -> g -> ([Int], g)
+  randIntPartitionAux = go []
+    where
+      go acc n' 1  g' = (n' : acc, g')
+      go acc n' k' g' = go (x : acc) (n'-x) (k'-1) g''
+        where
+          lo       = 1
+          hi       = n'-k'+1
+          (x, g'') = System.Random.randomR (lo, hi) . T.snd $ System.Random.randomR (lo, hi) g'

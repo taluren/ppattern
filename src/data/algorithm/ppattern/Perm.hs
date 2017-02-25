@@ -19,7 +19,6 @@ Perm(..)
 , fromIntListUnsafe
 , fromListUnsafe
 , mkEmpty
-, reduce
 
 -- * Conversions
 , toList
@@ -71,11 +70,11 @@ where
   import qualified Data.Algorithm.Patience as Patience
 
   import qualified Data.Algorithm.PPattern.Types        as T
-  -- import qualified Data.Algorithm.PPattern.Splitting    as Splitting
+  import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
   import qualified Data.Algorithm.PPattern.Random       as Random
   import qualified Data.Algorithm.PPattern.CPoint       as CPoint
   import qualified Data.Algorithm.PPattern.Color        as Color
-  import qualified Data.Algorithm.PPattern.Combi      as Combi
+  import qualified Data.Algorithm.PPattern.Combi        as Combi
 
   {-| The 'Perm' type encapsulates an optional value.
       A permutation is a list of 'T.T'.
@@ -410,7 +409,15 @@ where
   randPerm' n g = (p', g')
     where
       p        = mkIncreasing n
-      (p', g') = randPerm p g
+      (p', g') = Random.randPerm p g
+
+  -- 'mkIncreasings xs' constructs increasing lists, where the length of each
+  -- list is given by the elements of 'xs'.
+  mkIncreasings :: System.Random.RandomGen g => [Int] -> g -> ([[Int]], g)
+  mkIncreasings xs = Split.splitPlaces ls xs
+    where
+      n = Foldable.sum xs
+      (ls', g') = Random.randPerm n g
 
   -- {-|
   --   'randKIncreasing' takes two integers 'n' and 'k' and a generator 'g'.
@@ -418,12 +425,20 @@ where
   --   increasings sequences, together with a new generatoRandom.
   -- -}
   randKIncreasing :: System.Random.RandomGen g => Int -> Int -> g -> (Perm, g)
-  randKIncreasing n k g =
-    if longestDecreasingLength p > k
-      then randKIncreasing n k g'
-      else (p, g')
+  randKIncreasing n k g
+    | k > n     = (mkEmpty, g)
+    | otherwise = (p, g'')
     where
-      (p, g') = randPerm' n g
+      -- rand int partition
+      (intPartition, g') = IntPartition.randIntPartition n k g
+      partitionAsList = IntPartition.toList intPartition
+      (partitionAsIncreasingLists, g'') = mkIncreasings partitionAsList g'
+
+      -- random shuffle
+      (xs, g''') = Random.randShuffle partitionAsIncreasingLists g''
+
+      -- make permutation
+      p = fromList xs
 
   {-|
     'randKIncreasings' takes three integers 'n', 'k' and 'm' and a generator 'g'.

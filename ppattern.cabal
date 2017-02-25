@@ -24,10 +24,12 @@ library
     random-shuffle >=0.0,
     patience >=0.1,
     utility-ht >= 0.0.12,
-    cmdargs >= 0.10.4
+    cmdargs >= 0.10.4,
+    split >= 0.2.3,
   default-language: Haskell2010
   hs-source-dirs: src
   exposed-modules:
+    Data.Algorithm.PPattern.List
     Data.Algorithm.PPattern.Perm
     Data.Algorithm.PPattern.IntPartition
     Data.Algorithm.PPattern.Combi
@@ -55,6 +57,7 @@ executable ppattern-search
     patience >=0.1,
     utility-ht >= 0.0.12,
     cmdargs >= 0.10.4,
+    split >= 0.2.3,
     criterion >= 1.1.4,
     integer-gmp >= 1.0
   hs-source-dirs:      src
@@ -70,7 +73,8 @@ executable ppattern-rand
     random-shuffle >=0.0,
     patience >=0.1,
     utility-ht >= 0.0.12,
-    cmdargs >= 0.10.4
+    cmdargs >= 0.10.4,
+    split >= 0.2.3,
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -84,7 +88,8 @@ executable ppattern-rand-k-increasings
     random-shuffle >=0.0,
     patience >=0.1,
     utility-ht >= 0.0.12,
-    cmdargs >= 0.10.4
+    cmdargs >= 0.10.4,
+    split >= 0.2.3,
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -99,6 +104,7 @@ executable ppattern-colouring
     patience >=0.1,
     utility-ht >= 0.0.12,
     cmdargs >= 0.10.4,
+    split >= 0.2.3,
     criterion >= 1.1.4
   hs-source-dirs:      src
   default-language:    Haskell2010
