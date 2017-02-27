@@ -21,7 +21,6 @@ where
   import qualified Data.IntMap.Strict as IntMap
   import qualified Data.Monoid        as Monoid
 
-  import qualified Data.Algorithm.PPattern.Types        as T
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
 
   newtype Tree = Tree { children :: IntMap.IntMap Tree }
@@ -64,7 +63,7 @@ where
     'splits p partitions' takes a permutation 'p' and a list of integer
     partitions 'partitions' of some integers.
   -}
-  splits :: [T.T] -> [IntPartition.IntPartition] -> [[[T.T]]]
+  splits :: [Int] -> [IntPartition.IntPartition] -> [[[Int]]]
   splits xs partitions = splitsAux xs t
     where
       t  = mkTree (fmap IntPartition.toList partitions)
@@ -72,7 +71,7 @@ where
   {-|
     Helper function for function 'splits'.
   -}
-  splitsAux :: [T.T] -> Tree -> [[[T.T]]]
+  splitsAux :: [Int] -> Tree -> [[[Int]]]
   splitsAux [] _ = [[]]
   splitsAux xs Tree { children=m } =
     [increasing:increasings | (k, t)      <- IntMap.toList m,
@@ -81,16 +80,16 @@ where
 
   {-|
     'increasingsL xs k' returns the list of all increasing subsequences
-    of length 'k' of the T.T list 'xs'.
+    of length 'k' of the Int list 'xs'.
   -}
-  increasingsL :: [T.T] ->  Int -> [[T.T]]
+  increasingsL :: [Int] ->  Int -> [[Int]]
   increasingsL []       _ = []
   increasingsL xs@(x:_) k = increasingsLAux xs k k x
 
   {-|
     Helper function for function 'increasingsL'.
   -}
-  increasingsLAux ::  [T.T] ->  Int -> Int -> T.T -> [[T.T]]
+  increasingsLAux ::  [Int] ->  Int -> Int -> Int -> [[Int]]
   increasingsLAux _      _ 0 _  = [[]]
   increasingsLAux []     _ _ _  = []
   increasingsLAux (x:xs) k k' x'

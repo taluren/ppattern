@@ -35,7 +35,6 @@ where
   import qualified Data.Function   as Fun
   import qualified Data.Map.Strict as Map
 
-  import qualified Data.Algorithm.PPattern.Types  as T
   import qualified Data.Algorithm.PPattern.CPoint as CPoint
   import qualified Data.Algorithm.PPattern.Next   as Next
 
@@ -87,12 +86,12 @@ where
 
   {-|
   -}
-  resolveX :: CPoint.CPoint -> T.T -> Next.Next -> Embedding -> Maybe Embedding
+  resolveX :: CPoint.CPoint -> Int -> Next.Next -> Embedding -> Maybe Embedding
   resolveX cp thrshld n e = fun cp e >>= Next.jmpThresholdXQ thrshld n >>= resolveAux cp n e
 
   {-|
   -}
-  resolveY :: CPoint.CPoint -> T.T -> Next.Next -> Embedding -> Maybe Embedding
+  resolveY :: CPoint.CPoint -> Int -> Next.Next -> Embedding -> Maybe Embedding
   resolveY cp thrshld n e = fun cp e >>= Next.jmpThresholdYQ thrshld n >>= resolveAux cp n e
 
   {-|

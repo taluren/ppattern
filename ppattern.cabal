@@ -26,14 +26,14 @@ library
     utility-ht >= 0.0.12,
     cmdargs >= 0.10.4,
     split >= 0.2.3,
+    formatting >= 6.2.4,
+    clock >= 0.7.2
   default-language: Haskell2010
   hs-source-dirs: src
   exposed-modules:
-    Data.Algorithm.PPattern.List
     Data.Algorithm.PPattern.Perm
     Data.Algorithm.PPattern.IntPartition
     Data.Algorithm.PPattern.Combi
-    Data.Algorithm.PPattern.Types
     Data.Algorithm.PPattern.Color
     Data.Algorithm.PPattern.Random
     Data.Algorithm.PPattern.Tools
@@ -46,9 +46,9 @@ library
     Data.Algorithm.PPattern
 
 executable ppattern-search
-  main-is:     PPatternSearch.hs
+  main-is: PPatternSearch.hs
   --  -with-rtsopts=-N
-  ghc-options: -Wall -Werror -threaded -funfolding-use-threshold=16 -O2
+  ghc-options: -Wall -Werror -threaded -funfolding-use-threshold=16 -O2 -fexcess-precision -optc-O3
   build-depends:
     base >= 4.8,
     containers >=0.5 && <0.6,
@@ -59,7 +59,9 @@ executable ppattern-search
     cmdargs >= 0.10.4,
     split >= 0.2.3,
     criterion >= 1.1.4,
-    integer-gmp >= 1.0
+    integer-gmp >= 1.0,
+    formatting >= 6.2.4,
+    clock >= 0.7.2
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -75,6 +77,8 @@ executable ppattern-rand
     utility-ht >= 0.0.12,
     cmdargs >= 0.10.4,
     split >= 0.2.3,
+    formatting >= 6.2.4,
+    clock >= 0.7.2
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -90,6 +94,8 @@ executable ppattern-rand-k-increasings
     utility-ht >= 0.0.12,
     cmdargs >= 0.10.4,
     split >= 0.2.3,
+    formatting >= 6.2.4,
+    clock >= 0.7.2
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -105,7 +111,9 @@ executable ppattern-colouring
     utility-ht >= 0.0.12,
     cmdargs >= 0.10.4,
     split >= 0.2.3,
-    criterion >= 1.1.4
+    criterion >= 1.1.4,
+    formatting >= 6.2.4,
+    clock >= 0.7.2
   hs-source-dirs:      src
   default-language:    Haskell2010
 

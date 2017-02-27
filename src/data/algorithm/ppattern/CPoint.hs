@@ -16,46 +16,81 @@ module Data.Algorithm.PPattern.CPoint
   CPoint(..)
 , mkCPoint
 
+  -- * Fields
+, xCoord
+, yCoord
+, color
+
   -- * Querying list of colored CPoints
 , colors
 , nbColors
-
-  -- * Comparing
-, northWestDomination
-, northEastDomination
-, southWestDomination
-, southEastDomination
 )
 where
 
-  import qualified Data.List as L
-  import qualified Data.Set  as Set
+  import qualified Data.List   as L
+  import qualified Data.Set    as Set
+  import qualified Data.Monoid as Monoid
 
-  import qualified Data.Algorithm.PPattern.Types as T
   import qualified Data.Algorithm.PPattern.Color as Color
 
-  data CPoint = CPoint { xCoord :: {-# UNPACK #-} !T.T
-                       , yCoord :: {-# UNPACK #-} !T.T
-                       , color  :: {-# UNPACK #-} !Color.Color
-                       } deriving (Eq, Ord)
+  newtype CPoint = CPoint (Int, Int, Color.Color) deriving (Eq, Ord)
 
   instance Show CPoint where
-    show CPoint {xCoord=x, yCoord=y, color=c } = "("    ++
-                                                 "x="   ++
-                                                 show x ++
-                                                 ","    ++
-                                                 "y="   ++
-                                                 show y ++
-                                                 ","    ++
-                                                 "c="   ++
-                                                 show c ++
-                                                 ")"
+    show (CPoint (x, y, c)) = "("    `Monoid.mappend`
+                              "x="   `Monoid.mappend`
+                              show x `Monoid.mappend`
+                              ","    `Monoid.mappend`
+                              "y="   `Monoid.mappend`
+                              show y `Monoid.mappend`
+                              ","    `Monoid.mappend`
+                              "c="   `Monoid.mappend`
+                              show c `Monoid.mappend`
+                              ")"
   {-|
     'mkPoint'' makes a colored CPoint from two integer coordinates and a color.
   -}
-  mkCPoint :: T.T -> T.T -> Color.Color -> CPoint
-  mkCPoint x y c = CPoint { xCoord=x, yCoord=y, color=c }
+  mkCPoint :: Int -> Int -> Color.Color -> CPoint
+  mkCPoint x y c = CPoint (x, y, c)
 
+  {-|
+    'xCoord'' returns the x-coordinate of a coloured point.
+  -}
+  xCoord :: CPoint -> Int
+  xCoord (CPoint (x, _, _)) = x
+
+  {-|
+    'yCoord'' returns the y-coordinate of a coloured point.
+  -}
+  yCoord :: CPoint -> Int
+  yCoord (CPoint (_, y, _)) = y
+
+  {-|
+    'color'' returns the colour of a coloured point.
+  -}
+  color :: CPoint -> Color.Color
+  color (CPoint (_, _, c)) = c
+
+  -- data CPoint = CPoint { xCoord :: {-# UNPACK #-} !T.T
+  --                      , yCoord :: {-# UNPACK #-} !T.T
+  --                      , color  :: {-# UNPACK #-} !Color.Color
+  --                      } deriving (Eq, Ord)
+  --
+  -- instance Show CPoint where
+  --   show CPoint {xCoord=x, yCoord=y, color=c } = "("    `Monoid.mappend`
+  --                                                "x="   `Monoid.mappend`
+  --                                                show x `Monoid.mappend`
+  --                                                ","    `Monoid.mappend`
+  --                                                "y="   `Monoid.mappend`
+  --                                                show y `Monoid.mappend`
+  --                                                ","    `Monoid.mappend`
+  --                                                "c="   `Monoid.mappend`
+  --                                                show c `Monoid.mappend`
+  --                                                ")"
+  -- {-|
+  --   'mkPoint'' makes a colored CPoint from two integer coordinates and a color.
+  -- -}
+  -- mkCPoint :: T.T -> T.T -> Color.Color -> CPoint
+  -- mkCPoint x y c = CPoint { xCoord=x, yCoord=y, color=c }
 
   {-|
     Return the list of distinct colors that occur in a list of colored CPoints.
@@ -68,37 +103,3 @@ where
   -}
   nbColors :: [CPoint] -> Int
   nbColors = L.length . colors
-
-  {-|
-    'southWestDomination p1 p2' takes two CPoints. It returns True if and only if
-    'p1' south-west-dominates 'p2' (i.e., x1 > x2 and y1 < y2).
-  -}
-  northWestDomination :: CPoint -> CPoint -> Bool
-  northWestDomination = flip southEastDomination
-
-  {-|
-    'southEastDomination p1 p2' takes two CPoints. It returns True if and only if
-    'p1' south-east-dominates 'p2' (i.e., x1 < x2 and y1 > y2).
-  -}
-  northEastDomination :: CPoint -> CPoint -> Bool
-  p1 `northEastDomination` p2 = xConstraint && yConstraint
-    where
-      xConstraint = xCoord p1 < xCoord p2
-      yConstraint = yCoord p1 < yCoord p2
-
-  {-|
-    'southWestDomination p1 p2' takes two CPoints. It returns True if and only if
-    'p1' south-west-dominates 'p2' (i.e., x1 > x2 and y1 > y2).
-  -}
-  southWestDomination :: CPoint -> CPoint -> Bool
-  southWestDomination = flip northEastDomination
-
-  {-|
-    'southEastDomination p1 p2' takes two CPoints. It returns True if and only if
-    'p1' north-east-dominates 'p2' (i.e., x1 < x2 and y1 > y2).
-  -}
-  southEastDomination :: CPoint -> CPoint -> Bool
-  p1 `southEastDomination` p2 = xConstraint && yConstraint
-    where
-      xConstraint = xCoord p1 < xCoord p2
-      yConstraint = yCoord p1 > yCoord p2

@@ -16,6 +16,9 @@ module Data.Algorithm.PPattern.Random
 , randSelect
 , randPerm
 , randShuffle
+
+  --
+, sample
 )
 where
 
@@ -79,3 +82,20 @@ where
   randShuffleAux' ([]:_)        = error "We shouldn't be there"
   randShuffleAux' ([x]:xss)     = (x, xss)
   randShuffleAux' ((x:xs):xss') = (x, xs:xss')
+
+  pick :: (Random.RandomGen g, Eq a) => [a] -> g -> (a, g)
+  pick xs g = (xs !! i, g')
+    where
+      (i, g') = Random.randomR (0, length xs - 1) g
+
+  sample :: (Random.RandomGen g, Eq a, Ord a) => Int -> [a] -> g -> ([a], g)
+  sample n xs g = (L.sort ys, g')
+    where
+      (ys, g') = sampleAux n xs g
+
+  sampleAux :: (Random.RandomGen g, Eq a, Ord a) => Int -> [a] -> g -> ([a], g)
+  sampleAux 0 _  g = ([], g)
+  sampleAux n xs g = (x : ys, g'')
+    where
+      (x, g')   = pick xs g
+      (ys, g'') = sampleAux (n-1) (L.delete x xs) g'

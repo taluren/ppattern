@@ -14,27 +14,24 @@ commentary with @some markup@.
 
 import System.Console.CmdArgs
 import System.Random
-import Data.Maybe
-import qualified Data.List as L
+import Criterion.Main
+import Data.Tuple.HT
 
 import qualified Data.Algorithm.PPattern           as PPattern
 import qualified Data.Algorithm.PPattern.Perm      as Perm
 import qualified Data.Algorithm.PPattern.Strategy  as Strategy
-import qualified Data.Algorithm.PPattern.Embedding as Embedding
 
-data Options = Options { srcSize  :: Int
-                       , srcNb    :: Int
-                       , trgtSize :: Int
-                       , trgtNb   :: Int
-                       , param    :: Int
-                       , seed     :: Int
+data Options = Options { psize :: Int
+                       , qsize :: Int
+                       , nb    :: Int
+                       , param :: Int
+                       , seed  :: Int
                        } deriving (Data, Typeable)
 
 options :: Options
-options = Options { srcSize  = def &= help "The length of each source permutation"
-                  , srcNb    = def &= help "The number of sources permutations"
-                  , trgtSize = def &= help "The length of each target permutation"
-                  , trgtNb   = def &= help "The number of target permutations"
+options = Options { psize  = def &= help "The length of each source permutation"
+                  , qsize = def &= help "The length of each target permutation"
+                  , nb       = def &= help "The number of target permutations"
                   , param    = def &= help "The maximum number of increasing subsequence"
                   , seed     = def &= help "Random number generator seed"
                   }
@@ -42,25 +39,22 @@ options = Options { srcSize  = def &= help "The length of each source permutatio
                   &= summary "ppattern-rand v0.1.0.0, (C) Stéphane Vialette 2017"
                   &= program "ppattern-rand"
 
-permutations :: RandomGen g => Int -> Int -> Int -> g -> ([Perm.Perm], g)
-permutations n k' m = aux [] 1
+go :: (RandomGen g) => Options -> g -> [Benchmark]
+go opts = aux [] (nb opts)
   where
-    aux acc i g
-      | i == m    = (acc, g)
-      | otherwise = aux (p : acc) (i+1) g'
-        where
-          (p, g') = Perm.randKIncreasing n k' g
+    pSize = psize opts
+    qSize = qsize opts
+    k     = param opts
 
-go :: RandomGen g => Options -> g -> ([Maybe Embedding.Embedding], g)
-go opts g = (res, g'')
-  where
-    (sourcePermutations, g')  = permutations (srcSize opts) (param opts) (srcNb opts) g
-    (targetPermutations, g'') = permutations (trgtSize opts) (param opts) (trgtNb opts) g'
-    s                         = Strategy.simple
-    res                       = [PPattern.search p q s | p <- sourcePermutations
-                                                       , q <- targetPermutations]
+    aux :: (RandomGen g) => [Benchmark] -> Int -> g -> [Benchmark]
+    aux acc 0 _ = acc
+    aux acc n g = aux (bench "search" (whnf f (p, q, Strategy.simple)) : acc) (n-1) g''
+      where
+        (p, g')  = Perm.randKIncreasing pSize k g
+        (q, g'') = Perm.randKIncreasing qSize k g'
+        f        = uncurry3 PPattern.search
 
 main :: IO ()
 main = do
   opts <- cmdArgs options
-  print . L.length . L.filter isJust . fst $ go opts (mkStdGen (seed opts))
+  defaultMain [bgroup "ppattern" (go opts (mkStdGen (seed opts)))]

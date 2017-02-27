@@ -43,7 +43,6 @@ where
   import qualified Data.IntMap.Strict     as IntMap
   import qualified Data.Foldable          as Foldable
 
-  import qualified Data.Algorithm.PPattern.Types  as T
   import qualified Data.Algorithm.PPattern.CPoint as CPoint
 
   type CPointCPointMap = Map.Map CPoint.CPoint CPoint.CPoint
@@ -157,13 +156,13 @@ where
   {-|
 
   -}
-  jmpThreshold :: (CPoint.CPoint -> T.T) -> T.T -> CPointCPointMap -> CPoint.CPoint -> Maybe Int
+  jmpThreshold :: (CPoint.CPoint -> Int) -> Int -> CPointCPointMap -> CPoint.CPoint -> Maybe Int
   jmpThreshold = jmpThresholdAux 1
 
   {-|
 
   -}
-  jmpThresholdAux :: Int -> (CPoint.CPoint -> T.T) -> T.T -> CPointCPointMap -> CPoint.CPoint -> Maybe Int
+  jmpThresholdAux :: Int -> (CPoint.CPoint -> Int) -> Int -> CPointCPointMap -> CPoint.CPoint -> Maybe Int
   jmpThresholdAux k fun thrshld m cp = Map.lookup cp m >>= aux
     where
       aux cp'
@@ -173,25 +172,25 @@ where
   {-|
 
   -}
-  jmpThresholdXP :: T.T -> Next -> CPoint.CPoint -> Maybe Int
+  jmpThresholdXP :: Int -> Next -> CPoint.CPoint -> Maybe Int
   jmpThresholdXP thrshld n = jmpThreshold CPoint.xCoord thrshld (pMap n)
 
   {-|
 
   -}
-  jmpThresholdYP :: T.T -> Next -> CPoint.CPoint -> Maybe Int
+  jmpThresholdYP :: Int -> Next -> CPoint.CPoint -> Maybe Int
   jmpThresholdYP thrshld n = jmpThreshold CPoint.yCoord thrshld (pMap n)
 
   {-|
 
   -}
-  jmpThresholdXQ :: T.T -> Next -> CPoint.CPoint -> Maybe Int
+  jmpThresholdXQ :: Int -> Next -> CPoint.CPoint -> Maybe Int
   jmpThresholdXQ thrshld n = jmpThreshold CPoint.xCoord thrshld (qMap n)
 
   {-|
 
   -}
-  jmpThresholdYQ :: T.T -> Next -> CPoint.CPoint -> Maybe Int
+  jmpThresholdYQ :: Int -> Next -> CPoint.CPoint -> Maybe Int
   jmpThresholdYQ thrshld n = jmpThreshold CPoint.yCoord thrshld (qMap n)
 
   {-|

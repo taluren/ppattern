@@ -19,39 +19,39 @@ module Data.Algorithm.PPattern
 )
 where
 
-  import qualified Data.List          as L
-  import qualified Data.IntMap.Strict as IntMap
+  -- import qualified Data.List          as L
+  -- import qualified Data.IntMap.Strict as IntMap
 
   import qualified Data.Algorithm.PPattern.Perm      as Perm
-  import qualified Data.Algorithm.PPattern.Color     as Color
+  -- import qualified Data.Algorithm.PPattern.Color     as Color
   import qualified Data.Algorithm.PPattern.CPoint    as CPoint
   import qualified Data.Algorithm.PPattern.CPLink    as CPLink
   import qualified Data.Algorithm.PPattern.Strategy  as Strategy
   import qualified Data.Algorithm.PPattern.Next      as Next
   import qualified Data.Algorithm.PPattern.Embedding as Embedding
 
-  -- Return the signature of a list of color points/ The pair (c, n) denotes
-  -- the fact that there are n occurrences of c-colored points.
-  signature :: [CPoint.CPoint] -> [(Color.Color, Int)]
-  signature = go IntMap.empty
-    where
-      go m []         = L.sort $ IntMap.toList m
-      go m (cp : cps) = case IntMap.lookup c m of
-                          Nothing -> go (IntMap.insert c 1 m)                  cps
-                          Just x  -> go (IntMap.update (\_ -> Just (x+1)) c m) cps
-        where
-          c = CPoint.color cp
-
-  -- Return True if, for each color c, the number of points with color c in cps'
-  -- is at least the number of points with color c in cps.
-  compatibleCPoints :: [CPoint.CPoint] -> [(Color.Color, Int)] -> Bool
-  compatibleCPoints cps = go (signature cps)
-    where
-      go [] _ = True
-      go _ [] = False
-      go ((c, n) : cns) ((c', n') : cns')
-        | c == c'   = n <= n' && go cns cns'
-        | otherwise = go ((c, n) : cns) cns'
+  -- -- Return the signature of a list of color points/ The pair (c, n) denotes
+  -- -- the fact that there are n occurrences of c-colored points.
+  -- signature :: [CPoint.CPoint] -> [(Color.Color, Int)]
+  -- signature = go IntMap.empty
+  --   where
+  --     go m []         = L.sort $ IntMap.toList m
+  --     go m (cp : cps) = case IntMap.lookup c m of
+  --                         Nothing -> go (IntMap.insert c 1 m)                  cps
+  --                         Just x  -> go (IntMap.update (\_ -> Just (x+1)) c m) cps
+  --       where
+  --         c = CPoint.color cp
+  --
+  -- -- Return True if, for each color c, the number of points with color c in cps'
+  -- -- is at least the number of points with color c in cps.
+  -- compatibleCPoints :: [CPoint.CPoint] -> [(Color.Color, Int)] -> Bool
+  -- compatibleCPoints cps = go (signature cps)
+  --   where
+  --     go [] _ = True
+  --     go _ [] = False
+  --     go ((c, n) : cns) ((c', n') : cns')
+  --       | c == c'   = n <= n' && go cns cns'
+  --       | otherwise = go ((c, n) : cns) cns'
 
   -- Construct the leftmost embedding of a list of coloured points into another
   -- list of coloured points.
@@ -62,7 +62,7 @@ where
   leftmostEmbeddingAux [] []  = Just []
   leftmostEmbeddingAux [] _   = Just []
   leftmostEmbeddingAux _  []  = Nothing
-  leftmostEmbeddingAux (cp1:cp1s) (cp2:cp2s)
+  leftmostEmbeddingAux (cp1 : cp1s) (cp2 : cp2s)
     | c1 == c2  = fmap ((cp1, cp2):) (leftmostEmbeddingAux cp1s cp2s)
     | otherwise = leftmostEmbeddingAux (cp1:cp1s) cp2s
     where
@@ -88,7 +88,7 @@ where
   search p q s
     | Perm.size p > Perm.size q                                       = Nothing
     | Perm.longestDecreasingLength p > Perm.longestDecreasingLength q = Nothing
-    | otherwise                                                       = searchAux cpPss cpQs sQ nQ s
+    | otherwise                                                       = searchAux cpPss cpQs nQ s
     where
       -- make target colored points list
       cpQs = mkQ q
@@ -99,24 +99,19 @@ where
       -- make next function for permutation q
       nQ = Next.mkQ' cpQs
 
-      -- the signature of cpQs
-      sQ = signature cpQs
-
   -- Permutation pattern matching for all possible coloouring of the source
   -- permutation.
-  searchAux :: [[CPoint.CPoint]] -> [CPoint.CPoint] -> [(Color.Color, Int)] -> Next.Next -> Strategy.Strategy -> Maybe Embedding.Embedding
-  searchAux []           _    _  _ _ = Nothing
-  searchAux (cpPs:cpPss) cpQs sQ n s = case doSearch cpPs cpQs sQ (Next.mkP cpPs n) s of
-                                        Nothing -> searchAux cpPss cpQs sQ n s
+  searchAux :: [[CPoint.CPoint]] -> [CPoint.CPoint] -> Next.Next -> Strategy.Strategy -> Maybe Embedding.Embedding
+  searchAux []           _    _ _ = Nothing
+  searchAux (cpPs:cpPss) cpQs n s = case doSearch cpPs cpQs (Next.mkP cpPs n) s of
+                                        Nothing -> searchAux cpPss cpQs n s
                                         Just e  -> Just e
 
   -- Perform the search for a given coloring of the source Perm.
-  doSearch :: [CPoint.CPoint] -> [CPoint.CPoint] -> [(Color.Color, Int)] -> Next.Next -> Strategy.Strategy -> Maybe Embedding.Embedding
-  doSearch []   _    _  _ _ = Nothing
-  doSearch _    []   _  _ _ = Nothing
-  doSearch cpPs cpQs sQ n s
-    | not (compatibleCPoints cpPs sQ) = Nothing
-    | otherwise                       = leftmostEmbedding cpPs cpQs >>= doSearchAux n s
+  doSearch :: [CPoint.CPoint] -> [CPoint.CPoint] -> Next.Next -> Strategy.Strategy -> Maybe Embedding.Embedding
+  doSearch []   _    _ _ = Nothing
+  doSearch _    []   _ _ = Nothing
+  doSearch cpPs cpQs n s = leftmostEmbedding cpPs cpQs >>= doSearchAux n s
 
   doSearchAux :: Next.Next -> Strategy.Strategy -> Embedding.Embedding -> Maybe Embedding.Embedding
   doSearchAux n s e = resolveConflict n s e >>= loop
