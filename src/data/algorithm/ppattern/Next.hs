@@ -45,86 +45,44 @@ where
 
   import qualified Data.Algorithm.PPattern.CPoint as CPoint
 
-  type CPointCPointMap = Map.Map CPoint.CPoint CPoint.CPoint
-
-  data Next = Next { pMap :: !CPointCPointMap -- ^ next function for permutation p
-                   , qMap :: !CPointCPointMap -- ^ next function for permutation q
-                   } deriving (Show)
+  data Next = Next { getMap :: Map.Map CPoint.CPoint CPoint.CPoint }
+              deriving (Show, Eq)
 
   {-|
     Empty next functions.
   -}
   empty :: Next
-  empty = Next { pMap=Map.empty, qMap=Map.empty }
+  empty = Next { getMap = Map.empty }
 
   {-|
-    Make either the P next function or the Q next function.
+    Make the next mapping for a list of colored points.
   -}
-  mk :: (CPointCPointMap -> Next -> Next) -> [CPoint.CPoint] -> Next -> Next
-  mk updateFun cps = updateFun m
+  mk :: [CPoint.CPoint] -> Next
+  mk cps = Next { getMap = T.fst $ Foldable.foldr f (Map.empty, IntMap.empty) cps }
     where
-      m = T.fst $ Foldable.foldr f (Map.empty, IntMap.empty) cps
-
-  f :: CPoint.CPoint -> (CPointCPointMap, IntMap.IntMap CPoint.CPoint) -> (CPointCPointMap, IntMap.IntMap CPoint.CPoint)
-  f cp (m, nextCP) = fAux (IntMap.lookup c nextCP)
-    where
-      c = CPoint.color cp
-
-      fAux :: Maybe CPoint.CPoint -> (CPointCPointMap, IntMap.IntMap CPoint.CPoint)
-      fAux Nothing = (m, nextCP')
+      f cp (m, m') = case IntMap.lookup c m' of
+                       Nothing  -> (m, IntMap.insert c cp m')
+                       Just cp' -> (Map.insert cp cp' m, IntMap.update (\_ -> Just cp) c m')
         where
-          nextCP' = IntMap.insert c cp nextCP
-      fAux (Just cp') = (m', nextCP')
-        where
-          m'      = Map.insert cp cp' m
-          nextCP' = IntMap.update (\_ -> Just cp) c nextCP
+          c = CPoint.color cp
 
   {-|
     Each color is required to induce an increasing subsequence.
   -}
-  mkP :: [CPoint.CPoint] -> Next -> Next
-  mkP = mk updateP
+  mk' :: [CPoint.CPoint] -> Next
+  mk' = flip mk empty
 
-  {-|
-    Each color is required to induce an increasing subsequence.
-  -}
-  mkP' :: [CPoint.CPoint] -> Next
-  mkP' = flip mkP empty
-
-  {-|
-    Each color is required to induce an increasing subsequence.
-  -}
-  mkQ :: [CPoint.CPoint] -> Next -> Next
-  mkQ = mk updateQ
-
-  {-|
-    Each color is required to induce an increasing subsequence.
-  -}
-  mkQ' :: [CPoint.CPoint] -> Next
-  mkQ' = flip mkQ empty
 
   {-|
 
   -}
-  next :: CPoint.CPoint -> CPointCPointMap-> Maybe CPoint.CPoint
-  next = Map.lookup
+  next :: CPoint.CPoint -> Next -> Maybe CPoint.CPoint
+  next cp Next { getMap = m } = Map.lookup cp m
 
   {-|
 
   -}
-  nextP :: CPoint.CPoint -> Next-> Maybe CPoint.CPoint
-  nextP p n = next p (pMap n)
-
-  {-|
-
-  -}
-  nextQ :: CPoint.CPoint -> Next-> Maybe CPoint.CPoint
-  nextQ p n = next p (pMap n)
-
-  {-|
-
-  -}
-  nextK :: Int -> CPointCPointMap -> CPoint.CPoint -> Maybe CPoint.CPoint
+  nextK :: Int -> Next -> CPoint.CPoint -> Maybe CPoint.CPoint
   nextK k m cp
     | k > 0     = next cp m >>= nextK (k-1) m
     | otherwise = Just cp
@@ -144,25 +102,25 @@ where
   {-|
 
   -}
-  updateP :: CPointCPointMap -> Next -> Next
+  updateP :: Map.Map CPoint.CPoint CPoint.CPoint -> Next -> Next
   updateP m n = n { pMap=m }
 
   {-|
 
   -}
-  updateQ :: CPointCPointMap -> Next -> Next
+  updateQ :: Map.Map CPoint.CPoint CPoint.CPoint -> Next -> Next
   updateQ m n = n { qMap=m }
 
   {-|
 
   -}
-  jmpThreshold :: (CPoint.CPoint -> Int) -> Int -> CPointCPointMap -> CPoint.CPoint -> Maybe Int
+  jmpThreshold :: (CPoint.CPoint -> Int) -> Int -> Map.Map CPoint.CPoint CPoint.CPoint -> CPoint.CPoint -> Maybe Int
   jmpThreshold = jmpThresholdAux 1
 
   {-|
 
   -}
-  jmpThresholdAux :: Int -> (CPoint.CPoint -> Int) -> Int -> CPointCPointMap -> CPoint.CPoint -> Maybe Int
+  jmpThresholdAux :: Int -> (CPoint.CPoint -> Int) -> Int -> Map.Map CPoint.CPoint CPoint.CPoint -> CPoint.CPoint -> Maybe Int
   jmpThresholdAux k fun thrshld m cp = Map.lookup cp m >>= aux
     where
       aux cp'
@@ -196,7 +154,7 @@ where
   {-|
 
   -}
-  insert :: CPoint.CPoint -> CPoint.CPoint -> CPointCPointMap -> CPointCPointMap
+  insert :: CPoint.CPoint -> CPoint.CPoint -> Map.Map CPoint.CPoint CPoint.CPoint -> Map.Map CPoint.CPoint CPoint.CPoint
   insert = Map.insert
 
   {-|

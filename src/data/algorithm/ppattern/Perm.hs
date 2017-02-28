@@ -201,76 +201,32 @@ where
     | x == y    = (i, x, c) : mkCPoints ixs ys  refColors
     | otherwise = (i, x, 0) : mkCPoints ixs ys' refColors'
 
-  {-|
-    'increasingPartition p' returns a partition of the permutation 'p' into
-    'l' increasing subsequences, wjere 'l' is the length of a longest increasing
-    subsequence of 'p'.
-  -}
-  increasingPartition :: Perm -> [CPoint.CPoint]
-  increasingPartition p = increasingPartitionAux cps cs prevMap nextMap
-    where
-      -- Index permutation p.
-      indexed = index p
+  -- findColor :: Int -> IntMap.IntMap Int -> Int
+  -- findColor x m = aux 1
+  --   where
+  --     aux c = case IntMap.lookup c m of
+  --               Nothing -> c
+  --               Just x' -> if x' < x then c else aux (c+1)
+  --
+  -- updateMap :: Color.Color -> Int -> IntMap.IntMap Int -> IntMap.IntMap Int
+  -- updateMap c x m = case IntMap.lookup c m of
+  --                     Nothing -> IntMap.insert c x m
+  --                     Just _  -> IntMap.update (\_ -> Just x) c m
 
-      -- A longest decreasing subsequence of p.
-      decreasing = longestDecreasing p
-
-      -- The length oa longest decreasing subsequence of p.
-      l = L.length decreasing
-
-      -- colours
-      cs = [1..l]
-
-      -- p as a list of coloured points (the lements of the decreasing
-      -- subsequence get distinct colours)
-      cps = mkCPoints indexed decreasing cs
-
-      -- maps
-      prevMap = IntMap.empty
-      nextMap = IntMap.fromList $ L.zip [1..l] decreasing
-
-  increasingPartitionAux :: [(Int, Int, Color.Color)] -> [Color.Color] -> IntMap.IntMap Int -> IntMap.IntMap Int -> [CPoint.CPoint]
-  increasingPartitionAux []                 _  _       _       = []
-  increasingPartitionAux ((i, x, 0) : ixcs) cs prevMap nextMap = increasingPartitionAux1  (i, x)    ixcs cs prevMap nextMap
-  increasingPartitionAux ((i, x, c) : ixcs) cs prevMap nextMap = increasingPartitionAux2 (i, x, c) ixcs cs prevMap nextMap
-
-  -- increasingPartitionAux for 0-coloured points
-  -- Find any compatible colour.
-  increasingPartitionAux1 :: (Int, Int)-> [(Int, Int, Color.Color)] -> [Color.Color] -> IntMap.IntMap Int -> IntMap.IntMap Int -> [CPoint.CPoint]
-  increasingPartitionAux1 is ixcs cs = increasingPartitionAux1' is ixcs cs cs
-
-  -- increasingPartitionAux for 0-coloured points
-  -- Find any compatible colour.
-  increasingPartitionAux1' :: (Int, Int)-> [(Int, Int, Color.Color)] -> [Color.Color] -> [Color.Color] -> IntMap.IntMap Int -> IntMap.IntMap Int -> [CPoint.CPoint]
-  increasingPartitionAux1' _      _    []       _   _       _      = error "We shouldn't be there"
-  increasingPartitionAux1' (i, x) ixcs (c : cs) cs' prevMap nextMap
-    | prevTest && nextTest = cp : increasingPartitionAux ixcs cs' prevMap' nextMap'
-    | otherwise            = increasingPartitionAux1' (i, x) ixcs cs cs' prevMap nextMap
-    where
-      prevTest = agreeWithPrevElement x c prevMap
-      nextTest = agreeWithNextElement x c nextMap
-      cp       = CPoint.mkCPoint i x c
-      prevMap' = updatePrevMap x c prevMap
-      nextMap' = updateNextMap x c nextMap
-
-  {-|
-    increasingPartitionsAux for colored points (those point that are part of
-    the selected longest decreasing subsequence).
-  -}
-  increasingPartitionAux2 :: (Int, Int, IntMap.Key) -> [(Int, Int, Color.Color)] -> [Color.Color] -> IntMap.IntMap Int -> IntMap.IntMap Int  -> [CPoint.CPoint]
-  increasingPartitionAux2 (i, x, c) ixcs cs prevMap nextMap = cp : cps
-    where
-      -- Nex color point
-      cp  = CPoint.mkCPoint i x c
-
-      -- This color point in now a left constraint
-      prevMap' = updatePrevMap x c prevMap
-
-      -- This color point in now a left constraint
-      nextMap' = updateNextMap x c nextMap
-
-      -- recursively compute the remaining colored points
-      cps = increasingPartitionAux ixcs cs prevMap' nextMap'
+  -- increasingPartition :: Perm -> [CPoint.CPoint]
+  -- increasingPartition p = increasingPartitionAux [] (index p) IntMap.empty
+  --
+  -- increasingPartitionAux :: [CPoint.CPoint] -> [(Int, Int)] -> IntMap.IntMap Int -> [CPoint.CPoint]
+  -- increasingPartitionAux acc [] _             = acc
+  -- increasingPartitionAux acc ((x, y) : xys) m = increasingPartitionAux acc' xys m'
+  --   where
+  --     c    = findColor x m
+  --
+  --     m'   = updateMap c x m
+  --
+  --     cp   = CPoint.mkCPoint x y c
+  --
+  --     acc' = cp : acc
 
   {-|
     'increasingPartitions p k' returns all partitions of the permutation 'p' into
@@ -281,10 +237,10 @@ where
     | l > k     = []
     | otherwise = Foldable.concat [increasingPartitionsAux cps cs prevMap nextMap
                                   | refColors     <- [1..k] `Combi.choose` l
-                                  , permRefColors <- L.permutations refColors
-                                  , let cps     = mkCPoints indexed decreasing permRefColors
+                                  -- , permRefColors <- L.permutations refColors
+                                  , let cps     = mkCPoints indexed decreasing refColors
                                   , let prevMap = IntMap.empty
-                                  , let nextMap = IntMap.fromList $ L.zip permRefColors decreasing]
+                                  , let nextMap = IntMap.fromList $ L.zip refColors decreasing]
     where
       -- A longest decreasing subsequence of p.
       decreasing = longestDecreasing p
@@ -349,9 +305,16 @@ where
                                  Just x' -> x < x'
 
   updatePrevMap :: Color.Color -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
-  updatePrevMap x c m = case IntMap.lookup c m of
-                          Nothing -> IntMap.insert c x m
-                          Just _  -> IntMap.update (\_ -> Just x) c m
+  updatePrevMap x c m = updatePrevMapAux x 1 c m
+
+  updatePrevMapAux :: Int -> IntMap.Key -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
+  updatePrevMapAux x c c' m
+    | c > c'    = m
+    | otherwise = updatePrevMapAux  x (c+1) c' m'
+      where
+        m' = case IntMap.lookup c m of
+               Nothing -> IntMap.insert c x m
+               Just _  -> IntMap.update (\y -> Just (max x y)) c m
 
   updateNextMap :: Color.Color -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
   updateNextMap x c m = case IntMap.lookup c m of

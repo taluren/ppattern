@@ -30,28 +30,8 @@ where
   import qualified Data.Algorithm.PPattern.Next      as Next
   import qualified Data.Algorithm.PPattern.Embedding as Embedding
 
-  -- -- Return the signature of a list of color points/ The pair (c, n) denotes
-  -- -- the fact that there are n occurrences of c-colored points.
-  -- signature :: [CPoint.CPoint] -> [(Color.Color, Int)]
-  -- signature = go IntMap.empty
-  --   where
-  --     go m []         = L.sort $ IntMap.toList m
-  --     go m (cp : cps) = case IntMap.lookup c m of
-  --                         Nothing -> go (IntMap.insert c 1 m)                  cps
-  --                         Just x  -> go (IntMap.update (\_ -> Just (x+1)) c m) cps
-  --       where
-  --         c = CPoint.color cp
-  --
-  -- -- Return True if, for each color c, the number of points with color c in cps'
-  -- -- is at least the number of points with color c in cps.
-  -- compatibleCPoints :: [CPoint.CPoint] -> [(Color.Color, Int)] -> Bool
-  -- compatibleCPoints cps = go (signature cps)
-  --   where
-  --     go [] _ = True
-  --     go _ [] = False
-  --     go ((c, n) : cns) ((c', n') : cns')
-  --       | c == c'   = n <= n' && go cns cns'
-  --       | otherwise = go ((c, n) : cns) cns'
+  embeddingCompletion ::[CPoint.CPoint] -> CPoint.CPoint -> [CPoint.CPoint] ->  Embedding.Embedding -> Next.Next -> Maybe Embedding.Embedding
+  embeddingCompletion cpPs cpP cpQs e n = 
 
   -- Construct the leftmost embedding of a list of coloured points into another
   -- list of coloured points.
