@@ -43,71 +43,58 @@ where
   import qualified Data.Algorithm.PPattern.Color  as Color
   import qualified Data.Algorithm.PPattern.Next   as Next
 
-  data Embedding =  Embedding { embedding  :: Map.Map CPoint.CPoint CPoint.CPoint
-                              , lastCPoint :: IntMap.IntMap CPoint.CPoint
-                              } deriving (Eq)
+  data Embedding =  Embedding { getMap :: Map.Map CPoint.CPoint CPoint.CPoint } deriving (Eq)
 
   instance Show Embedding where
-    show Embedding { embedding=m } = L.intercalate "\n" strList
+    show Embedding { getMap = m } = L.intercalate "\n" strList
       where
-        asList     = Map.toList m
-        sortedList = L.sortBy (compare `Fun.on` (CPoint.xCoord . T.fst)) asList
-        strList    = fmap f sortedList
-        f (cp1, cp2) = show cp1 `Monoid.mappend` " -> " `Monoid.mappend` show cp2
+        asList      = Map.toList m
+        sortedList  = L.sortBy (compare `Fun.on` (CPoint.xCoord . T.fst)) asList
+        strList     = fmap f sortedList
+        f (cp, cp') = show cp `Monoid.mapêpend` " -> " `Monoid.mappend` show cp'
 
   {-|
   'empty' constructs an empty embedding.
   -}
   empty :: Embedding
-  empty  = Embedding { embedding=Map.empty, lastCPoint=IntMap.empty }
-
-  {-|
-    Return the associated embedding.
-  -}
-  getEmbedding :: Embedding -> Map.Map CPoint.CPoint CPoint.CPoint
-  getEmbedding Embedding { embedding=m } = m
-
-  {-|
-    Return the associated CPoint mapping.
-  -}
-  getLastCPoint :: Embedding -> IntMap.IntMap CPoint.CPoint
-  getLastCPoint Embedding { lastCPoint=m } = m
+  empty  = Embedding { getMap = Map.empty }
 
   {-|
     Transform an embedding into a list of key/value pairs.
   -}
-  embeddingToList :: Embedding -> [(CPoint.CPoint, CPoint.CPoint)]
-  embeddingToList = Map.toList . getEmbedding
+  toList :: Embedding -> [(CPoint.CPoint, CPoint.CPoint)]
+  toList = Map.toList . getMap
 
   {-|
     Update the embedding.
   -}
-  updateEmbedding :: CPoint.CPoint -> CPoint.CPoint -> Embedding -> Embedding
-  updateEmbedding cp cp' e = e { embedding=m' }
+  update :: CPoint.CPoint -> CPoint.CPoint -> Embedding -> Embedding
+  update cp cp' e = e { hetMap = m' }
     where
-      m  = getEmbedding e
+      m  = getMap e
       m' = case Map.lookup cp m of
-            Nothing -> Map.insert cp cp' m
-            Just _  -> Map.update (\_ -> Just cp') cp m
+             Nothing -> Map.insert cp cp' m
+             Just _  -> Map.update (\_ -> Just cp') cp m
 
   {-|
+    Return the image of a colored point according to the embedding.
   -}
   image :: CPoint.CPoint -> Embedding -> Maybe CPoint.CPoint
-  image cp Embedding { embedding=m } = Map.lookup cp m
+  image cp e = Map.lookup cp . getMap
 
   {-|
   -}
-  resolveXEmbedding :: CPoint.CPoint -> Int -> Next.Next -> Embedding -> Maybe Embedding
-  resolveXEmbedding cp thrshld n e = image cp e                    >>=
-                                     Next.jmpThresholdXQ thrshld n >>=
-                                     resolveAux cp n e
+  xResolve :: CPoint.CPoint -> Int -> Embedding -> Maybe Embedding
+  xResolve cp thrshld n e = image cp e                            >>=
+                            Next.xJumpThreshold thrshld (pNext s) >>=
+                            resolveAux cp n e
 
   {-|
   -}
-  resolveYEmbedding :: CPoint.CPoint -> Int -> Next.Next -> Embedding -> Maybe Embedding
-  resolveYEmbedding cp thrshld n e = image cp e                    >>=
-                                     Next.jmpThresholdYQ thrshld n >>=
-                                     resolveAux cp n e
+  yResolve :: CPoint.CPoint -> Int -> Next.Next -> Embedding -> Maybe Embedding
+  yResolve cp thrshld n e = image cp e                    >>=
+                            Next.yJumpThreshold thrshld n >>=
+                            resolveAux cp n e
 
   -- {-|
   -- -}
@@ -145,12 +132,3 @@ where
     where
       c  = CPoint.color cp
       e' = updateLastCPoint c cp e
-
-  -- Update the lastCPoint mapping.
-  updateLastCPoint :: Color.Color -> CPoint.CPoint -> Embedding -> Embedding
-  updateLastCPoint c cp e = e { lastCPoint=m' }
-    where
-      m  = getLastCPoint e
-      m' = case IntMap.lookup c m of
-            Nothing -> IntMap.insert c cp m
-            Just _  -> IntMap.update (\_ -> Just cp) c m

@@ -15,26 +15,17 @@ module Data.Algorithm.PPattern.Next
   -- * The @Next@ type
   Next
 , empty
-, mkP
-, mkP'
-, mkQ
-, mkQ'
+, mk
+, mk'
 
   -- Querying
-, nextP
-, nextQ
-, nextPK
-, nextQK
-, jmpThresholdXP
-, jmpThresholdYP
-, jmpThresholdXQ
-, jmpThresholdYQ
+, next
+, nextK
+, xJumpThreshold
+, yJumpThreshold
 
   -- Modifying
-, updateP
-, updateQ
-, insertP
-, insertQ
+, update
 )
 where
 
@@ -74,97 +65,53 @@ where
 
 
   {-|
-
+    Return (if it exists) the next colored point of a colored point.
   -}
   next :: CPoint.CPoint -> Next -> Maybe CPoint.CPoint
   next cp Next { getMap = m } = Map.lookup cp m
 
   {-|
-
+    Iterate the next function.
   -}
   nextK :: Int -> Next -> CPoint.CPoint -> Maybe CPoint.CPoint
-  nextK k m cp
-    | k > 0     = next cp m >>= nextK (k-1) m
+  nextK k n cp
+    | k > 0     = next cp n >>= nextK (k-1) n
     | otherwise = Just cp
 
   {-|
-
+    Update the next mapping for a given colored point.
   -}
-  nextPK :: Int -> Next -> CPoint.CPoint -> Maybe CPoint.CPoint
-  nextPK k n = nextK k (pMap n)
+  update :: CPoint.CPoint -> CPoint.CPoint -> Next -> Next
+  update cp cp' n = Next { getMap = m' }
+    where
+      m  = getMap n
+      m' = case Map.lookup cp m of
+             Nothing -> Map.insert cp cp' m
+             Just _  -> Map.update (\_ -> Just cp') cp m
 
   {-|
-
+    Find the minimum number of call to the next function for obtaining a colored
+    point with a coordinate above some given threashold.
   -}
-  nextQK :: Int -> Next -> CPoint.CPoint -> Maybe CPoint.CPoint
-  nextQK k n = nextK k (qMap n)
+  jumpThreshold :: (CPoint.CPoint -> Int) -> Int -> Next -> CPoint.CPoint -> Maybe Int
+  jumpThreshold = jumpThresholdAux 1
 
-  {-|
-
-  -}
-  updateP :: Map.Map CPoint.CPoint CPoint.CPoint -> Next -> Next
-  updateP m n = n { pMap=m }
-
-  {-|
-
-  -}
-  updateQ :: Map.Map CPoint.CPoint CPoint.CPoint -> Next -> Next
-  updateQ m n = n { qMap=m }
-
-  {-|
-
-  -}
-  jmpThreshold :: (CPoint.CPoint -> Int) -> Int -> Map.Map CPoint.CPoint CPoint.CPoint -> CPoint.CPoint -> Maybe Int
-  jmpThreshold = jmpThresholdAux 1
-
-  {-|
-
-  -}
-  jmpThresholdAux :: Int -> (CPoint.CPoint -> Int) -> Int -> Map.Map CPoint.CPoint CPoint.CPoint -> CPoint.CPoint -> Maybe Int
-  jmpThresholdAux k fun thrshld m cp = Map.lookup cp m >>= aux
+  -- jumpThreshold auxiliary function
+  jumpThresholdAux :: Int -> (CPoint.CPoint -> Int) -> Int -> Next  -> CPoint.CPoint -> Maybe Int
+  jumpThresholdAux k f thrshld n cp = Map.lookup cp (getMap n) >>= aux
     where
       aux cp'
-        | fun cp' > thrshld = Just k
-        | otherwise         = jmpThresholdAux (k+1) fun thrshld m cp'
+        | f cp' > thrshld = Just k
+        | otherwise       = jumpThresholdAux (k+1) f thrshld cp' n
 
   {-|
-
+    jumpThreshold function for x-coordinate.
   -}
-  jmpThresholdXP :: Int -> Next -> CPoint.CPoint -> Maybe Int
-  jmpThresholdXP thrshld n = jmpThreshold CPoint.xCoord thrshld (pMap n)
+  xJumpThreshold :: Int -> Next -> CPoint.CPoint -> Maybe Int
+  xJumpThreshold = jumpThreshold CPoint.xCoord
 
   {-|
-
+    jumpThreshold function for y-coordinate.
   -}
-  jmpThresholdYP :: Int -> Next -> CPoint.CPoint -> Maybe Int
-  jmpThresholdYP thrshld n = jmpThreshold CPoint.yCoord thrshld (pMap n)
-
-  {-|
-
-  -}
-  jmpThresholdXQ :: Int -> Next -> CPoint.CPoint -> Maybe Int
-  jmpThresholdXQ thrshld n = jmpThreshold CPoint.xCoord thrshld (qMap n)
-
-  {-|
-
-  -}
-  jmpThresholdYQ :: Int -> Next -> CPoint.CPoint -> Maybe Int
-  jmpThresholdYQ thrshld n = jmpThreshold CPoint.yCoord thrshld (qMap n)
-
-  {-|
-
-  -}
-  insert :: CPoint.CPoint -> CPoint.CPoint -> Map.Map CPoint.CPoint CPoint.CPoint -> Map.Map CPoint.CPoint CPoint.CPoint
-  insert = Map.insert
-
-  {-|
-
-  -}
-  insertP :: CPoint.CPoint -> CPoint.CPoint -> Next -> Next
-  insertP cp1 cp1' n = n { pMap=insert cp1 cp1' (pMap n) }
-
-  {-|
-
-  -}
-  insertQ :: CPoint.CPoint -> CPoint.CPoint -> Next -> Next
-  insertQ cp1 cp1' n = n { pMap=insert cp1 cp1' (qMap n) }
+  yJumpThreshold :: Int -> Next -> CPoint.CPoint -> Maybe Int
+  yJumpThreshold = jumpThreshold CPoint.y0Coord
