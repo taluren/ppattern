@@ -41,25 +41,13 @@ where
   import qualified Data.Algorithm.PPattern.Next      as Next
 
   -- colored point to colored points mapping
-  newtype Embedding = Embedding { getEmbedding :: Map.Map CPoint.CPoint CPoint.CPoint }
-                      deriving (Eq)
-
-  -- pretty print
-  instance Show Embedding where
-    show Embedding { getMap = m } = L.intercalate "\n" strList
-      where
-        asList      = Map.toList m
-        sortedList  = L.sortBy (compare `Fun.on` (CPoint.xCoord . T.fst)) asList
-        strList     = fmap f sortedList
-        f (cp, cp') = show cp `Monoid.mapêpend` " -> " `Monoid.mappend` show cp'
+  type Embedding = Map.Map CPoint.CPoint CPoint.CPoint
 
   -- Fast access to colored point by color
-  newtype Access = Access { getAccess :: IntMap.IntMap CPoint.CPoint }
-                   deriving (Show, Eq)
+  type Access = IntMap.IntMap CPoint.CPoint
 
   -- Next colored point mapping
-  newtype Next = Next { getNext :: Map.Map CPoint.CPoint CPoint.CPoint }
-                 deriving (Show, Eq)
+  type Next = Map.Map CPoint.CPoint CPoint.CPoint
 
   -- The state of a search
   data State = State { pCPoints   :: [CPoint.CPoint]
@@ -82,66 +70,47 @@ where
   ------------------------------------------------------------------------------
 
   emptyNext :: Next
-  emptyNext = Next { getNext = Map.empty }
+  emptyNext = IntMap.empty
 
   mkNext :: [CPoint.CPoint] -> Next
-  mkNext cps = Next { getNext = T.fst $ Foldable.foldr f (Map.empty, IntMap.empty) cps }
+  mkNext = T.fst $ Foldable.foldr f (emptyNext, IntMap.empty)
     where
       f cp (m, m') = case IntMap.lookup c m' of
                        Nothing  -> (m, IntMap.insert c cp m')
-                       Just cp' -> (Map.insert cp cp' m, IntMap.update (\_ -> Just cp) c m')
+                       Just cp' -> (insertNext cp cp' m, IntMap.update (\_ -> Just cp) c m')
         where
           c = CPoint.color cp
 
-  mkNext' :: [CPoint.CPoint] -> Next
-  mkNext' = flip mkNext empty
+  lookupNext :: CPoint.CPoint -> Next -> Maybe CPoint.CPoint
+  lookupNext = Map.lookup
 
   next :: CPoint.CPoint -> Next -> Maybe CPoint.CPoint
-  next cp = Map.lookup cp . getNext
+  next = lookupNext
 
   next' :: Next -> CPoint.CPoint -> Maybe CPoint.CPoint
   next' = flip next
 
-  nextK :: Int -> Next -> CPoint.CPoint -> Maybe CPoint.CPoint
-  nextK k n cp
-    | k > 0     = next cp n >>= nextK (k-1) n
-    | otherwise = Just cp
+  insertNext :: CPoint.CPoint -> CPoint.CPoint -> Next -> Next
+  insertNext = Map.insert
 
   updateNext :: CPoint.CPoint -> CPoint.CPoint -> Next -> Next
-  updateNext cp cp' n = Next { getNext = m' }
+  updateNext cp cp' n = case Map.lookup cp m of
+                          Nothing -> Map.insert cp cp' m
+                          Just _  -> Map.update (\_ -> Just cp') cp m
+
+  jumpThreshold :: (CPoint.CPoint -> Int) -> Int -> Next -> CPoint.CPoint -> Maybe CPoint.CPoint
+  jumpThreshold coord t n cp = aux (next cp n)
     where
-      m  = getMap n
-      m' = case Map.lookup cp m of
-             Nothing -> Map.insert cp cp' m
-             Just _  -> Map.update (\_ -> Just cp') cp m
+      aux Nothing = Nothing
+      aux (Just cp')
+        | coord c > t = Just cp'
+        | otherwise   = aux (next cp' n)
 
-  {-|
-    Find the minimum number of call to the next function for obtaining a colored
-    point with a coordinate above some given threashold.
-  -}
-  jumpThreshold :: (CPoint.CPoint -> Int) -> Int -> Next -> CPoint.CPoint -> Maybe Int
-  jumpThreshold = jumpThresholdAux 1
-
-  -- jumpThreshold auxiliary function
-  jumpThresholdAux :: Int -> (CPoint.CPoint -> Int) -> Int -> Next  -> CPoint.CPoint -> Maybe Int
-  jumpThresholdAux k f thrshld n cp = Map.lookup cp (getMap n) >>= aux
-    where
-      aux cp'
-        | f cp' > thrshld = Just k
-        | otherwise       = jumpThresholdAux (k+1) f thrshld cp' n
-
-  {-|
-    jumpThreshold function for x-coordinate.
-  -}
-  xJumpThreshold :: Int -> Next -> CPoint.CPoint -> Maybe Int
+  xJumpThreshold :: Int -> Next -> CPoint.CPoint -> Maybe CPoint.CPoint
   xJumpThreshold = jumpThreshold CPoint.xCoord
 
-  {-|
-    jumpThreshold function for y-coordinate.
-  -}
-  yJumpThreshold :: Int -> Next -> CPoint.CPoint -> Maybe Int
+  yJumpThreshold :: Int -> Next -> CPoint.CPoint -> Maybe CPoint.CPoint
   yJumpThreshold = jumpThreshold CPoint.yCoord
-
 
   ------------------------------------------------------------------------------
   --
@@ -150,62 +119,24 @@ where
   ------------------------------------------------------------------------------
 
   emptyEmbedding :: Embedding
-  emptyEmbedding  = Embedding { getMap = Map.empty }
+  emptyEmbedding  = Map.empty
 
   embeddingToList :: Embedding -> [(CPoint.CPoint, CPoint.CPoint)]
-  embeddingToList = Map.toList . getMap
+  embeddingToList = Map.toList
 
-  {-|
-    Update the embedding.
-  -}
-  update :: CPoint.CPoint -> CPoint.CPoint -> Embedding -> Embedding
-  update cp cp' e = e { hetMap = m' }
-    where
-      m  = getMap e
-      m' = case Map.lookup cp m of
-             Nothing -> Map.insert cp cp' m
-             Just _  -> Map.update (\_ -> Just cp') cp m
+  insertEmbedding :: CPoint.CPoint -> CPoint.CPoint -> Embedding -> Embedding
+  insertEmbedding = Map.insert
 
-  {-|
-    Return the image of a colored point according to the embedding.
-  -}
-  image :: CPoint.CPoint -> Embedding -> Maybe CPoint.CPoint
-  image cp e = Map.lookup cp . getMap
+  lookupEmbedding :: CPoint.CPoint -> Embedding -> Maybe CPoint.CPoint
+  lookupNext = Map.lookup
 
-  {-|
-  -}
-  xResolve :: CPoint.CPoint -> Int -> Embedding -> Maybe Embedding
-  xResolve cp thrshld n e = image cp e                            >>=
-                                     Next.xJumpThreshold thrshld (pNext s) >>=
-                                     resolveAux cp n e
+  imageEmbedding :: CPoint.CPoint -> Embedding -> Maybe CPoint.CPoint
+  imageEmbedding = lookupEmbedding
 
-  {-|
-  -}
-  yResolveEmbedding :: CPoint.CPoint -> Int -> Next.Next -> Embedding -> Maybe Embedding
-  yResolveEmbedding cp thrshld n e = image cp e                    >>=
-                                     Next.yJumpThreshold thrshld n >>=
-                                     resolveAux cp n e
-
-  resolveAux :: CPoint.CPoint -> Next.Next -> Embedding -> Int -> Maybe Embedding
-  resolveAux cp n e k = image cp e      >>=
-                        Next.nextQK k n >>=
-                        resolveAux' cp n e k
-
-  -- resolveAux first auxiliary function. Update the embedding cp -> cp' and call
-  -- resolveAux for the next colored point.
-  resolveAux' :: CPoint.CPoint -> Next.Next -> Embedding -> Int -> CPoint.CPoint -> Maybe Embedding
-  resolveAux' cp n e k cp' = case Next.nextP cp n of
-                               Nothing   -> resolveAux'' cp e'
-                               Just cp'' -> resolveAux cp'' n e' k
-        where
-          e' = updateEmbedding cp cp' e
-
-  -- resolveAux second auxiliary function. Update lastCPoint mapping.
-  resolveAux'' :: CPoint.CPoint -> Embedding -> Maybe Embedding
-  resolveAux'' cp e = Just e'
-    where
-      c  = CPoint.color cp
-      e' = updateLastCPoint c cp e
+  updateEmbedding :: CPoint.CPoint -> CPoint.CPoint -> Embedding -> Embedding
+  updateEmbedding cp cp' e = case Map.lookup cp e of
+                               Nothing -> Map.insert cp cp' e
+                               Just _  -> Map.update (\ _ -> Just cp') cp e
 
   ------------------------------------------------------------------------------
   --
@@ -226,6 +157,9 @@ where
                  Nothing -> IntMap.insert c cp m
                  Just _  -> m
 
+  qQueryLeftmost :: Color.Color -> State -> Maybe CPoint.CPoint
+  qQueryLeftmost c = queryAccess c . qLeftmost
+
   mkRightmost :: [CPoint.CPoint] -> Access
   mkRightmost cps = Access { getAccess = Foldable.foldr f IntMap.empty cps }
    where
@@ -239,6 +173,9 @@ where
       m' = case IntMap.lookup (CPoint.color cp) m of
              Nothing -> IntMap.insert c cp m
              Just _  -> m
+
+  pQueryRightmost :: Color.Color -> State -> Maybe CPoint.CPoint
+  pQueryRightmost c = queryAccess c . pRightmost
 
   ------------------------------------------------------------------------------
   --
@@ -327,32 +264,36 @@ where
     where
       c = CPoint.color cp
 
-  -- Find (if it exists) the rightmost colored point of permutation p with
-  -- color c
-  utmostLookup :: Color.Color -> State -> Maybe CPoint.CPoint
-  utmostLookup c = aux c . pUtmost
-    where
-      aux c First { getUtmost = m } = IntMap.lookup c m
-
   {-|
     Transform an embedding into a list of key/value pairs.
   -}
   embeddingToList :: State -> [(CPoint.CPoint, CPoint.CPoint)]
   embeddingToList = Embedding.embeddingToList . embedding
 
-  {-|
-    Update the embedding.
-  -}
-  updateEmbedding :: CPoint.CPoint -> CPoint.CPoint -> State -> State
-  updateEmbedding cp cp' s = s { embedding = e }
-    where
-      e = Embedding.update cp cp'
+  xResolve :: CPoint.CPoint -> Int -> State -> Maybe State
+  xResolve cp t s = imageEmbedding cp (embedding s) >>=
+                    xJumpThreshold t (qNext s)      >>=
+                    resolve cp s
 
-  -- Update the utmost mapping.
-  updateUtmost :: Color.Color -> CPoint.CPoint -> Embedding -> Embedding
-  updateUtmost c cp e = e { utmost=m' }
+  yResolve :: CPoint.CPoint -> Int -> State -> Maybe State
+  yResolve cp t s = imageEmbedding cp (embedding s) >>=
+                    xJumpThreshold t (qNext s)      >>=
+                    resolve cp s
+
+  resolve :: CPoint.CPoint -> State -> CPoint.CPoint -> Maybe State
+  resolve pCP s qCP = resolveAux (next pCP (pNext s)) (next qCP (qNext s)) s
     where
-      m  = getutmost e
-      m' = case IntMap.lookup c m of
-            Nothing -> IntMap.insert c cp m
-            Just _  -> IntMap.update (\_ -> Just cp) c m
+      e  = embedding s
+      e' = updateEmbedding pCP cpQ e
+      s' = s { embedding = e' }
+
+  resolveAux :: Maybe CPoint.CPoint -> Maybe CPoint.CPoint -> State -> Maybe State
+  resolveAux Nothing    _          s = Just s
+  resolveAux _          Nothing    s = Nothing
+  resolveAux (Just pCP) (Just qCP) s = imageEmbedding pCP (embedding s) >>=
+                                       resolveAux' pCP qCP s
+
+  resolveAux' :: CPoint.CPoint -> CPoint.CPoint -> State -> CPoint.CPoint -> Maybe State
+  resolveAux' pCP s qCP qCP'
+    | CPoint.xCoord qCP <= CPoint.xCoord qCP' = Just s
+    | otherwise                               = resolve pCP s' qCP
