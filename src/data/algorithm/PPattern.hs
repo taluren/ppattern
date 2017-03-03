@@ -29,27 +29,117 @@ where
   import qualified Data.Algorithm.PPattern.Strategy  as Strategy
   import qualified Data.Algorithm.PPattern.Next      as Next
   import qualified Data.Algorithm.PPattern.Embedding as Embedding
+  import qualified Data.Algorithm.PPattern.Strategy  as Strategy
 
-  embeddingCompletion ::[CPoint.CPoint] -> CPoint.CPoint -> [CPoint.CPoint] ->  Embedding.Embedding -> Next.Next -> Maybe Embedding.Embedding
-  embeddingCompletion cpPs cpP cpQs e n = 
 
-  -- Construct the leftmost embedding of a list of coloured points into another
-  -- list of coloured points.
-  leftmostEmbedding :: [CPoint.CPoint] -> [CPoint.CPoint] -> Maybe Embedding.Embedding
-  leftmostEmbedding cp1s cp2s = Embedding.fromList <$> leftmostEmbeddingAux cp1s cp2s
+  -- Make an initial list of colored points. Each element from the longest
+  -- decreasing subsequence is given a distinct colors. All other elements
+  -- are given the 'not determined yet' color 0.
+  mkCPoints :: [(Int, Int)] -> [Int] -> [Color.Color] -> [(Int, Int, Color.Color)]
+  mkCPoints []             _            _         = []
+  mkCPoints ((i, x) : ixs) []           refColors = (i, x, 0) : mkCPoints ixs [] refColors
+  mkCPoints ((_, _) : _)   _            []        = error "We shouldn't be there"
+  mkCPoints ((i, x) : ixs) ys'@(y : ys) refColors'@(c : refColors)
+    | x == y    = (i, x, c) : mkCPoints ixs ys  refColors
+    | otherwise = (i, x, 0) : mkCPoints ixs ys' refColors'
 
-  leftmostEmbeddingAux :: [CPoint.CPoint] -> [CPoint.CPoint] -> Maybe [(CPoint.CPoint, CPoint.CPoint)]
-  leftmostEmbeddingAux [] []  = Just []
-  leftmostEmbeddingAux [] _   = Just []
-  leftmostEmbeddingAux _  []  = Nothing
-  leftmostEmbeddingAux (cp1 : cp1s) (cp2 : cp2s)
-    | c1 == c2  = fmap ((cp1, cp2):) (leftmostEmbeddingAux cp1s cp2s)
-    | otherwise = leftmostEmbeddingAux (cp1:cp1s) cp2s
+  {-|
+    'increasingPartitions p k' returns all partitions of the permutation 'p' into
+    'k' increasing subsequences.
+  -}
+  increasingPartitions :: Perm -> Int -> [[CPoint.CPoint]]
+  increasingPartitions p k
+    | l > k     = []
+    | otherwise = Foldable.concat [increasingPartitionsAux cps cs prevMap nextMap
+                                  | refColors     <- [1..k] `Combi.choose` l
+                                  -- , permRefColors <- L.permutations refColors
+                                  , let cps     = mkCPoints indexed decreasing refColors
+                                  , let prevMap = IntMap.empty
+                                  , let nextMap = IntMap.fromList $ L.zip refColors decreasing]
     where
-      c1 = CPoint.color cp1
-      c2 = CPoint.color cp2
+      -- A longest decreasing subsequence of p.
+      decreasing = longestDecreasing p
 
-  -- 'mkPs p k' returns all 'k'-coloring of permutation 'p', where each coloring
+      -- The length oa longest decreasing subsequence of p.
+      l = L.length decreasing
+
+      -- The list of available colors.
+      cs = [1..k]
+
+      -- Index permutation p.
+      indexed = index p
+
+  increasingPartitionsAux :: [(Int, Int, Color.Color)] -> [Color.Color] -> IntMap.IntMap Int -> IntMap.IntMap Int -> [[CPoint.CPoint]]
+  increasingPartitionsAux []                 _  _       _       = [[]]
+  increasingPartitionsAux ((i, x, 0) : ixcs) cs prevMap nextMap = increasingPartitionsAux1  (i, x)    ixcs cs prevMap nextMap
+  increasingPartitionsAux ((i, x, c) : ixcs) cs prevMap nextMap = increasingPartitionsAux2 (i, x, c) ixcs cs prevMap nextMap
+
+  {-|
+    increasingPartitionsAux for color-0 points (those point that are not part of
+    the selected longest decreasing subsequence).
+  -}
+  increasingPartitionsAux1 :: (Int, Int)-> [(Int, Int, Color.Color)] -> [Color.Color] -> IntMap.IntMap Int -> IntMap.IntMap Int -> [[CPoint.CPoint]]
+  increasingPartitionsAux1 (i, x) ixcs cs prevMap nextMap = Foldable.concat cpsss
+    where
+      cpsss = [fmap (cp :) cpss | c <- cs
+                                , agreeWithPrevElement x c prevMap
+                                , agreeWithNextElement x c nextMap
+                                , let cp       = CPoint.mkCPoint i x c
+                                , let prevMap' = updatePrevMap x c prevMap
+                                , let nextMap' = updateNextMap x c nextMap
+                                , let cpss     = increasingPartitionsAux ixcs cs prevMap' nextMap']
+
+  {-|
+    increasingPartitionsAux for colored points (those point that are part of
+    the selected longest decreasing subsequence).
+  -}
+  increasingPartitionsAux2 :: (Int, Int, IntMap.Key) -> [(Int, Int, Color.Color)] -> [Color.Color] -> IntMap.IntMap Int -> IntMap.IntMap Int  -> [[CPoint.CPoint]]
+  increasingPartitionsAux2 (i, x, c) ixcs cs prevMap nextMap = fmap (cp :) cpss
+    where
+      -- Nex color point
+      cp  = CPoint.mkCPoint i x c
+
+      -- This color point in now a left constraint
+      prevMap' = updatePrevMap x c prevMap
+
+      -- This color point in now a left constraint
+      nextMap' = updateNextMap x c nextMap
+
+      -- recursively compute the remaining colored points
+      cpss = increasingPartitionsAux ixcs cs prevMap' nextMap'
+
+
+  agreeWithPrevElement :: Color.Color -> IntMap.Key -> IntMap.IntMap Int -> Bool
+  agreeWithPrevElement x c m = case IntMap.lookup c m of
+                                 Nothing -> True
+                                 Just x' -> x' < x
+
+  agreeWithNextElData.Algorithm.PPattern.Embedding as Embeddingement :: Color.Color -> IntMap.Key -> IntMap.IntMap Int -> Bool
+  agreeWithNextElement x c m = case IntMap.lookup c m of
+                                 Nothing -> True
+                                 Just x' -> x < x'
+
+  updatePrevMap :: Color.Color -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
+  updatePrevMap x c m = updatePrevMapAux x 1 c m
+
+  updatePrevMapAux :: Int -> IntMap.Key -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
+  updatePrevMapAux x c c' m
+    | c > c'    = m
+    | otherwise = updatePrevMapAux  x (c+1) c' m'
+      where
+        m' = case IntMap.lookup c m of
+               Nothing -> IntMap.insert c x m
+               Just _  -> IntMap.update (\y -> Just (max x y)) c m
+
+  updateNextMap :: Color.Color -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
+  updateNextMap x c m = case IntMap.lookup c m of
+                          Nothing       -> m
+                          Just x'
+                            | x < x'    -> m
+                            | x == x'   -> IntMap.delete c m
+                            | otherwise -> error "We shouldn't be there 2" -- make ghc -Werror happy
+
+-- 'mkPs p k' returns all 'k'-coloring of permutation 'p', where each coloring
   -- induces an increasing subsequence.
   mkPs :: Perm.Perm -> Int -> [[CPoint.CPoint]]
   mkPs = Perm.increasingPartitions
@@ -64,20 +154,19 @@ where
     The 'search' function takes two permutations 'p' and 'q', and it returns
     (if possible) an order-isomorphic occurrence of 'p' in 'q'.
   -}
-  search :: Perm.Perm -> Perm.Perm -> Strategy.Strategy -> Maybe Embedding.Embedding
-  search p q s
-    | Perm.size p > Perm.size q                                       = Nothing
-    | Perm.longestDecreasingLength p > Perm.longestDecreasingLength q = Nothing
-    | otherwise                                                       = searchAux cpPss cpQs nQ s
+  search :: Perm.Perm -> Perm.Perm -> Strategy.Strategy -> Maybe State.State
+  search p q strtgy
+    | m > n     = Nothing
+    | l > k     = Nothing
+    | otherwise = searchAux p s
     where
-      -- make target colored points list
-      cpQs = mkQ q
+      m = Perm.size p
+      n = Perm.size q
 
-      -- make all source colored points lists
-      cpPss = mkPs p (CPoint.nbColors cpQs)
+      l = Perm.longestDecreasingLength p
+      k = Perm.longestDecreasingLength q
 
-      -- make next function for permutation q
-      nQ = Next.mkQ' cpQs
+      s = mkState q strtgy
 
   -- Permutation pattern matching for all possible coloouring of the source
   -- permutation.

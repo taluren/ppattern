@@ -1,5 +1,5 @@
 {-|
-Module      : Data.Algorithm.PPattern.Next
+Module      : Data.Algorithm.PPattern.State
 Structription : Short Structription
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -16,8 +16,8 @@ module Data.Algorithm.PPattern.State
   State
 , empty
 
-  -- * The @Embedding@ type
-, Embedding
+  -- * Constructing
+, mkState
 
   -- * The @ColorCPointMap@ type
 , ColorCPointMap
@@ -50,19 +50,20 @@ where
   type Next = Map.Map CPoint.CPoint CPoint.CPoint
 
   -- The state of a search
-  data State = State { pCPoints    :: [CPoint.CPoint]
-                     , qCPoint     :: [CPoint.CPoint]
-                     , embedding   :: Embedding
-                     , pRightmost  :: Access
-                     , pRightmost' :: Maybe CPoint.CPoint
-                     , qLeftmost   :: Access
-                     , pNext       :: Next
-                     , qNext       :: Next
+  data State = State { pCPoints          :: [CPoint.CPoint]
+                     , qCPoint           :: [CPoint.CPoint]
+                     , embedding         :: Embedding
+                     , pRightmostByColor :: Access
+                     , qLeftmostByColor  :: Access
+                     , qRightmostByColor :: Access
+                     , qRightmost        :: Maybe CPoint.CPoint
+                     , pNext             :: Next
+                     , qNext             :: Next
                      } deriving (Eq)
 
   -- pretty print
   instance Show State where
-    show State { embedding = e } = show $ embeddingToList e
+    show State { embedding = e } = show e
 
   ------------------------------------------------------------------------------
   --
@@ -84,12 +85,6 @@ where
 
   lookupNext :: CPoint.CPoint -> Next -> Maybe CPoint.CPoint
   lookupNext = Map.lookup
-
-  next :: CPoint.CPoint -> Next -> Maybe CPoint.CPoint
-  next = lookupNext
-
-  next' :: Next -> CPoint.CPoint -> Maybe CPoint.CPoint
-  next' = flip next
 
   insertNext :: CPoint.CPoint -> CPoint.CPoint -> Next -> Next
   insertNext = Map.insert
@@ -131,13 +126,10 @@ where
   lookupEmbedding :: CPoint.CPoint -> Embedding -> Maybe CPoint.CPoint
   lookupEmbedding = Map.lookup
 
-  imageEmbedding :: CPoint.CPoint -> Embedding -> Maybe CPoint.CPoint
-  imageEmbedding = lookupEmbedding
-
   updateEmbedding :: CPoint.CPoint -> CPoint.CPoint -> Embedding -> Embedding
-  updateEmbedding cp cp' e = case Map.lookup cp e of
-                               Nothing -> Map.insert cp cp' e
-                               Just _  -> Map.update (\ _ -> Just cp') cp e
+  updateEmbedding cp cp' m = case Map.lookup cp m of
+                               Nothing -> Map.insert cp cp' m
+                               Just _  -> Map.update (\ _ -> Just cp') cp m
 
   ------------------------------------------------------------------------------
   --
@@ -158,8 +150,8 @@ where
                  Nothing -> IntMap.insert c cp m
                  Just _  -> m
 
-  qQueryLeftmostAccess :: Color.Color -> State -> Maybe CPoint.CPoint
-  qQueryLeftmostAccess c = queryAccess c . qLeftMost
+  qQueryLeftmostBycolor :: Color.Color -> State -> Maybe CPoint.CPoint
+  qQueryLeftmostBycolor c = queryAccess c . qLeftmostByColor
 
   mkRightmostAccess :: [CPoint.CPoint] -> Access
   mkRightmostAccess = Foldable.foldr f IntMap.empty
@@ -168,8 +160,8 @@ where
                 Nothing -> IntMap.insert c cp m
                 Just _  -> m
 
-  updateRightmostAccess :: CPoint.CPoint -> Access -> Access
-  updateRightmostAccess cp m = m'
+  updateRightmostByColor :: CPoint.CPoint -> Access -> Access
+  updateRightmostByColor cp m = m'
     where
       m  =
       m' = case IntMap.lookup (CPoint.color cp) m of
@@ -189,15 +181,16 @@ where
     Make a new state. Permutation q is required.
   -}
   mkState :: Perm.Perm -> State
-  mkState q = State { pCPoints    = []
-                    , qCPoint     = cps
-                    , embedding   = emptyEmbedding
-                    , pRightMost  = emptyAccess
-                    , pRightMost' = Nothing
-                    , qLeftMost   = mkLeftmostAccess qcps
-                    , pNext       = emptyNext
-                    , qNext       = n
-                    }
+  mkState q strtgy = State { pCPoints    = []
+                           , qCPoint     = cps
+                           , embedding   = emptyEmbedding
+                           , pRightMost  = emptyAccess
+                           , pRightMost' = Nothing
+                           , qLeftMost   = mkLeftmostAccess qcps
+                           , pNext       = emptyNext
+                           , qNext       = n
+                           , strategy    = strtgy
+                           }
     where
       qcps = mkQ q
       n    = mkNext qcps
@@ -276,45 +269,52 @@ where
                , pNext             = pNext'
                }
 
-  -- Find the leftmost colored point of permutation q that is compatible
-  -- to both cp and the current embedding.
-  qFindLeftMost :: CPoint.CPoint -> State -> Maybe CPoint.CPoint
-  qFindLeftMost cp s = case utmostLookup c s of
-                               Nothing  -> firstLookup c s
-                               Just cp' -> nextQ (image cp' s) s
-    where
-      c = CPoint.color cp
-
-  {-|
-    Transform an embedding into a list of key/value pairs.
-  -}
-  embeddingToList :: State -> [(CPoint.CPoint, CPoint.CPoint)]
-  embeddingToList = Embedding.embeddingToList . embedding
-
   xResolve :: CPoint.CPoint -> Int -> State -> Maybe State
-  xResolve cp t s = imageEmbedding cp (embedding s) >>=
-                    xJumpThreshold t (qNext s)      >>=
-                    resolve cp s
+  xResolve pcp t s = lookupEmbedding pcp (embedding s) >>=
+                     xJumpThreshold t (qNext s)        >>=
+                     resolve pcp s
 
   yResolve :: CPoint.CPoint -> Int -> State -> Maybe State
-  yResolve cp t s = imageEmbedding cp (embedding s) >>=
-                    xJumpThreshold t (qNext s)      >>=
-                    resolve cp s
+  yResolve pcp t s = lookupEmbedding pcp (embedding s) >>=
+                     yJumpThreshold t (qNext s)       >>=
+                     resolve pcp s
 
   resolve :: CPoint.CPoint -> State -> CPoint.CPoint -> Maybe State
-  resolve pCP s qCP = resolveAux (next pCP (pNext s)) (next qCP (qNext s)) s
+  resolve pcp s qcp = resolveAux (next pcp (pNext s)) (next qcp (qNext s)) s
     where
-      e  = embedding s
-      e' = updateEmbedding pCP cpQ e
-      s' = s { embedding = e' }
+      embedding' = updateEmbedding pcp qcp (embedding s)
+
+      qRightMost' = case qRightmost s of
+                      Nothing   -> Just qcp
+                      Just qcp' -> if CPoint.xCoord qcp > CPoint.xCoord qcp'
+                                   then Just qcp
+                                   else Just qcp'
+
+      qRightmostByColor' = case lookupNext (CPoint.color qcp) (qRightmostByColor s) of
+                             Nothing   -> updateNext (CPoint.color qcp) qcp (qRightmostByColor s)
+                             Just qcp' -> if CPoint.xCoord qcp > CPoint.xCoord qcp'
+                                          then updateNext (CPoint.color qcp) qcp (qRightmostByColor s)
+                                          else qRightmostByColor s
+
+      s' = s { embedding          = embedding'
+             , qRightmost         = qRightmost'
+             , qRightmostByColor' = qRightmostByColor'
+             }
 
   resolveAux :: Maybe CPoint.CPoint -> Maybe CPoint.CPoint -> State -> Maybe State
   resolveAux Nothing    _          s = Just s
   resolveAux _          Nothing    s = Nothing
-  resolveAux (Just pCP) (Just qCP) s = imageEmbedding pCP (embedding s) >>=
-                                       resolveAux' pCP qCP s
+  resolveAux (Just pcp) (Just qcp) s = imageEmbedding pcp (embedding s) >>=
+                                       resolveAux' pcp qcp s
 
   resolveAux' :: CPoint.CPoint -> CPoint.CPoint -> State -> CPoint.CPoint -> Maybe State
-  resolveAux' pCP s qCP qCP'
-    | CPoint.xCoord qCP <= CPoint.xCoord qCP' = Just s
-    | otherwise                               = resolve pCP s' qCP
+  resolveAux' pcp qcp s qcp'
+    | CPoint.xCoord qcp <= CPoint.xCoord qcp' = Just s'
+    | otherwise                               = resolve pcp s qcp
+    where
+      qRightmostByColor' = a
+      qRightmost' = b
+
+      s' = s { qRightmostByColor = qRightmostByColor'
+             , qRightmost = qRightmost'
+             }
