@@ -50,18 +50,19 @@ where
   type Next = Map.Map CPoint.CPoint CPoint.CPoint
 
   -- The state of a search
-  data State = State { pCPoints   :: [CPoint.CPoint]
-                     , qCPoint    :: [CPoint.CPoint]
-                     , embedding  :: Embedding
-                     , pRightmost :: Access
-                     , qLeftmost  :: Access
-                     , pNext      :: Next
-                     , qNext      :: Next
+  data State = State { pCPoints    :: [CPoint.CPoint]
+                     , qCPoint     :: [CPoint.CPoint]
+                     , embedding   :: Embedding
+                     , pRightmost  :: Access
+                     , pRightmost' :: Maybe CPoint.CPoint
+                     , qLeftmost   :: Access
+                     , pNext       :: Next
+                     , qNext       :: Next
                      } deriving (Eq)
 
   -- pretty print
   instance Show State where
-    show State { embedding = e } = show e
+    show State { embedding = e } = show $ embeddingToList e
 
   ------------------------------------------------------------------------------
   --
@@ -99,12 +100,12 @@ where
                           Just _  -> Map.update (\_ -> Just cp') cp m
 
   jumpThreshold :: (CPoint.CPoint -> Int) -> Int -> Next -> CPoint.CPoint -> Maybe CPoint.CPoint
-  jumpThreshold coord t n cp = aux (next cp n)
+  jumpThreshold coordFun t n cp = aux (next cp n)
     where
       aux Nothing = Nothing
       aux (Just cp')
-        | coord c > t = Just cp'
-        | otherwise   = aux (next cp' n)
+        | coordFun cp' > t = Just cp'
+        | otherwise        = aux (next cp' n)
 
   xJumpThreshold :: Int -> Next -> CPoint.CPoint -> Maybe CPoint.CPoint
   xJumpThreshold = jumpThreshold CPoint.xCoord
@@ -128,7 +129,7 @@ where
   insertEmbedding = Map.insert
 
   lookupEmbedding :: CPoint.CPoint -> Embedding -> Maybe CPoint.CPoint
-  lookupNext = Map.lookup
+  lookupEmbedding = Map.lookup
 
   imageEmbedding :: CPoint.CPoint -> Embedding -> Maybe CPoint.CPoint
   imageEmbedding = lookupEmbedding
@@ -145,37 +146,38 @@ where
   ------------------------------------------------------------------------------
 
   emptyAccess :: Access
-  emptyAccess = Access { getAccess = IntMap.empty }
+  emptyAccess = IntMap.empty
 
   queryAccess :: Color.Color -> Access -> Maybe CPoint.CPoint
-  queryAccess c Access { getAccess = m } = IntMap.lookup c m
+  queryAccess = IntMap.lookup
 
-  mkLeftmost :: [CPoint.CPoint] -> Access
-  mkLeftmost cps = Access { getAccess = Foldable.foldl f IntMap.empty cps }
+  mkLeftmostAccess :: [CPoint.CPoint] -> Access
+  mkLeftmostAccess = Foldable.foldl f IntMap.empty
     where
       f m cp = case IntMap.lookup (CPoint.color cp) m of
                  Nothing -> IntMap.insert c cp m
                  Just _  -> m
 
-  qQueryLeftmost :: Color.Color -> State -> Maybe CPoint.CPoint
-  qQueryLeftmost c = queryAccess c . qLeftmost
+  qQueryLeftmostAccess :: Color.Color -> State -> Maybe CPoint.CPoint
+  qQueryLeftmostAccess c = queryAccess c . qLeftMost
 
-  mkRightmost :: [CPoint.CPoint] -> Access
-  mkRightmost cps = Access { getAccess = Foldable.foldr f IntMap.empty cps }
+  mkRightmostAccess :: [CPoint.CPoint] -> Access
+  mkRightmostAccess = Foldable.foldr f IntMap.empty
    where
      f cp m = case IntMap.lookup (CPoint.color cp) m of
                 Nothing -> IntMap.insert c cp m
                 Just _  -> m
 
-  updateRightmost :: CPoint.CPoint -> Access -> Access
-  updateRightmost cp Access { getAccess = m } = Access { getAccess = m' }
+  updateRightmostAccess :: CPoint.CPoint -> Access -> Access
+  updateRightmostAccess cp m = m'
     where
+      m  =
       m' = case IntMap.lookup (CPoint.color cp) m of
              Nothing -> IntMap.insert c cp m
              Just _  -> m
 
-  pQueryRightmost :: Color.Color -> State -> Maybe CPoint.CPoint
-  pQueryRightmost c = queryAccess c . pRightmost
+  pQueryRightmostAccess :: Color.Color -> State -> Maybe CPoint.CPoint
+  pQueryRightmostAccess c = queryAccess c . pRightmost
 
   ------------------------------------------------------------------------------
   --
@@ -187,17 +189,18 @@ where
     Make a new state. Permutation q is required.
   -}
   mkState :: Perm.Perm -> State
-  mkState q = State { pCPoints   = []
-                    , qCPoint    = cps
-                    , embedding  = emptyEmbedding
-                    , utmost     = IntMap.empty
-                    , lastCPoint = Nothing
-                    , pNext      = emptyNext
-                    , qNext      = n
+  mkState q = State { pCPoints    = []
+                    , qCPoint     = cps
+                    , embedding   = emptyEmbedding
+                    , pRightMost  = emptyAccess
+                    , pRightMost' = Nothing
+                    , qLeftMost   = mkLeftmostAccess qcps
+                    , pNext       = emptyNext
+                    , qNext       = n
                     }
     where
-      cps = mkQ q
-      n   = mkNext cps
+      qcps = mkQ q
+      n    = mkNext qcps
 
   -- construct the colored points list associated to permutation q using
   -- a greedy coloring procedure.
@@ -206,16 +209,11 @@ where
 
   -- mkQ auxiliary function.
   mkQAux :: [CPoint.CPoint] -> [(Int, Int)] -> IntMap.IntMap Int -> [CPoint.CPoint]
-  mkQAux acc [] _             = L.reverse acc
+  mkQAux acc []             _ = L.reverse acc
   mkQAux acc ((x, y) : xys) m = mkQAux (cp : acc) xys m'
     where
-      -- Find the smallest color that point (x, y) can accept
       c  = findSmallestColor y m
-
-      -- Update the map accordingly
       m' = updateMap c y m
-
-      -- Construct the associated colored point
       cp = CPoint.mkCPoint x y c
 
   -- Auxialiary function for mkQAux.
@@ -238,27 +236,50 @@ where
     Add a new colored point to the list of colored points associated
     to permutation p.
   -}
-  appendCPoint :: CPoint.CPoint -> State -> Maybe State
-  appendCPoint cp s = findLeftMostQCPoint cp s >>= appendCPointAux cp s
+  pAppend :: CPoint.CPoint -> State -> Maybe State
+  pAppend pcp s = case lookupNext (CPoint.color pcp) (pRightmostByColor s) of
+                    Nothing   -> pAppendAux1 pcp  pcp s
+                    Just pcp' -> pAppendAux1 pcp' pcp s
 
-  appendCPointAux :: CPoint.CPoint -> State -> CPoint.CPoint -> Maybe State
-  appendCPointAux cp s cp' =  s { pCPoints  = pCPoints s `Mondoid.mappend` [cp]
-                                , embedding = updateEmbedding cp cp' (embedding s)
-                                , utmost    = updateUtmost cp
-                                , lastCPoint = image
-                                , pNext     = Next.updateP cp cp' (nextP s)
-                                }
+  pAppendAux1 :: CPoint.CPoint -> CPoint.CPoint -> State -> Maybe State
+  pAppendAux1 pcp pcp' s = case lookupEmbedding pcp s of
+                             Nothing  -> lookupAccess (CPoint.color pcp) (qNext s) >>=
+                                         pAppendAux2 pcp pcp'
+                             Just qcp -> lookupNext (CPoint.color pcp) (qLeftmostByColor s) >>=
+                                         pAppendAux2 pcp pcp'
+
+  pAppendAux2 :: CPoint.CPoint -> CPoint.CPoint -> CPoint.CPoint -> State -> Maybe State
+  pAppendAux2 pcp pcp' qcp s = case qRightmost s of
+                                 Nothing   -> pAppendAux3 pcp pcp' qcp qcp
+                                 Just qcp' -> pAppendAux3 pcp pcp' qcp' qcp
+
+  pAppendAux3 :: CPoint.CPoint -> CPoint.CPoint -> CPoint.CPoint -> CPoint.CPoint -> State -> Maybe State
+  pAppendAux3 pcp pcp' qcp qcp' s
+    | x' < x    = lookupNext qcp' (qNext s) >>= pAppendAux3 pcp pcp' qcp
+    | otherwise = pAppendFinalize pcp pcp' qcp qcp'
     where
-      cps  = pCPoints s `Mondoid.mappend` [cp]
-      e    = updateEmbedding cp cp' (embedding s)
-      u    = updateUtmost cp (utmost s)
-      cp'' = image cp e
-      n    = updateNext cp cp' (nextP s)
+      x  = CPoint.xCoord qcp
+      x' = CPoint.xCoord qcp'
+
+  pAppendFinalize :: CPoint.CPoint -> CPoint.CPoint -> CPoint.CPoint -> CPoint.CPoint -> State -> Maybe State
+  pAppendFinalize pcp pcp' qcp qcp' s = Just s'
+    where
+      pCPoints'          = pCPoints s `Mondoid.mappend` [pcp']
+      embedding'         = updateEmbedding pcp' qcp' (embedding s)
+      pRightMostByColor' = updateAccess (CPoint.color pcp) pcp' (pRightMostByColor s)
+      qRightmost         = qcp
+
+      s'   = s { pCPoints          = pCPoints'
+               , embedding         = embedding'
+               , pRightMostByColor = pRightMostByColor'
+               , qRightmost        = qRightmost'
+               , pNext             = pNext'
+               }
 
   -- Find the leftmost colored point of permutation q that is compatible
   -- to both cp and the current embedding.
-  findLeftMostQCPoint :: CPoint.CPoint -> State -> Maybe CPoint.CPoint
-  findLeftMostQCPoint cp s = case utmostLookup c s of
+  qFindLeftMost :: CPoint.CPoint -> State -> Maybe CPoint.CPoint
+  qFindLeftMost cp s = case utmostLookup c s of
                                Nothing  -> firstLookup c s
                                Just cp' -> nextQ (image cp' s) s
     where

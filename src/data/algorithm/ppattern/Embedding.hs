@@ -43,7 +43,7 @@ where
   import qualified Data.Algorithm.PPattern.Color  as Color
   import qualified Data.Algorithm.PPattern.Next   as Next
 
-  data Embedding =  Embedding { getMap :: Map.Map CPoint.CPoint CPoint.CPoint } deriving (Eq)
+  data Embedding =  Embedding { map :: Map.Map CPoint.CPoint CPoint.CPoint } deriving (Eq)
 
   instance Show Embedding where
     show Embedding { getMap = m } = L.intercalate "\n" strList
