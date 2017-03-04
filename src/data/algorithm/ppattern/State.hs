@@ -19,8 +19,11 @@ module Data.Algorithm.PPattern.State
   -- * Constructing
 , mkState
 
-  -- * The @ColorCPointMap@ type
-, ColorCPointMap
+ -- * Querying
+, qColors
+
+  -- * The @Embeddingp@ type
+, Embedding
 
   -- * The @Next@ type
 , Next
@@ -28,6 +31,7 @@ module Data.Algorithm.PPattern.State
 where
 
   import qualified Data.List          as L
+  import qualified Data.Set           as Set
   import qualified Data.Tuple         as T
   import qualified Data.Function      as Fun
   import qualified Data.Map.Strict    as Map
@@ -181,16 +185,15 @@ where
     Make a new state. Permutation q is required.
   -}
   mkState :: Perm.Perm -> State
-  mkState q strtgy = State { pCPoints    = []
-                           , qCPoint     = cps
-                           , embedding   = emptyEmbedding
-                           , pRightMost  = emptyAccess
-                           , pRightMost' = Nothing
-                           , qLeftMost   = mkLeftmostAccess qcps
-                           , pNext       = emptyNext
-                           , qNext       = n
-                           , strategy    = strtgy
-                           }
+  mkState q  = State { pCPoints    = []
+                     , qCPoint     = cps
+                     , embedding   = emptyEmbedding
+                     , pRightMost  = emptyAccess
+                     , pRightMost' = Nothing
+                     , qLeftMost   = mkLeftmostAccess qcps
+                     , pNext       = emptyNext
+                     , qNext       = n
+                     }
     where
       qcps = mkQ q
       n    = mkNext qcps
@@ -224,6 +227,12 @@ where
   updateMap c y m = case IntMap.lookup c m of
                       Nothing -> IntMap.insert c y m
                       Just _  -> IntMap.update (\_ -> Just y) c m
+
+  {-|
+    The colors in permutation q.
+  -}
+  qColors :: State.State -> [Color.Color]
+  qColors State { qCPoint = qcps } = Set.toList . Set.fromList . fmap Cpoint.color qcps
 
   {-|
     Add a new colored point to the list of colored points associated
