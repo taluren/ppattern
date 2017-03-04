@@ -31,16 +31,18 @@ where
 
   -- Show class
   instance Show CPoint where
-    show CPoint {xCoord=x, yCoord=y, color=c } = "("    `Monoid.mappend`
-                                                 "x="   `Monoid.mappend`
-                                                 show x `Monoid.mappend`
-                                                 ","    `Monoid.mappend`
-                                                 "y="   `Monoid.mappend`
-                                                 show y `Monoid.mappend`
-                                                 ","    `Monoid.mappend`
-                                                 "c="   `Monoid.mappend`
-                                                 show c `Monoid.mappend`
-                                                 ")"
+    show CPoint {xCoord=x, yCoord=y, color=c } =
+      "("    `Monoid.mappend`
+      "x="   `Monoid.mappend`
+      show x `Monoid.mappend`
+      ","    `Monoid.mappend`
+      "y="   `Monoid.mappend`
+      show y `Monoid.mappend`
+      ","    `Monoid.mappend`
+      "c="   `Monoid.mappend`
+      show c `Monoid.mappend`
+      ")"
+      
   -- Ord clas
   instance Ord CPoint where
     compare cp1 cp2 = compare (xCoord cp1) (xCoord cp2)

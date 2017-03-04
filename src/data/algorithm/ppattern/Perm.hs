@@ -33,14 +33,7 @@ Perm(..)
 
   ---
 , diff
-
-  -- * Enumerating subsequences
--- , increasingsL
-
-  -- * Partitioning
-, mkIncreasings
-, increasingPartition
-, increasingPartitions
+, index
 
   -- * LCS
 , longestIncreasing
@@ -53,11 +46,6 @@ Perm(..)
 , randPerm'
 , randKIncreasing
 , randKIncreasings
-
--- , splits
--- , canonical
--- , standard
--- , isClassRepresentative
 )
 where
 
@@ -65,17 +53,12 @@ where
   import qualified Data.List          as L
   import qualified Data.Foldable      as Foldable
   import qualified Data.Function      as Fun
-  import qualified Data.IntMap.Strict as IntMap
-  -- import qualified Data.List.Split    as Split
   import qualified System.Random
 
   import qualified Data.Algorithm.Patience as Patience
 
   import qualified Data.Algorithm.PPattern.IntPartition as IntPartition
   import qualified Data.Algorithm.PPattern.Random       as Random
-  import qualified Data.Algorithm.PPattern.CPoint       as CPoint
-  import qualified Data.Algorithm.PPattern.Color        as Color
-  import qualified Data.Algorithm.PPattern.Combi        as Combi
 
   {-| The 'Perm' type encapsulates an optional value.
       A permutation is a list of 'Int'.
@@ -180,8 +163,6 @@ where
   diff :: Perm -> Perm -> Perm
   diff (Perm xs) (Perm ys) = fromListUnsafe (xs L.\\ ys)
 
-
-
   {-|
     'longestIncreasing xs' returns a longest increasing subsequences in 'xs'.
   -}
@@ -202,7 +183,7 @@ where
     'longestDecreasing xs' returns a longest decreasing subsequences in 'xs'.
   -}
   longestDecreasing :: Perm -> [Int]
-  longestDecreasing p = fmap T.fst $ Patience.longestIncreasing xs
+  longestDecreasing p = T.fst <$> Patience.longestIncreasing xs
     where
       ints = [1..] :: [Int]
       xs   = flip L.zip ints . L.reverse $ toIntList p
