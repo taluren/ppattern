@@ -93,13 +93,14 @@ where
       aux vConflict ((link1, link2) : plinks)
         | orderConflict link1 link2 = Just $ reportOrderConflict link1 link2
         | orderConflict link2 link1 = Just $ reportOrderConflict link2 link1
-        | valueConflict link1 link2 = case vConflict of
-                                        Nothing -> aux (Just $ reportValueConflict link1 link2) plinks
-                                        _       -> aux vConflict plinks
-
-        | valueConflict link2 link1 = case vConflict of
-                                        Nothing -> aux (Just $ reportValueConflict link2 link1) plinks
-                                        _       -> aux vConflict plinks
+        | valueConflict link1 link2 =
+            case vConflict of
+              Nothing -> aux (Just $ reportValueConflict link1 link2) plinks
+              _       -> aux vConflict plinks
+        | valueConflict link2 link1 =
+            case vConflict of
+              Nothing -> aux (Just $ reportValueConflict link2 link1) plinks
+              _       -> aux vConflict plinks
         | otherwise                 = aux plinks
 
   {-|
@@ -112,12 +113,14 @@ where
       aux Nothing   []              = Nothing
       aux oConflict []              = oConflict
       aux oConflict ((link1, link2) : plinks)
-        | orderConflict link1 link2 = case oConflict of
-                                        Nothing -> aux (Just $ reportOrderConflict link1 link2) plinks
-                                        _       -> aux oConflict plinks
-        | orderConflict link2 link1 = case vConflict of
-                                        Nothing -> aux (Just $ reportOrderConflict link2 link1) plinks
-                                        _       -> aux oConflict plinks
+        | orderConflict link1 link2 =
+          case oConflict of
+            Nothing -> aux (Just $ reportOrderConflict link1 link2) plinks
+            _       -> aux oConflict plinks
+        | orderConflict link2 link1 =
+          case vConflict of
+            Nothing -> aux (Just $ reportOrderConflict link2 link1) plinks
+            _       -> aux oConflict plinks
         | valueConflict link1 link2 = Just $ reportValueConflict link1 link2
         | valueConflict link2 link1 = Just $ reportValueConflict link2 link1
 

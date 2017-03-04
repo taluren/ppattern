@@ -16,15 +16,14 @@ module Data.Algorithm.PPattern
 )
 where
 
-  -- import qualified Data.List          as L
   import qualified Data.Foldable as Foldable
-  -- import qualified Data.IntMap.Strict as IntMap
 
   import qualified Data.Algorithm.PPattern.Perm      as Perm
-  -- import qualified Data.Algorithm.PPattern.Color     as Color
   import qualified Data.Algorithm.PPattern.CPoint    as CPoint
   import qualified Data.Algorithm.PPattern.Strategy  as Strategy
   import qualified Data.Algorithm.PPattern.State     as State
+
+  type Context = (IntMap.IntMap Int, IntMap.IntMap Int)
 
   -- Make an initial list of colored points. Each element from the longest
   -- decreasing subsequence is given a distinct colors. All other elements
@@ -60,7 +59,7 @@ where
       -- make initial state
       s = State.mkState q
 
-      res = Foldable.asum [doSearch cps [1..k] prevMap nextMap s
+      res = Foldable.asum [doSearch cps [1..k] (prevMap, nextMap) s
                           | refColors   <- [1..k] `Combi.choose` l
                           , let pcps    = mkCPoints pIndexed decreasing refColors
                           , let prevMap = IntMap.empty
@@ -68,26 +67,24 @@ where
 
   doSearch :: [CPoint.CPoint]   ->
               [Color.Color]     ->
-              IntMap.IntMap Int ->
-              IntMap.IntMap Int ->
+              Context           ->
               Strategy.Strategy ->
               State.State       ->
               Maybe State.State
-  doSearch []           _  _       _       _        _  = Nothing
-  doSearch (pcp : pcps) cs prevMap nextMap strategy s
-    | CPoint.color pcp == 0 = doSearchAux1 pcp pcps cs prevMap nextMap strategy s
-    | otherwise             = doSearchAux2 pcp pcps cs prevMap nextMap strategy s
+  doSearch []           _  _                  _        _  = Nothing
+  doSearch (pcp : pcps) cs (prevMap, nextMap) strategy s
+    | CPoint.color pcp == 0 = doSearchAux1 pcp pcps cs (prevMap, nextMap) strategy s
+    | otherwise             = doSearchAux2 pcp pcps cs (prevMap, nextMap) strategy s
 
   -- pcp is a 0-color point.
   doSearchAux1 :: CPoint.CPoint     ->
                   [CPoint.CPoint]   ->
                   [Color.Color]     ->
-                  IntMap.IntMap Int ->
-                  IntMap.IntMap Int ->
+                  Context           ->
                   Strategy.Strategy ->
                   State.State       ->
                   Maybe State.State
-  doSearchAux1 pcp pcps cs prevMap nextMap s =
+  doSearchAux1 pcp pcps cs (prevMap, nextMap) s =
       Foldable.asum [go strategy s' >>= doSearch pcps prevMap' nextMap' strategy
                     | c <- cs
                     , let x = CPoint.xCoord pcp
@@ -104,13 +101,12 @@ where
   doSearchAux2 :: CPoint.CPoint     ->
                   [CPoint.CPoint]   ->
                   [Color.Color]     ->
-                  IntMap.IntMap Int ->
-                  IntMap.IntMap Int ->
+                  Context           ->
                   Strategy.Strategy ->
                   State.State       ->
                   Maybe State.State
-  doSearchAux2 pcp pcps cs prevMap nextMap strategy s =
-    go strategy s' >>= doSearch pcps prevMap' nextMap' strategy
+  doSearchAux2 pcp pcps cs (prevMap, nextMap) strategy s =
+    go strategy s' >>= doSearch pcps (prevMap', nextMap') strategy
     where
       prevMap' = updatePrevMap y c prevMap
       nextMap' = updateNextMap y c nextMap

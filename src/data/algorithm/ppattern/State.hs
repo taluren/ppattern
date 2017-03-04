@@ -1,7 +1,7 @@
 {-|
 Module      : Data.Algorithm.PPattern.State
-Structription : Short Structription
-Copyright   : (c) Stéphane Vialette, 2016
+Structription : Search state
+Copyright   : (c) Stéphane Vialette, 2016-2017
 License     : MIT
 Maintainer  : vialette@gmail.com
 Stability   : experimental
@@ -58,13 +58,13 @@ where
   data State =
     State { pCPoints                :: [CPoint.CPoint]
           , qCPoints                :: [CPoint.CPoint]
-          , embedding               :: Embedding
-          , pRightmostMappedByColor :: Access
-          , qLeftmostByColor        :: Access
-          , qRightmostMappedByColor :: Access
+          , embedding               :: !Embedding
+          , pRightmostMappedByColor :: !Access
+          , qLeftmostByColor        :: !Access
+          , qRightmostMappedByColor :: !Access
           , qRightmost              :: Maybe CPoint.CPoint
-          , pNext                   :: Next
-          , qNext                   :: Next
+          , pNext                   :: !Next
+          , qNext                   :: !Next
           } deriving (Eq)
 
   -- Show class

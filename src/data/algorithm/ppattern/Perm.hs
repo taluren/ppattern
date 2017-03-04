@@ -127,11 +127,13 @@ where
     Perm [3,5,1,4,2]
   -}
   reduce :: Perm -> Perm
-  reduce = fromListUnsafe . extract . sortByIdx . L.zip ([1..] :: [Int]) . sortByVal . L.zip ([1..] :: [Int]) . toList
+  reduce = fromListUnsafe . extract . dIndex . toList
     where
-      sortByVal  = L.sortBy (compare `Fun.on` T.snd)
-      sortByIdx  = L.sortBy (compare `Fun.on` (T.fst . T.snd))
-      extract    = fmap T.fst
+      sortByVal = L.sortBy (compare `Fun.on` T.snd)
+      sortByIdx = L.sortBy (compare `Fun.on` (T.fst . T.snd))
+      xs        = [1..] :: [Int]
+      dIndex    = sortByIdx . L.zip xs . sortByVal . L.zip xs
+      extract   = fmap T.fst
 
   {-|
     'mkIncreasing n' contructs the increasing permutation 1 2 ... n.
@@ -220,7 +222,8 @@ where
     where
       n = Foldable.sum ls
 
-  mkIncreasingsAux :: System.Random.RandomGen g => [[Int]] -> [Int] -> [Int] -> g -> ([[Int]], g)
+  mkIncreasingsAux :: System.Random.RandomGen g =>
+    [[Int]] -> [Int] -> [Int] -> g -> ([[Int]], g)
   mkIncreasingsAux acc _  []       g = (acc, g)
   mkIncreasingsAux acc xs (l : ls) g = mkIncreasingsAux (ys : acc) (xs L.\\ ys) ls g'
     where
@@ -231,7 +234,8 @@ where
   --   It returns a random permutation of length 'n' that is the union of 'k'
   --   increasings sequences, together with a new generatoRandom.
   -- -}
-  randKIncreasing :: System.Random.RandomGen g => Int -> Int -> g -> (Perm, g)
+  randKIncreasing :: System.Random.RandomGen g =>
+    Int -> Int -> g -> (Perm, g)
   randKIncreasing n k g
     | k > n     = (mkEmpty, g)
     | otherwise = (p, g''')
@@ -252,7 +256,8 @@ where
     It returns 'm' random permutations of length 'n' (each Perm is the
     union of 'k' increasings sequences), together with a new generatoRandom.
   -}
-  randKIncreasings :: (System.Random.RandomGen g) => Int -> Int -> Int -> g -> ([Perm], g)
+  randKIncreasings :: (System.Random.RandomGen g) =>
+    Int -> Int -> Int -> g -> ([Perm], g)
   randKIncreasings n k = aux []
     where
       aux acc 0 g = (acc, g)
