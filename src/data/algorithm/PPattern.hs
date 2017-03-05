@@ -24,28 +24,21 @@ where
   import qualified Data.Algorithm.PPattern.State     as State
   import qualified Data.Algorithm.PPattern.Conflict  as Conflict
   import qualified Data.Algorithm.PPattern.Combi     as Combi
-
-  -- Context type for constructing increasing colorings of permutation p.
-  data Context = Context { precede :: IntMap.IntMap Int
-                         , follow  :: IntMap.IntMap Int
-                         } deriving (Eq, Show)
-
-  mkContext :: IntMap.IntMap Int -> IntMap.IntMap Int -> Context
-  mkContext m m' = Context { precede = m, follow = m' }
+  import qualified Data.Algorithm.PPattern.Context   as Context
 
   -- Make an initial list of colored points. Each element from the longest
   -- decreasing subsequence is given a distinct colors. All other elements
   -- are given the 'not determined yet' color 0.
   mkCPoints :: [(Int, Int)] -> [Int] -> [Color.Color] -> [CPoint.CPoint]
   mkCPoints []             _  _         = []
-  mkCPoints ((i, x) : ixs) [] refColors = cp : mkCPoints ixs [] refColors
+  mkCPoints ((i, y) : iys) [] refColors = cp : mkCPoints iys [] refColors
     where
-      cp = CPoint.mkCPoint i x 0
-  mkCPoints ((_, _) : _)   _            []        =
+      cp = CPoint.mkCPoint i y 0
+  mkCPoints ((_, _) : _)   _  []        =
     error "mkCPoints. We shouldn't be there" -- make ghc -Werror happy
-  mkCPoints ((i, x) : ixs) ys'@(y : ys) refColors'@(c : refColors)
-    | x == y    = CPoint.mkCPoint i x c : mkCPoints ixs ys  refColors
-    | otherwise = CPoint.mkCPoint i x 0 : mkCPoints ixs ys' refColors'
+  mkCPoints ((i, y) : iys) ds'@(d : ds) refColors'@(c : refColors)
+    | y == d    = CPoint.mkCPoint i y c : mkCPoints iys ds  refColors
+    | otherwise = CPoint.mkCPoint i y 0 : mkCPoints iys ds' refColors'
 
   {-|
     The 'search' function takes two permutations 'p' and 'q', and it returns
@@ -78,13 +71,13 @@ where
       res = Foldable.asum [doSearch pcps cs context strategy s
                             | refColors   <- cs `Combi.choose` l
                             , let pcps    = mkCPoints pIndexed decreasing refColors
-                            , let precedeMap = IntMap.empty
-                            , let followMap = IntMap.fromList $ L.zip refColors decreasing
-                            , let context = mkContext precedeMap followMap
+                            , let precede = IntMap.empty
+                            , let follow  = IntMap.fromList $ L.zip refColors decreasing
+                            , let context = Context.mk precede follow
                           ]
 
   doSearch ::
-    [CPoint.CPoint] -> [Color.Color] -> Context -> Strategy.Strategy -> State.State ->
+    [CPoint.CPoint] -> [Color.Color] -> Context.Context -> Strategy.Strategy -> State.State ->
       Maybe State.State
   doSearch []             _  _       _        s  = Just s
   doSearch pcps@(pcp : _) cs context strategy s
@@ -93,7 +86,7 @@ where
 
   -- pcp is a 0-color point.
   doSearchAux1 ::
-    [CPoint.CPoint] -> [Color.Color] -> Context -> Strategy.Strategy -> State.State ->
+    [CPoint.CPoint] -> [Color.Color] -> Context.Context -> Strategy.Strategy -> State.State ->
       Maybe State.State
   doSearchAux1 []           _  _       _        _ =
     error "doSearchAux1. We shouldn't be there" -- make ghc -Werror happy
@@ -101,14 +94,9 @@ where
     Foldable.asum [State.pAppend (CPoint.mkCPoint x y c) s >>= -- append new point
                    go strategy                             >>= -- resolve for match
                    doSearch pcps cs context' strategy
-                    | c <- cs
-                    , let precedeMap = precede context
-                    , let followMap  = follow context
-                    , agreeWithprecedeMap y c precedeMap
-                    , agreeWithfollowMap y c followMap
-                    , let precedeMap' = updatePrecedeMap y c precedeMap
-                    , let followMap'  = updateFollowMap y c followMap
-                    , let context'    = mkContext precedeMap' followMap'
+                     | c <- cs
+                     , Context.agree c y context
+                     , let context' = Context.update c y context
                   ]
     where
       x = CPoint.xCoord pcp
@@ -116,20 +104,18 @@ where
 
   -- pcp is not a 0-color point.
   doSearchAux2 ::
-    [CPoint.CPoint] -> [Color.Color] -> Context -> Strategy.Strategy -> State.State ->
+    [CPoint.CPoint] -> [Color.Color] -> Context.Context -> Strategy.Strategy -> State.State ->
       Maybe State.State
   doSearchAux2 []           _  _                  _        _ =
     error "doSearchAux2. We shouldn't be there" -- make ghc -Werror happy
   doSearchAux2 (pcp : pcps) cs context strategy s =
-    State.pAppend pcp s >>= -- append new point
-    go strategy         >>= -- resolve for match
-    doSearch pcps cs context' strategy
+      State.pAppend pcp s >>= -- append new point
+      go strategy         >>= -- resolve for match
+      doSearch pcps cs context' strategy
     where
       y = CPoint.yCoord pcp
       c = CPoint.color pcp
-      precedeMap' = updatePrecedeMap y c (precede context)
-      followMap' = updateFollowMap y c (follow context)
-      context' = mkContext precedeMap' followMap'
+      context' = Context.update c y context
 
   agreeWithprecedeMap :: Color.Color -> IntMap.Key -> IntMap.IntMap Int -> Bool
   agreeWithprecedeMap y c m =
@@ -143,29 +129,29 @@ where
       Nothing -> True
       Just y' -> y < y'
 
-  updatePrecedeMap ::
+  updatePrecede ::
     Color.Color -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
-  updatePrecedeMap y = updatePrecedeMapAux y 1
+  updatePrecede y = updatePrecedeAux y 1
 
-  updatePrecedeMapAux ::
+  updatePrecedeAux ::
     Int -> IntMap.Key -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
-  updatePrecedeMapAux y c c' m
+  updatePrecedeAux y c c' m
     | c > c'    = m
-    | otherwise = updatePrecedeMapAux y (c+1) c' m'
+    | otherwise = updatePrecedeAux y (c+1) c' m'
       where
         m' = case IntMap.lookup c m of
                Nothing  -> IntMap.insert c y m
                Just y'  -> IntMap.insert (max y y') c m
 
-  updateFollowMap ::
+  updateFollow ::
     Color.Color -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
-  updateFollowMap y c m =
+  updateFollow y c m =
     case IntMap.lookup c m of
       Nothing       -> m
       Just y'
         | y < y'    -> m
         | y == y'   -> IntMap.delete c m
-        | otherwise -> error "updateFollowMap. We shouldn't be there" -- make ghc -Werror happy
+        | otherwise -> error "updateFollow. We shouldn't be there" -- make ghc -Werror happy
 
   go :: Strategy.Strategy -> State.State -> Maybe State.State
   go strategy s =

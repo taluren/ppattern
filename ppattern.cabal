@@ -40,6 +40,7 @@ library
     Data.Algorithm.PPattern.Strategy,
     Data.Algorithm.PPattern.Conflict,
     Data.Algorithm.PPattern.State,
+    Data.Algorithm.PPattern.Context,
     Data.Algorithm.PPattern.IntPartition,
     Data.Algorithm.PPattern
 
