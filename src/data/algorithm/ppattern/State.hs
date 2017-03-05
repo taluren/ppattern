@@ -11,31 +11,33 @@ commentary with @some markup@.
 -}
 
 module Data.Algorithm.PPattern.State
-(
-  -- * The @State@ type
-  State
-, empty
-
-  -- * Constructing
-, mkState
-
- -- * Querying
-, qColors
-
--- * Modifying
-, pAppend
-, xResolve
-, yResolve
-
-  -- * The @Embeddingp@ type
-, Embedding
-)
+-- (
+--   -- * The @State@ type
+--   State(..)
+--
+--   -- * Constructing
+-- , mkState
+--
+--   -- * Exporting
+-- -- , embedding
+-- , embeddingToList
+--
+--  -- * Querying
+-- , qColors
+--
+-- -- * Modifying
+-- , pAppend
+-- , xResolve
+-- , yResolve
+--
+--   -- * The @Embeddingp@ type
+-- , Embedding
+-- )
 where
 
   import qualified Data.List          as L
   import qualified Data.Set           as Set
   import qualified Data.Tuple         as T
-  import qualified Data.Function      as Fun
   import qualified Data.Map.Strict    as Map
   import qualified Data.IntMap.Strict as IntMap
   import qualified Data.Monoid        as Monoid
@@ -95,16 +97,8 @@ where
   insertNext :: CPoint.CPoint -> CPoint.CPoint -> Next -> Next
   insertNext = Map.insert
 
-  updateNext :: CPoint.CPoint -> CPoint.CPoint -> Next -> Next
-  updateNext cp cp' n = case Map.lookup cp n of
-                          Nothing -> Map.insert cp cp' n
-                          Just _  -> Map.update (\_ -> Just cp') cp n
-
-  jumpThreshold :: (CPoint.CPoint -> Int) ->
-                   Int                    ->
-                   Next                   ->
-                   CPoint.CPoint          ->
-                   Maybe CPoint.CPoint
+  jumpThreshold ::
+    (CPoint.CPoint -> Int) -> Int ->  Next -> CPoint.CPoint -> Maybe CPoint.CPoint
   jumpThreshold f t n cp = aux (lookupNext cp n)
     where
       aux Nothing = Nothing
@@ -136,11 +130,6 @@ where
   lookupEmbedding :: CPoint.CPoint -> Embedding -> Maybe CPoint.CPoint
   lookupEmbedding = Map.lookup
 
-  updateEmbedding :: CPoint.CPoint -> CPoint.CPoint -> Embedding -> Embedding
-  updateEmbedding cp cp' m = case Map.lookup cp m of
-                               Nothing -> Map.insert cp cp' m
-                               Just _  -> Map.update (\ _ -> Just cp') cp m
-
   ------------------------------------------------------------------------------
   --
   -- Access
@@ -153,10 +142,8 @@ where
   lookupAccess :: Color.Color -> Access -> Maybe CPoint.CPoint
   lookupAccess = IntMap.lookup
 
-  updateAccess :: Color.Color -> CPoint.CPoint -> Access -> Access
-  updateAccess c cp a = case IntMap.lookup c a of
-                          Nothing -> IntMap.insert c cp a
-                          Just _  -> IntMap.update (\ _ -> Just cp) c a
+  insertAccess :: Color.Color -> CPoint.CPoint -> Access -> Access
+  insertAccess = IntMap.insert
 
   mkLeftmostByColor :: [CPoint.CPoint] -> Access
   mkLeftmostByColor = Foldable.foldl f IntMap.empty
@@ -164,13 +151,6 @@ where
       f m cp = case IntMap.lookup (CPoint.color cp) m of
                  Nothing -> IntMap.insert (CPoint.color cp) cp m
                  Just _  -> m
-
-  updateRightmostByColor :: CPoint.CPoint -> Access -> Access
-  updateRightmostByColor cp m = m'
-    where
-      m' = case IntMap.lookup (CPoint.color cp) m of
-             Nothing -> IntMap.insert (CPoint.color cp) cp m
-             Just _  -> m
 
   ------------------------------------------------------------------------------
   --
@@ -232,30 +212,30 @@ where
     to permutation p. Update the state accordingly.
   -}
   pAppend :: CPoint.CPoint -> State -> Maybe State
-  pAppend pcp s = case lookupAccess (CPoint.color pcp) (pRightmostMappedByColor s) of
-                    Nothing   -> pAppendAux1 pcp  pcp s
-                    Just pcp' -> pAppendAux1 pcp' pcp s
+  pAppend pcp s =
+    case lookupAccess (CPoint.color pcp) (pRightmostMappedByColor s) of
+      Nothing   -> pAppendAux1 pcp  pcp s
+      Just pcp' -> pAppendAux1 pcp' pcp s
 
   pAppendAux1 :: CPoint.CPoint -> CPoint.CPoint -> State -> Maybe State
   pAppendAux1 pcp pcp' s =
     case lookupEmbedding pcp (embedding s) of
-      Nothing  -> lookupAccess (CPoint.color pcp) (qNext s) >>=
+      Nothing  -> lookupAccess (CPoint.color pcp) (qLeftmostByColor s) >>=
                   pAppendAux2 pcp pcp' s
-      Just qcp -> lookupNext (CPoint.color pcp) (qLeftmostByColor s) >>=
+      Just qcp -> lookupNext qcp (qNext s) >>=
                   pAppendAux2 pcp pcp' s
 
-  pAppendAux2 :: CPoint.CPoint -> CPoint.CPoint  -> State -> CPoint.CPoint -> Maybe State
+  pAppendAux2 ::
+    CPoint.CPoint -> CPoint.CPoint  -> State -> CPoint.CPoint ->
+    Maybe State
   pAppendAux2 pcp pcp' s qcp =
     case qRightmost s of
       Nothing   -> pAppendAux3 pcp pcp' qcp  s qcp
       Just qcp' -> pAppendAux3 pcp pcp' qcp' s qcp
 
-  pAppendAux3 :: CPoint.CPoint ->
-                 CPoint.CPoint ->
-                 CPoint.CPoint ->
-                 State         ->
-                 CPoint.CPoint ->
-                 Maybe State
+  pAppendAux3 ::
+    CPoint.CPoint -> CPoint.CPoint -> CPoint.CPoint -> State -> CPoint.CPoint ->
+    Maybe State
   pAppendAux3 pcp pcp' qcp s qcp'
     | x' < x    = lookupNext qcp' (qNext s) >>= pAppendAux3 pcp pcp' qcp s
     | otherwise = pAppendFinalize pcp pcp' qcp qcp' s
@@ -263,20 +243,27 @@ where
       x  = CPoint.xCoord qcp
       x' = CPoint.xCoord qcp'
 
-  pAppendFinalize :: CPoint.CPoint -> CPoint.CPoint -> CPoint.CPoint -> CPoint.CPoint -> State -> Maybe State
-  pAppendFinalize pcp pcp' qcp qcp' s = Just s'
+  pAppendFinalize ::
+    CPoint.CPoint -> CPoint.CPoint -> CPoint.CPoint -> CPoint.CPoint -> State ->
+    Maybe State
+  pAppendFinalize pcp pcp' _ qcp' s = Just s'
     where
-      pCPoints'          = pCPoints s `Monoid.mappend` [pcp']
-      embedding'         = updateEmbedding pcp' qcp' (embedding s)
-      pRightmostMappedByColor' = updateAccess (CPoint.color pcp) pcp' (pRightmostMappedByColor s)
-      qRightmost'        = qcp
-      pNext'             = updateNext pcp pcp' (pNext s)
+      c                        = CPoint.color pcp
+      pCPoints'                = pCPoints s `Monoid.mappend` [pcp']
+      embedding'               = insertEmbedding pcp' qcp' (embedding s)
+      pRightmostMappedByColor' = insertAccess c pcp' (pRightmostMappedByColor s)
+      qRightmostMappedByColor' = insertAccess c qcp' (qRightmostMappedByColor s)
+      qRightmost'              = qcp'
+      pNext'                   = if pcp /= pcp'
+                                 then insertNext pcp pcp' (pNext s)
+                                 else pNext s
 
-      s'   = s { pCPoints          = pCPoints'
-               , embedding         = embedding'
+      s'   = s { pCPoints                = pCPoints'
+               , embedding               = embedding'
                , pRightmostMappedByColor = pRightmostMappedByColor'
-               , qRightmost        = Just qRightmost'
-               , pNext             = pNext'
+               , qRightmostMappedByColor = qRightmostMappedByColor'
+               , qRightmost              = Just qRightmost'
+               , pNext                   = pNext'
                }
 
   xResolve :: CPoint.CPoint -> Int -> State -> Maybe State
@@ -290,32 +277,33 @@ where
                      resolve pcp s
 
   resolve :: CPoint.CPoint -> State -> CPoint.CPoint -> Maybe State
-  resolve pcp s qcp = resolveAux (lookupNext pcp (pNext s)) (lookupNext qcp (qNext s)) s
+  resolve pcp s qcp =
+    resolveAux (lookupNext pcp (pNext s)) (lookupNext qcp (qNext s)) s'
     where
-      embedding' = updateEmbedding pcp qcp (embedding s)
+      embedding' = insertEmbedding pcp qcp (embedding s)
 
       qRightmost' =
         case qRightmost s of
-                        Nothing   -> Just qcp
-                        Just qcp' -> if CPoint.xCoord qcp > CPoint.xCoord qcp'
-                                     then Just qcp
-                                     else Just qcp'
+          Nothing   -> Just qcp
+          Just qcp' -> if CPoint.xCoord qcp > CPoint.xCoord qcp'
+                       then Just qcp
+                       else Just qcp'
 
       qRightmostMappedByColor' =
         case lookupAccess (CPoint.color qcp) (qRightmostMappedByColor s) of
-          Nothing   -> updateAccess (CPoint.color qcp) qcp (qRightmostMappedByColor s)
+          Nothing   -> insertAccess (CPoint.color qcp) qcp (qRightmostMappedByColor s)
           Just qcp' -> if CPoint.xCoord qcp > CPoint.xCoord qcp'
-                       then updateAccess (CPoint.color qcp) qcp (qRightmostMappedByColor s)
+                       then insertAccess (CPoint.color qcp) qcp (qRightmostMappedByColor s)
                        else qRightmostMappedByColor s
 
-      s' = s { embedding         = embedding'
-             , qRightmost        = qRightmost'
+      s' = s { embedding               = embedding'
+             , qRightmost              = qRightmost'
              , qRightmostMappedByColor = qRightmostMappedByColor'
              }
 
   resolveAux :: Maybe CPoint.CPoint -> Maybe CPoint.CPoint -> State -> Maybe State
   resolveAux Nothing    _          s = Just s
-  resolveAux _          Nothing    s = Nothing
+  resolveAux _          Nothing    _ = Nothing
   resolveAux (Just pcp) (Just qcp) s = lookupEmbedding pcp (embedding s) >>=
                                        resolveAux' pcp qcp s
 

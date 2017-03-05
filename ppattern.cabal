@@ -38,7 +38,6 @@ library
     Data.Algorithm.PPattern.Tools,
     Data.Algorithm.PPattern.CPoint,
     Data.Algorithm.PPattern.Strategy,
-    Data.Algorithm.PPattern.Splitting,
     Data.Algorithm.PPattern.Conflict,
     Data.Algorithm.PPattern.State,
     Data.Algorithm.PPattern.IntPartition,

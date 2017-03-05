@@ -15,29 +15,28 @@ commentary with @some markup@.
 -- import System.Console.CmdArgs
 import System.Random
 import Criterion.Main
-import Data.Tuple.HT
+-- import Data.Tuple.HT
 
 import qualified Data.Algorithm.PPattern           as PPattern
 import qualified Data.Algorithm.PPattern.Perm      as Perm
 import qualified Data.Algorithm.PPattern.Strategy  as Strategy
+import qualified Data.Algorithm.PPattern.State     as State
 
 -- data Options = Options { psize :: Int
 --                        , qsize :: Int
---                        , nb    :: Int
 --                        , param :: Int
 --                        , seed  :: Int
 --                        } deriving (Data, Typeable)
 --
 -- options :: Options
--- options = Options { psize  = def &= help "The length of each source permutation"
+-- options = Options { psize = def &= help "The length of each source permutation"
 --                   , qsize = def &= help "The length of each target permutation"
---                   , nb       = def &= help "The number of target permutations"
---                   , param    = def &= help "The maximum number of increasing subsequence"
---                   , seed     = def &= help "Random number generator seed"
+--                   , param = def &= help "The maximum number of increasing subsequence"
+--                   , seed  = def &= help "Random number generator seed"
 --                   }
 --                   &= verbosity
---                   &= summary "ppattern-rand v0.1.0.0, (C) Stéphane Vialette 2017"
---                   &= program "ppattern-rand"
+--                   &= summary "ppattern-search v0.1.0.0, (C) Stéphane Vialette 2017"
+--                   &= program "ppattern-search"
 
 -- go :: (RandomGen g) => Options -> g -> [Benchmark]
 -- go opts = aux [] (nb opts)
@@ -59,20 +58,26 @@ import qualified Data.Algorithm.PPattern.Strategy  as Strategy
 --   opts <- cmdArgs options
 --   defaultMain [bgroup "ppattern" (go opts (mkStdGen (seed opts)))]
 
-go :: (RandomGen g) => g -> [Benchmark]
-go = aux [] 10
-  where
-    pSize = 20
-    qSize = 1000
-    k     = 3
+go :: (Perm.Perm, Perm.Perm) -> Maybe State.Embedding
+go (p, q) = PPattern.search p q Strategy.anyConflict
 
-    aux :: (RandomGen g) => [Benchmark] -> Int -> g -> [Benchmark]
-    aux acc 0 _ = acc
-    aux acc n g = aux (bench "search" (whnf f (p, q, Strategy.simple)) : acc) (n-1) g''
+mkPQs :: (RandomGen g) => g -> [Benchmark]
+-- mkPQs :: StdGen -> [Benchmark]
+mkPQs = aux [] (1 :: Int)
+  where
+    l = 10
+    m = 40
+    n = 1000
+    k = 4
+    aux acc i g
+      | i == l    = acc
+      | otherwise = aux (pq : acc) (i+1) g''
       where
-        (p, g')  = Perm.randKIncreasing pSize k g
-        (q, g'') = Perm.randKIncreasing qSize k g'
-        f        = uncurry3 PPattern.search
+        (p, g')  = Perm.randKIncreasing m k g
+        (q, g'') = Perm.randKIncreasing n k g'
+        pq = bench "search" $ whnf go (p, q)
+
 
 main :: IO ()
-main = defaultMain [bgroup "ppattern" (go (mkStdGen 123486789))]
+main =
+  defaultMain [bgroup "ppattern" (mkPQs (mkStdGen 1423908765))]
