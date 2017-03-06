@@ -14,15 +14,12 @@ module Data.Algorithm.PPattern.Perm
 (
 -- * The @Perm@ type
 Perm(..)
-, fromIntList
 , fromList
-, fromIntListUnsafe
 , fromListUnsafe
 , mkEmpty
 
 -- * Conversions
 , toList
-, toIntList
 
   -- * Monotonic Perms
 , mkIncreasing
@@ -72,37 +69,17 @@ where
   mkEmpty = fromListUnsafe []
 
   {-|
-    'fromIntList xs' construct a permutation from int list 'xs'.
-    Warning: the elements of 'xs' are not reduced.
-  -}
-  fromIntList :: [Int] -> Perm
-  fromIntList = fromList . fmap (\n -> fromIntegral n :: Int)
-
-  {-|
     'fromList xs' construct a reduced permutation from a 'Int' list xs.
   -}
   fromList ::  [Int] -> Perm
   fromList = reduce . fromListUnsafe
 
   {-|
-    'fromList xs' constructs a permutation from the int list 'xs'.
-    Warning: the elements of 'xs' are not reduced.
-  -}
-  fromIntListUnsafe :: [Int] -> Perm
-  fromIntListUnsafe = fromListUnsafe . fmap (\n -> fromIntegral n :: Int)
-
-  {-|
-    'fromList xs' constructs a permutation from the Int list 'xs'.
+    'fromList xs' constructs a permutation from an Int list.
     Warning: the elements of 'xs' are not reduced.
   -}
   fromListUnsafe :: [Int] -> Perm
   fromListUnsafe = Perm
-
-  {-|
-    Turn a permutation into an int list.
-  -}
-  toIntList :: Perm -> [Int]
-  toIntList (Perm xs) = fmap (\n -> fromIntegral n :: Int) xs
 
   {-|
     Turn a permutation into a Int. list.
@@ -172,7 +149,7 @@ where
   longestIncreasing p = L.reverse . fmap T.fst $ Patience.longestIncreasing xs
     where
       ints = [1..] :: [Int]
-      xs   = flip L.zip ints $ toIntList p
+      xs   = flip L.zip ints $ toList p
 
   {-|
     'longestIncreasingLength xs' returns the length of the longest increasing
@@ -188,7 +165,7 @@ where
   longestDecreasing p = T.fst <$> Patience.longestIncreasing xs
     where
       ints = [1..] :: [Int]
-      xs   = flip L.zip ints . L.reverse $ toIntList p
+      xs   = flip L.zip ints . L.reverse $ toList p
 
   {-|
     'longestDecreasingLength xs' returns the length of the longest decreasing

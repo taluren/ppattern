@@ -15,7 +15,7 @@ commentary with @some markup@.
 -- import System.Console.CmdArgs
 import System.Random
 import Criterion.Main
--- import Data.Tuple.HT
+import Data.Monoid as Monoid
 
 import qualified Data.Algorithm.PPattern           as PPattern
 import qualified Data.Algorithm.PPattern.Perm      as Perm
@@ -62,10 +62,9 @@ go :: (Perm.Perm, Perm.Perm) -> Maybe State.Embedding
 go (p, q) = PPattern.search p q Strategy.anyConflict
 
 mkPQs :: (RandomGen g) => g -> [Benchmark]
--- mkPQs :: StdGen -> [Benchmark]
 mkPQs = aux [] (1 :: Int)
   where
-    l = 10
+    l = 100
     m = 40
     n = 1000
     k = 4
@@ -75,8 +74,17 @@ mkPQs = aux [] (1 :: Int)
       where
         (p, g')  = Perm.randKIncreasing m k g
         (q, g'') = Perm.randKIncreasing n k g'
-        pq = bench "search" $ whnf go (p, q)
-
+        label    = "search (" `Monoid.mappend`
+                   "p="       `Monoid.mappend`
+                   show p     `Monoid.mappend`
+                   ", q="     `Monoid.mappend`
+                   show q     `Monoid.mappend`
+                   ", k="     `Monoid.mappend`
+                   show k     `Monoid.mappend`
+                   ", i="     `Monoid.mappend`
+                   show i     `Monoid.mappend`
+                   ")"
+        pq = bench label $ whnf go (p, q)
 
 main :: IO ()
 main =

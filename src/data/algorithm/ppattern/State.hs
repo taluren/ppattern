@@ -11,28 +11,28 @@ commentary with @some markup@.
 -}
 
 module Data.Algorithm.PPattern.State
--- (
---   -- * The @State@ type
---   State(..)
---
---   -- * Constructing
--- , mkState
---
---   -- * Exporting
--- -- , embedding
--- , embeddingToList
---
---  -- * Querying
--- , qColors
---
--- -- * Modifying
--- , pAppend
--- , xResolve
--- , yResolve
---
---   -- * The @Embeddingp@ type
--- , Embedding
--- )
+(
+  -- * The @State@ type
+  State(..)
+
+  -- * Constructing
+, mkState
+
+  -- * Exporting
+-- , embedding
+, embeddingToList
+
+ -- * Querying
+, qColors
+
+-- * Modifying
+, pAppend
+, xResolve
+, yResolve
+
+  -- * The @Embeddingp@ type
+, Embedding
+)
 where
 
   import qualified Data.List          as L

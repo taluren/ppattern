@@ -13,7 +13,7 @@ commentary with @some markup@.
 module Data.Algorithm.PPattern.Context
 (
   -- * The @Resolve@ type
-  Context(..)
+  Context
 
   -- * Constructing
 , mk
@@ -27,22 +27,21 @@ module Data.Algorithm.PPattern.Context
 where
 
   import qualified Data.IntMap.Strict as IntMap
+  import qualified Data.Tuple         as T
 
   import qualified Data.Algorithm.PPattern.Color as Color
 
   -- Context type for constructing increasing colorings of permutation p.
-  data Context = Context { precede :: IntMap.IntMap Int
-                         , follow  :: IntMap.IntMap Int
-                         } deriving (Eq, Show)
+  type Context = (IntMap.IntMap Int, IntMap.IntMap Int)
+
+  precede :: Context -> IntMap.IntMap Int
+  precede = T.fst
+
+  follow :: Context -> IntMap.IntMap Int
+  follow = T.snd
 
   mk :: IntMap.IntMap Int -> IntMap.IntMap Int -> Context
-  mk m m' = Context { precede = m, follow = m' }
-
-  agree :: Color.Color -> Int -> Context -> Bool
-  agree c y context = agreePrecede' && agreeFollow'
-    where
-      agreePrecede' = agreePrecede c y (precede context)
-      agreeFollow'  = agreeFollow  c y (follow context)
+  mk precede' follow' = (precede', follow')
 
   update :: Color.Color -> Int -> Context -> Context
   update c y context = mk precede' follow'
@@ -50,34 +49,36 @@ where
       precede' = updatePrecede c y (precede context)
       follow'  = updateFollow  c y (follow  context)
 
-  agreePrecede :: Color.Color -> IntMap.Key -> IntMap.IntMap Int -> Bool
+  agree :: Color.Color -> Int -> Context -> Bool
+  agree c y context = agreeForPrecede && agreeForFollow
+    where
+      agreeForPrecede = agreePrecede c y (precede context)
+      agreeForFollow  = agreeFollow  c y (follow  context)
+
+  agreePrecede :: Color.Color -> Int -> IntMap.IntMap Int -> Bool
   agreePrecede c y m =
     case IntMap.lookup c m of
       Nothing -> True
       Just y' -> y' < y
 
-  agreeFollow :: Color.Color -> IntMap.Key -> IntMap.IntMap Int -> Bool
+  agreeFollow :: Color.Color -> Int -> IntMap.IntMap Int -> Bool
   agreeFollow c y m =
     case IntMap.lookup c m of
       Nothing -> True
       Just y' -> y < y'
 
-  updatePrecede ::
-    Color.Color -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
-  updatePrecede c = updatePrecedeAux c 1
+  updatePrecede :: Color.Color -> Int-> IntMap.IntMap Int -> IntMap.IntMap Int
+  updatePrecede = aux (1 :: Color.Color)
+    where
+      aux c refC y m
+        | c > refC  = m
+        | otherwise = aux (c+1) refC y m'
+          where
+            m' = case IntMap.lookup c m of
+                   Nothing  -> IntMap.insert c y          m
+                   Just y'  -> IntMap.insert c (max y y') m
 
-  updatePrecedeAux ::
-    Color.Color -> Color.Color -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
-  updatePrecedeAux c c' y m
-    | c > c'    = m
-    | otherwise = updatePrecedeAux y (c+1) c' m'
-      where
-        m' = case IntMap.lookup c m of
-               Nothing  -> IntMap.insert c y m
-               Just y'  -> IntMap.insert (max y y') c m
-
-  updateFollow ::
-    Color.Color -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
+  updateFollow :: Color.Color -> Int -> IntMap.IntMap Int -> IntMap.IntMap Int
   updateFollow c y m =
     case IntMap.lookup c m of
       Nothing       -> m

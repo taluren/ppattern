@@ -13,10 +13,23 @@ commentary with @some markup@.
 module Data.Algorithm.PPattern.CPoint
 (
   -- * The @CPoint@ type
-  CPoint(..)
+  CPoint
 
-  -- _ constructing
+ -- * Accessing
+, xCoord
+, yCoord
+, color
+
+  -- * constructing
 , mkCPoint
+
+  -- * Modifying
+, updateXCoord
+, updateYCoord
+, updateColor
+
+  -- * Displaying
+, toStr
 )
 where
 
@@ -24,14 +37,56 @@ where
 
   import qualified Data.Algorithm.PPattern.Color as Color
 
-  data CPoint = CPoint { xCoord :: {-# UNPACK #-} !Int
-                       , yCoord :: {-# UNPACK #-} !Int
-                       , color  :: {-# UNPACK #-} !Color.Color
-                       } deriving (Eq)
+  type Point = (Int, Int)
+  type CPoint = (Point, Color.Color)
 
-  -- Show class
-  instance Show CPoint where
-    show CPoint {xCoord=x, yCoord=y, color=c } =
+  {-|
+    'mkPoint' makes a colored CPoint from two integer coordinates and a color.
+  -}
+  mkCPoint :: Int -> Int -> Color.Color -> CPoint
+  mkCPoint x y c = ((x, y), c)
+
+  {-|
+    Get x-ccordinate.
+  -}
+  xCoord :: CPoint -> Int
+  xCoord ((x, _), _) = x
+
+  {-|
+    Get y-ccordinate.
+  -}
+  yCoord :: CPoint -> Int
+  yCoord ((_, y), _) = y
+
+  {-|
+    Get color.
+  -}
+  color :: CPoint -> Color.Color
+  color (_, c) = c
+
+  {-|
+    Update x-ccordinate.
+  -}
+  updateXCoord :: Int -> CPoint -> CPoint
+  updateXCoord x' ((_, y), c) = ((x', y), c)
+
+  {-|
+    Update y-ccordinate.
+  -}
+  updateYCoord :: Int -> CPoint -> CPoint
+  updateYCoord y' ((x, _), c) = ((x, y'), c)
+
+  {-|
+    Update color.
+  -}
+  updateColor :: Color.Color -> CPoint -> CPoint
+  updateColor c' (p, _) = (p, c')
+
+  {-|
+    Transform to string.
+  -}
+  toStr :: CPoint -> String
+  toStr ((x, y), c) =
       "("    `Monoid.mappend`
       "x="   `Monoid.mappend`
       show x `Monoid.mappend`
@@ -42,13 +97,3 @@ where
       "c="   `Monoid.mappend`
       show c `Monoid.mappend`
       ")"
-      
-  -- Ord clas
-  instance Ord CPoint where
-    compare cp1 cp2 = compare (xCoord cp1) (xCoord cp2)
-
-  {-|
-    'mkPoint'' makes a colored CPoint from two integer coordinates and a color.
-  -}
-  mkCPoint :: Int -> Int -> Color.Color -> CPoint
-  mkCPoint x y c = CPoint { xCoord = x, yCoord = y, color = c }

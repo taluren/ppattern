@@ -11,6 +11,9 @@ commentary with @some markup@.
 -}
 
 module Data.Algorithm.PPattern
+(
+  search
+)
 where
 
   import qualified Data.List          as L
@@ -64,10 +67,10 @@ where
 
       -- make initial state
       s = State.mkState q
-      cs = [1..k]
+      cs = Color.colors 1 k
       pIndexed = Perm.index p
 
-      -- Perform search
+      -- Embed p and perform search
       res = Foldable.asum [doSearch pcps cs context strategy s
                             | refColors   <- cs `Combi.choose` l
                             , let pcps    = mkCPoints pIndexed decreasing refColors
@@ -91,15 +94,14 @@ where
   doSearchAux1 []           _  _       _        _ =
     error "doSearchAux1. We shouldn't be there" -- make ghc -Werror happy
   doSearchAux1 (pcp : pcps) cs context strategy s =
-    Foldable.asum [State.pAppend (CPoint.mkCPoint x y c) s >>= -- append new point
-                   go strategy                             >>= -- resolve for match
+    Foldable.asum [State.pAppend (CPoint.updateColor c pcp) s >>= -- append new point
+                   go strategy                                >>= -- resolve for match
                    doSearch pcps cs context' strategy
                      | c <- cs
                      , Context.agree c y context
                      , let context' = Context.update c y context
                   ]
     where
-      x = CPoint.xCoord pcp
       y = CPoint.yCoord pcp
 
   -- pcp is not a 0-color point.
@@ -114,44 +116,8 @@ where
       doSearch pcps cs context' strategy
     where
       y = CPoint.yCoord pcp
-      c = CPoint.color pcp
+      c = CPoint.color  pcp
       context' = Context.update c y context
-
-  agreeWithprecedeMap :: Color.Color -> IntMap.Key -> IntMap.IntMap Int -> Bool
-  agreeWithprecedeMap y c m =
-    case IntMap.lookup c m of
-      Nothing -> True
-      Just y' -> y' < y
-
-  agreeWithfollowMap :: Color.Color -> IntMap.Key -> IntMap.IntMap Int -> Bool
-  agreeWithfollowMap y c m =
-    case IntMap.lookup c m of
-      Nothing -> True
-      Just y' -> y < y'
-
-  updatePrecede ::
-    Color.Color -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
-  updatePrecede y = updatePrecedeAux y 1
-
-  updatePrecedeAux ::
-    Int -> IntMap.Key -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
-  updatePrecedeAux y c c' m
-    | c > c'    = m
-    | otherwise = updatePrecedeAux y (c+1) c' m'
-      where
-        m' = case IntMap.lookup c m of
-               Nothing  -> IntMap.insert c y m
-               Just y'  -> IntMap.insert (max y y') c m
-
-  updateFollow ::
-    Color.Color -> IntMap.Key -> IntMap.IntMap Int -> IntMap.IntMap Int
-  updateFollow y c m =
-    case IntMap.lookup c m of
-      Nothing       -> m
-      Just y'
-        | y < y'    -> m
-        | y == y'   -> IntMap.delete c m
-        | otherwise -> error "updateFollow. We shouldn't be there" -- make ghc -Werror happy
 
   go :: Strategy.Strategy -> State.State -> Maybe State.State
   go strategy s =
