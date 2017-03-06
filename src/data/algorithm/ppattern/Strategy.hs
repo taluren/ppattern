@@ -128,5 +128,4 @@ where
             _       -> aux oConflict plinks
         | valueConflict link1 link2 = Just $ reportValueConflict link1 link2
         | valueConflict link2 link1 = Just $ reportValueConflict link2 link1
-
         | otherwise                 = aux oConflict plinks

@@ -43,12 +43,6 @@ where
   mk :: IntMap.IntMap Int -> IntMap.IntMap Int -> Context
   mk precede' follow' = (precede', follow')
 
-  update :: Color.Color -> Int -> Context -> Context
-  update c y context = mk precede' follow'
-    where
-      precede' = updatePrecede c y (precede context)
-      follow'  = updateFollow  c y (follow  context)
-
   agree :: Color.Color -> Int -> Context -> Bool
   agree c y context = agreeForPrecede && agreeForFollow
     where
@@ -66,6 +60,12 @@ where
     case IntMap.lookup c m of
       Nothing -> True
       Just y' -> y < y'
+
+  update :: Color.Color -> Int -> Context -> Context
+  update c y context = mk precede' follow'
+    where
+      precede' = updatePrecede c y (precede context)
+      follow'  = updateFollow  c y (follow  context)
 
   updatePrecede :: Color.Color -> Int-> IntMap.IntMap Int -> IntMap.IntMap Int
   updatePrecede = aux (1 :: Color.Color)

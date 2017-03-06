@@ -60,13 +60,13 @@ where
   data State =
     State { pCPoints                :: [CPoint.CPoint]
           , qCPoints                :: [CPoint.CPoint]
-          , embedding               :: !Embedding
-          , pRightmostMappedByColor :: !Access
-          , qLeftmostByColor        :: !Access
-          , qRightmostMappedByColor :: !Access
+          , embedding               :: Embedding
+          , pRightmostMappedByColor :: Access
+          , qLeftmostByColor        :: Access
+          , qRightmostMappedByColor :: Access
           , qRightmost              :: Maybe CPoint.CPoint
-          , pNext                   :: !Next
-          , qNext                   :: !Next
+          , pNext                   :: Next
+          , qNext                   :: Next
           } deriving (Eq)
 
   -- Show class
@@ -87,7 +87,7 @@ where
     where
       f cp (m, m') = case IntMap.lookup c m' of
                        Nothing  -> (m, IntMap.insert c cp m')
-                       Just cp' -> (insertNext cp cp' m, IntMap.update (\_ -> Just cp) c m')
+                       Just cp' -> (insertNext cp cp' m, IntMap.insert c cp m')
         where
           c = CPoint.color cp
 

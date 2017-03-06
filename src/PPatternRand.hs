@@ -1,4 +1,5 @@
 {-|
+Module      : PPatternRand
 Description : Short description
 Copyright   : (c) Stéphane Vialette, 2016
 License     : MIT
@@ -9,37 +10,43 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
-{-# LANGUAGE DeriveDataTypeable #-}
-
-import System.Console.CmdArgs
 import System.Random
+import Criterion.Main
+import Data.Monoid as Monoid
 
-import qualified Data.Algorithm.PPattern.Perm as Perm
+import qualified Data.Algorithm.PPattern           as PPattern
+import qualified Data.Algorithm.PPattern.Perm      as Perm
+import qualified Data.Algorithm.PPattern.Strategy  as Strategy
+import qualified Data.Algorithm.PPattern.State     as State
 
-data Options = Options { len            :: Int
-                       , num            :: Int
-                       , outputFilename :: FilePath
-                       } deriving (Data, Typeable)
+go :: (Perm.Perm, Perm.Perm) -> Maybe State.Embedding
+go (p, q) = PPattern.search p q Strategy.anyConflict
 
-options :: Options
-options = Options { len            = def  &= help "The length of each permutation"
-                  , num            = def &= help "The number of generated permutations"
-                  , outputFilename = def &= help "The output filename"
-                  }
-                  &= verbosity
-                  &= summary "ppattern-rand v0.1.0.0, (C) Stéphane Vialette 2017"
-                  &= program "ppattern-rand"
-
-go :: RandomGen g => Options -> g -> [Perm.Perm]
-go opts = aux (len opts) (num opts) []
+mkPQs :: (RandomGen g) => g -> [Benchmark]
+mkPQs = aux [] (1 :: Int)
   where
-    aux _ 0 acc _ = acc
-    aux n m acc g = aux n (m-1) (p:acc) g'
+    l = 100
+    m = 40
+    n = 1000
+    k = 4
+    aux acc i g
+      | i == l    = acc
+      | otherwise = aux (pq : acc) (i+1) g''
       where
-        (p, g') = Perm.randPerm' n g
+        (p, g')  = Perm.randKIncreasing m k g
+        (q, g'') = Perm.randKIncreasing n k g'
+        label    = "search (" `Monoid.mappend`
+                   "p="       `Monoid.mappend`
+                   show p     `Monoid.mappend`
+                   ", q="     `Monoid.mappend`
+                   show q     `Monoid.mappend`
+                   ", k="     `Monoid.mappend`
+                   show k     `Monoid.mappend`
+                   ", i="     `Monoid.mappend`
+                   show i     `Monoid.mappend`
+                   ")"
+        pq = bench label $ whnf go (p, q)
 
 main :: IO ()
-main = do
-  opts <- cmdArgs options
-  g    <- getStdGen
-  writeFile (outputFilename opts) . unlines . fmap show $ go opts g
+main =
+  defaultMain [bgroup "ppattern" (mkPQs (mkStdGen 1423908765))]
